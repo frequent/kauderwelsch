@@ -17,11 +17,11 @@
     }
 
     // Load Kauderwelsch worker
-    kauderwelsch_instance.trainer = new Worker(option_dict.pathToTrainer || 'trainer_worker.js');
+    kauderwelsch_instance.trainer = new Worker(option_dict.pathToTrainer || 'kauderwelsch_worker.js');
 
     // initialize audio recording and file storing
   }
 
-  window.kw = Kauderwelsch;
+  window.Kauderwelsch = Kauderwelsch;
 
 }(window, window.navigator, RSVP));

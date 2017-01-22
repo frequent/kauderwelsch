@@ -4,8 +4,7 @@
   "use strict";
 
   importScripts(
-    'trainer.js',
-    'trainer/converter.js'
+    'trainer.js'
   );
 
   // some strings

@@ -28,4 +28,19 @@ http://www.voxforge.org/home/dev/acousticmodels/linux
 http://www.voxforge.org/home/dev/acousticmodels/linux/create/htkjulius/tutorial/data-prep/step-1
 
 Audacity online alternative: https://twistedwave.com/online/
-Audio Online Converter FLAC ~ WAV: http://audio.online-convert.com/
+Online File Converters:
+=> FLAC ~ WAV: http://audio.online-convert.com/ (used, can do PCM 16bit signed little Endian!)
+http://www.filezigzag.com/wav-zip-en.aspx
+
+// https://mdn.github.io/web-dictaphone/ => barebones recorder
+// => https://mdn.github.io/web-dictaphone/scripts/app.js
+// => https://github.com/mdn/web-dictaphone
+
+//https://softinst56756.host.vifib.net/public/project/hyperconvergence/
+// audio example => good, too, haha, uses worker and code from last example
+// from Matt Diamond... ok. bien.
+
+// https://subvisual.co/blog/posts/39-tutorial-html-audio-capture-streaming-to-node-js-no-browser-extensions
+// another tutorial
+// get mic access
+

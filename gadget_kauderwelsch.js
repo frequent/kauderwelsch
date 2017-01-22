@@ -9,7 +9,15 @@
     // ready
     /////////////////////////////
     .ready(function (my_gadget) {
+      my_gadget.property_dict = {};
 
+      return new RSVP.Queue()
+        .push(function () {
+          return my_gadget.getElement();
+        })
+        .push(function (my_element) {
+          my_gadget.property_dict.element = my_element;
+        });
     })
 
     /////////////////////////////
@@ -23,7 +31,7 @@
       var gadget = this,
       props = gadget.property_dict;
       
-      // record audio and store somewhere
+      // record audio and store first in browser, then jio
       
       // initialize Kauderwelsch
       props.kw = new Kauderwelsch({

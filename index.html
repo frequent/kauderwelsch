@@ -1,7 +1,10 @@
 <!doctype html>
 <html>
   <head>
-    <title>Gadget JuliusJS</title>
+    <title>Gadget Kauderwelsch</title>
+    
+    <link rel="stylesheet" href="gadget_kauderwelsch.css" />
+    
     <script type="text/javascript" src="rsvp.js"></script>
     <script type="text/javascript" src="renderjs.js"></script>
     <script tpye="text/javascript" src="kauderwelsch.js"></script>
@@ -9,6 +12,24 @@
     <script tpye="text/javascript" src="gadget_kauderwelsch.js"></script>
   </head>
   <body>
-  <p>Initializing Kauderwelsch...</p>
+    <h1>Kauderwelsch</h1>
+
+    <section class="kw-controls">
+      <canvas class="kw-visualizer"></canvas>
+      <form name="kw-form-record"><input type="submit" value="Record" /></form>
+      <form name="kw-form-stop"><input type="submit" value="Stop" /></form>
+    </section>
+
+    <section class="kw-sample-list">
+
+      <!--
+      <div class="kw-sample">
+        <audio controls></audio>
+        <p>Sample clip name</p>
+        <form name="kw-form-sample-XXX-delete"><input type="submit" value="Delete" />
+      </div>
+      -->
+
+    </section>
   </body>
 </html>
