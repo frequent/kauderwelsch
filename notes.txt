@@ -1,0 +1,31 @@
+Links:
+http://cs.stanford.edu/people/karpathy/convnetjs/
+https://github.com/karpathy/convnetjs
+
+browser machinelearning
+http://cs.stanford.edu/people/karpathy/convnetjs/
+https://github.com/karpathy/convnetjs neural networks
+HMM Proto => voxforge => https://raw.githubusercontent.com/VoxForge/develop/master/tutorial/hmm0/proto
+One sample => https://github.com/Sumolari/hmm, has some states and things
+Tutorial: http://chrisnatale.info/markov-models-in-javascript-part-ii-more-responsive-ui-with-hidden-markov-models/
+http://chrisnatale.info/markov-models-in-javascript-part-i-an-observable-markov-chain/
+
+http://www.ee.columbia.edu/ln/LabROSA/doc/HTKBook21/node50.html
+
+build model in JS
+http://www.soliantconsulting.com/blog/2013/02/title-generator-using-markov-chains
+build brain cell in JS
+https://medium.com/javascript-scene/how-to-build-a-neuron-exploring-ai-in-javascript-pt-1-c2726f1f02b2#.6hwlldhob
+
+speech accuracy: http://nshmyrev.blogspot.fr/2009/08/how-to-improve-accuracy.html
+
+http://www.repository.voxforge1.org/downloads/Main/Tags/Releases/ 
+http://htk.eng.cam.ac.uk => required for voxforge
+https://en.wikibooks.org/wiki/Introducing_Julia/Getting_started => install from there!
+
+Tutorial for building accoutic model:
+http://www.voxforge.org/home/dev/acousticmodels/linux
+http://www.voxforge.org/home/dev/acousticmodels/linux/create/htkjulius/tutorial/data-prep/step-1
+
+Audacity online alternative: https://twistedwave.com/online/
+Audio Online Converter FLAC ~ WAV: http://audio.online-convert.com/
