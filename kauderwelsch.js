@@ -20,10 +20,10 @@
 
   var AUDIO_CONTEXT = window.AudioContext || window.webkitAudioContext;
   var MEDIA_DEVICES = navigator.mediaDevices;
-  var REQUEST_ANIMATION_FRAME = navigator.requestAnimationFrame || 
-    navigator.webkitRequestAnimationFrame || navigator.mozRequestAnimationFrame;
-  var CANCEL_ANIMATION_FRAME = navigator.cancelAnimationFrame || 
-    navigator.webkitCancelAnimationFrame || navigator.mozCancelAnimationFrame;
+  var REQUEST_ANIMATION_FRAME = window.requestAnimationFrame || 
+    window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame;
+  var CANCEL_ANIMATION_FRAME = window.cancelAnimationFrame || 
+    window.webkitCancelAnimationFrame || window.mozCancelAnimationFrame;
 
   var AUDIO_OPTIONS = {
       "audio": {
@@ -45,10 +45,65 @@
     //audio.processor = audio.context.createScriptProcessor(4096, 1, 1);
   }
 
+  function saveAudio() {
+    var kauderwelsch_instance = this;
+    kauderwelsch_instance.audio.recorder.exportWAV(doneEncoding);
+    // could get mono instead by saying
+    // audioRecorder.exportMonoWAV( doneEncoding );
+  }
+
+  function doneEncoding(blob) {
+    //???
+    Recorder.setupDownload(blob, "Sample" + 1 + ".wav" );
+  }
+  
+  /*
+  function toggleRecording(e) {
+    if (e.classList.contains("recording")) {
+        // stop recording
+        audioRecorder.stop();
+        e.classList.remove("recording");
+        => audioRecorder.getBuffers( gotBuffers ); //redraw from recorded file, then play through?
+    } else {
+        // start recording
+        if (!audioRecorder)
+            return;
+        e.classList.add("recording");
+        audioRecorder.clear();
+        audioRecorder.record();
+    }
+  }
+  */
+
+  function convertToMono(input) {
+    var kauderwelsch_instance = this,
+      splitter = kauderwelsch_instance.audio.context.createChannelSplitter(2);
+      merger = kauderwelsch_instance.audio.context.createChannelMerger(2);
+
+      input.connect(splitter);
+      splitter.connect(merger, 0, 0);
+      splitter.connect(merger, 0, 1);
+      return merger;
+  }
+
+  function cancelAnalyserUpdates() {
+    var kauderwelsch_instance = this;
+    window.cancelAnimationFrame(kauderwelsch_instance.rafID);
+    kauderwelsch_instance.rafID = null;
+  }
+
   function updateAnalyser() {
     var kauderwelsch_instance = this,
-      bar_
-    
+      audio = kauderwelsch_instance.audio,
+      freqByteData,
+      step,
+      amp,
+      min,
+      max,
+      datum,
+      i,
+      j;
+
     if (!kauderwelsch_instance.analyser_context) {
         var canvas = kauderwelsch_instance.analyser_dom_node;
         canvas_width = canvas.width;
@@ -56,54 +111,41 @@
         kauderwelsch_instance.analyser_context = canvas.getContext('2d');
     }
 
-    // visualiser draw code here
+    // draw analyser code her
+    // https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode/frequencyBinCount
     {
-      var freqByteData = new Uint8Array(analyserNode.frequencyBinCount);
-      var step = Math.ceil( data.length / canvas_width );
-      var amp = canvas_height / 2;
-      kauderwelsch_instance.fillStyle = "silver";
+      freqByteData = new Uint8Array(audio.analyer.frequencyBinCount);
+      step = Math.ceil( freqByteData.length / canvas_width );
+      amp = canvas_height / 2;
+
+      audio.analyser.getByteFrequencyDatea(freqByteData);
+
       kauderwelsch_instance.visualiser_context.clearRect(0, 0, canvas_width, canvas_height);
-      for(var i=0; i < width; i++){
-          var min = 1.0;
-          var max = -1.0;
-          for (j=0; j<step; j++) {
-              var datum = data[(i*step)+j]; 
-              if (datum < min)
-                  min = datum;
-              if (datum > max)
-                  max = datum;
+      kauderwelsch_instance.visualiser_context.fillStyle = "silver";
+      //kauderwelsch_instance.visualiser_context.fillStyle =  "round";  
+      
+      for(i = 0; i < canvas_width; i += 1){
+        min = 1.0;
+        max = -1.0;
+        for (j = 0; j < step; j += 1) {
+          datum = data[(i * step) + j]; 
+          if (datum < min) {
+            min = datum;
           }
-      context.fillRect(i,(1+min)*amp,1,Math.max(1,(max-min)*amp));
-    }
-
-        var SPACING = 3;
-        var BAR_WIDTH = 1;
-        var numBars = Math.round(canvas_width / SPACING);
-        var freqByteData = new Uint8Array(analyserNode.frequencyBinCount);
-
-        analyserNode.getByteFrequencyData(freqByteData); 
-
-        analyserContext.clearRect(0, 0, canvasWidth, canvasHeight);
-        analyserContext.fillStyle = 'silver';
-        analyserContext.lineCap = 'round';
-        var multiplier = analyserNode.frequencyBinCount / numBars;
-
-        // Draw rectangle for each frequency bin.
-        for (var i = 0; i < numBars; ++i) {
-            var magnitude = 0;
-            var offset = Math.floor( i * multiplier );
-            // gotta sum/average the block, or we miss narrow-bandwidth spikes
-            for (var j = 0; j< multiplier; j++)
-                magnitude += freqByteData[offset + j];
-            magnitude = magnitude / multiplier;
-            var magnitude2 = freqByteData[i * multiplier];
-            analyserContext.fillStyle = "hsl( " + Math.round((i*360)/numBars) + ", 100%, 50%)";
-            analyserContext.fillRect(i * SPACING, canvasHeight, BAR_WIDTH, -magnitude);
+          if (datum > max) {
+            max = datum;
+          }
         }
+        kauderwelsch_instance.analyser_context.fillRect(
+          i,
+          (1 + min) * amp,
+          1, 
+          Math.max(1, (max - min) * amp)
+        );
+      }
     }
-    
-    kauderwelsch_instance.rafID = window.requestAnimationFrame(updateVisualiser);
 
+    kauderwelsch_instance.rafID = window.requestAnimationFrame(updateAnalyser);
   }
   
   function bootstrap(my_option_dict) {
@@ -151,7 +193,7 @@
       throw new TypeError("Browser does not support MediaDevices");
     }
     if (!REQUEST_ANIMATION_FRAME || !CANCEL_ANIMATION_FRAME) {
-      throw new TypeEroor("Browser does not support AnimationFrame");
+      throw new TypeError("Browser does not support AnimationFrame");
     }
 
     // setup worker communication
