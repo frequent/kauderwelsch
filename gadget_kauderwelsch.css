@@ -1,0 +1,41 @@
+h1 {
+  text-align: center;
+}
+.kw-wrapper {
+	width: 60%;
+	display: block;
+	padding: 0 2em;
+	margin: 0 auto;
+	-webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+@media (max-width: 64em) {
+  .kw-wrapper {
+    width: 100%;
+  }
+}
+.kw-analyser { 
+	background: #000000; 
+	width: 100%;
+}
+.kw-controls {
+	display: block;
+  margin: 0 auto;
+	width: 20%;
+	background: #d1d1de;
+	padding: 1em;
+	border: 1px solid #000;
+	-webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+.kw-controls input {
+  padding: .5em;
+  border: 1px solid #000;
+  cursor: pointer;
+}
+.kw-controls input:hover {
+  background: #d2d2d2;
+}
+
