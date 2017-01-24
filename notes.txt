@@ -1,11 +1,15 @@
+emscripten tutorial:
+http://blog.scottlogic.com/2014/03/12/native-code-emscripten-webgl-simmer-gently.html
+
 Links:
 http://cs.stanford.edu/people/karpathy/convnetjs/
 https://github.com/karpathy/convnetjs
 
+HTK doc => http://www.ee.columbia.edu/ln/LabROSA/doc/HTKBook21/node95.html
 browser machinelearning
 http://cs.stanford.edu/people/karpathy/convnetjs/
 https://github.com/karpathy/convnetjs neural networks
-HMM Proto => voxforge => https://raw.githubusercontent.com/VoxForge/develop/master/tutorial/hmm0/proto
+HMM Proto => voxforge => https://rawhttp://www.soliantconsulting.com/blog/2013/02/title-generator-using-markov-chains.githubusercontent.com/VoxForge/develop/master/tutorial/hmm0/proto
 One sample => https://github.com/Sumolari/hmm, has some states and things
 Tutorial: http://chrisnatale.info/markov-models-in-javascript-part-ii-more-responsive-ui-with-hidden-markov-models/
 http://chrisnatale.info/markov-models-in-javascript-part-i-an-observable-markov-chain/
@@ -17,8 +21,11 @@ http://www.soliantconsulting.com/blog/2013/02/title-generator-using-markov-chain
 build brain cell in JS
 https://medium.com/javascript-scene/how-to-build-a-neuron-exploring-ai-in-javascript-pt-1-c2726f1f02b2#.6hwlldhob
 
+http://coding-geek.com/how-shazam-works/
 speech accuracy: http://nshmyrev.blogspot.fr/2009/08/how-to-improve-accuracy.html
-
+https://w-labs.at/experiments/audioviz/
+https://www.airtightinteractive.com/2013/10/making-audio-reactive-visuals/
+https://www.airtightinteractive.com/demos/js/uberviz/audioanalysis/js/AudioHandler.js
 http://www.repository.voxforge1.org/downloads/Main/Tags/Releases/ 
 http://htk.eng.cam.ac.uk => required for voxforge
 https://en.wikibooks.org/wiki/Introducing_Julia/Getting_started => install from there!
@@ -44,3 +51,8 @@ http://www.filezigzag.com/wav-zip-en.aspx
 // another tutorial
 // get mic access
 
+// JIO soundcloud storage
+https://developers.soundcloud.com/docs/api/sdks#uploading
+e -> resample
+ 
+                                  

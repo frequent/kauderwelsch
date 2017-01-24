@@ -1,1 +1,1 @@
-// emscripten
+// called from worker - emscripten
