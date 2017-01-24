@@ -36,11 +36,42 @@
           "optional": []
       },
   };
+  
+  // needs to be explicit
+  var ANALYSER_CONTEXT;
+  var ANALYSER_DOM_NODE;
+  var ANALYSER_NODE;
+  var ANALYSER_FRAME_ID;
+
+  updateAnalyser = function () {
+    var freqByteData = new Uint8Array(ANALYSER_NODE.frequencyBinCount),
+      magnitude,
+      i;
+
+    // https://www.airtightinteractive.com/2013/10/making-audio-reactive-visuals/
+    // volumne
+    // beat
+    // waveform (array 0-256, 128 is silence) 
+    // ANALYSER_NODE.getByteTimeDomainData(freqByteData);
+    // equalizer (array 0-256, 0 is silence)
+    ANALYSER_NODE.getByteFrequencyData(freqByteData); 
+    ANALYSER_CONTEXT.clearRect(0, 0, ANALYSER_DOM_NODE.width, ANALYSER_DOM_NODE.height);
+    ANALYSER_CONTEXT.fillStyle = 'silver';
+    ANALYSER_CONTEXT.lineCap = 'round';
+
+    for(i = 0; i < ANALYSER_DOM_NODE.width; i += 1){
+      magnitude = freqByteData[i]/1.5;
+
+      ANALYSER_CONTEXT.fillRect(i*1.5, ANALYSER_DOM_NODE.height/2, 1, -magnitude * 1);
+      ANALYSER_CONTEXT.fillRect(i*1.5, ANALYSER_DOM_NODE.height/2, 1,  magnitude * 1);
+    }
+    ANALYSER_FRAME_ID = requestAnimationFrame( updateAnalyser );
+  };
+
 
   function initializeAudio(audio) {
     audio.context = new AUDIO_CONTEXT();
-    audio.analyser = audio.context.createAnalyser();
-    audio.analyser.fftSize = 2048;
+
     
     //audio.processor = audio.context.createScriptProcessor(4096, 1, 1);
   }
@@ -86,67 +117,7 @@
       return merger;
   }
 
-  function cancelAnalyserUpdates() {
-    var kauderwelsch_instance = this;
-    window.cancelAnimationFrame(kauderwelsch_instance.rafID);
-    kauderwelsch_instance.rafID = null;
-  }
 
-  function updateAnalyser() {
-    var kauderwelsch_instance = this,
-      audio = kauderwelsch_instance.audio,
-      freqByteData,
-      step,
-      amp,
-      min,
-      max,
-      datum,
-      i,
-      j;
-
-    if (!kauderwelsch_instance.analyser_context) {
-        var canvas = kauderwelsch_instance.analyser_dom_node;
-        canvas_width = canvas.width;
-        canvas_height = canvas.height;
-        kauderwelsch_instance.analyser_context = canvas.getContext('2d');
-    }
-
-    // draw analyser code her
-    // https://developer.mozilla.org/en-US/docs/Web/API/AnalyserNode/frequencyBinCount
-    {
-      freqByteData = new Uint8Array(audio.analyer.frequencyBinCount);
-      step = Math.ceil( freqByteData.length / canvas_width );
-      amp = canvas_height / 2;
-
-      audio.analyser.getByteFrequencyDatea(freqByteData);
-
-      kauderwelsch_instance.visualiser_context.clearRect(0, 0, canvas_width, canvas_height);
-      kauderwelsch_instance.visualiser_context.fillStyle = "silver";
-      //kauderwelsch_instance.visualiser_context.fillStyle =  "round";  
-      
-      for(i = 0; i < canvas_width; i += 1){
-        min = 1.0;
-        max = -1.0;
-        for (j = 0; j < step; j += 1) {
-          datum = data[(i * step) + j]; 
-          if (datum < min) {
-            min = datum;
-          }
-          if (datum > max) {
-            max = datum;
-          }
-        }
-        kauderwelsch_instance.analyser_context.fillRect(
-          i,
-          (1 + min) * amp,
-          1, 
-          Math.max(1, (max - min) * amp)
-        );
-      }
-    }
-
-    kauderwelsch_instance.rafID = window.requestAnimationFrame(updateAnalyser);
-  }
   
   function bootstrap(my_option_dict) {
     var kauderwelsch_instance = this;
@@ -156,6 +127,8 @@
         return MEDIA_DEVICES.getUserMedia(AUDIO_OPTIONS);
       })
       .push(function (my_stream) {
+        console.log("bootstrap has stream")
+        console.log(my_stream)
         var audio = kauderwelsch_instance.audio,
           input_point = audio.context.createGain(),
           zero_gain;
@@ -164,19 +137,22 @@
         audio.source = audio.context.createMediaStreamSource(my_stream);
         audio.source.connect(input_point);
 
-        // connect with destination
-        input_point.connect(audio.analyser);
-        
-        audio.recorder = new Recorder(input_point);
+        //audio.recorder = new Recorder(input_point);
         
         zero_gain = audio.context.createGain();
         zero_gain.gain.value = 0.0;
         input_point.connect(zero_gain);
         zero_gain.connect(audio.context.destination);
+
+        kauderwelsch_instance.initializeAnalyser();
         
-        updateAnalyser();
+        // connect with destination
+        input_point.connect(audio.analyser);
+        
       })
       .push(null, function (my_error) {
+        console.log("BAM, error")
+        console.log(my_error)
         kauderwelsch_instance.terminate(my_error);
         throw my_error;
       });
@@ -196,21 +172,6 @@
       throw new TypeError("Browser does not support AnimationFrame");
     }
 
-    // setup worker communication
-    kauderwelsch_instance.sendMessage = function (my_message) {
-      return new RSVP.Promise(function (resolve, reject, notify) {
-        kauderwelsch_instance.trainer.onmessage = function (my_event) {
-          if (my_event.data.error) {
-              reject(handelCallback.call(kauderwelsch_instance, my_event));
-            } else {
-              resolve(handleCallback.call(kauderwelsch_instance, my_event));
-            }
-          };
-
-        return kauderwelsch_instance.trainer.postMessage(my_message);
-      });
-    };
-    
     // The context's nodemap: source => processor => destination
     // context => Browser AudioContext
     // source => AudioSourceNode from captured microphone input
@@ -222,23 +183,62 @@
       recorder: null,
       _transfer: my_option_dict.transfer
     };
+    // audio visualizer
+    kauderwelsch_instance.canvas_node = option_dict.analyser_dom_node;
 
     // Do not pollute the object
     delete option_dict.transfer;
+    delete option_dict.analyser_dom_node;
     
-    // audio visualizer
-    kauderwelsch_instance.analsyer_dom_node = my_option_dict.analyser_dom_node;
     
     // instantiate worker
     kauderwelsch_instance.trainer = new Worker(my_option_dict.pathToTrainer || 'kauderwelsch_worker.js');
 
     initializeAudio(kauderwelsch_instance.audio);
-    bootstrap(my_option_dict);
+    bootstrap.call(kauderwelsch_instance, my_option_dict);
   }
 
+  Kauderwelsch.prototype.initializeAnalyser = function () {
+    var kauderwelsch_instance = this,
+      audio = kauderwelsch_instance.audio,
+      canvas_node = kauderwelsch_instance.canvas_node;
+    
+    audio.analyser = audio.context.createAnalyser();
+    audio.analyser.fftSize = 2048;
+    
+    ANALYSER_CONTEXT = canvas_node.getContext('2d');
+    ANALYSER_DOM_NODE = canvas_node;
+    ANALYSER_NODE = audio.analyser;
+  
+    updateAnalyser();
+  };
+  
+  Kauderwelsch.prototype.cancelAnalyser = function () {
+    var kauderwelsch_instance = this;
+    cancelAnimationFrame(ANALYSER_FRAME_ID);
+    ANALYSER_FRAME_ID = null;
+  };
+  
   Kauderwelsch.prototype.stop = function () {
     var kauderwelsch_instance = this;
 
+  };
+
+  Kauderwelsch.prototype.sendMessage = function (my_message) {
+    var kauderwelsch_instance = this;
+
+    // setup worker communication 
+    return new RSVP.Promise(function (resolve, reject, notify) {
+      kauderwelsch_instance.trainer.onmessage = function (my_event) {
+        if (my_event.data.error) {
+            reject(handelCallback.call(kauderwelsch_instance, my_event));
+          } else {
+            resolve(handleCallback.call(kauderwelsch_instance, my_event));
+          }
+        };
+
+      return kauderwelsch_instance.trainer.postMessage(my_message);
+    });
   };
 
   Kauderwelsch.prototype.record = function() {
@@ -259,4 +259,3 @@
   window.Kauderwelsch = Kauderwelsch;
 
 }(window, window.navigator, RSVP));
-
