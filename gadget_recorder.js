@@ -55,12 +55,10 @@
       cancelResolver();
     }
     function itsANonResolvableTrap(resolve, reject) {
-      console.log("trapped")
       handle_event_callback = function (evt) {
         cancelResolver();
         callback_promise = new RSVP.Queue()
           .push(function () {
-            console.log("heya")
             return my_callback(evt);
           })
           .push(undefined, function (error) {
@@ -78,7 +76,6 @@
 
 
   function handleCallback(my_event) {
-    console.log(my_event);
     if (my_event.data.error) {
       throw my_event.data.error;
     }
@@ -128,6 +125,7 @@
     .declareMethod('render', function (my_option_dict) {
       var gadget = this,
       props = gadget.property_dict;
+      props.is_recording = null;
 
       // XXX Harmonize sendMessage API
       return new RSVP.Queue()
@@ -151,7 +149,6 @@
           }});
         })
         .push(function () {
-          props.recording = false;
           props.source.connect(props.node);
           props.node.connect(props.context.destination);
           return gadget;
@@ -177,19 +174,20 @@
     
     .declareMethod("notify_stop", function () {
       var gadget = this;
-      gadget.property_dict.recording = null;
+      gadget.property_dict.is_recording = null;
     })
 
     .declareMethod("notify_record", function () {
       var gadget = this;
       
       // recording should be triggered by onaudioprocess
+      // first clear buffers, then allow recording
       return new RSVP.Queue()
         .push(function () {
           return gadget.notify_clear();
         })
         .push(function () {
-          gadget.property_dict.recording = true;
+          gadget.property_dict.is_recording = true;
         });
     })
     
@@ -243,9 +241,10 @@
         deferred = new RSVP.defer();
 
       function record(my_event) {
-        if (props.recording) {
+        if (!props.is_recording) {
           return;
         }
+        //Debug: console.log("recording...")
         return gadget.sendMessage({"command": "record", "option_dict": {
           "buffer": [
             my_event.inputBuffer.getChannelData(0),
@@ -262,7 +261,6 @@
           return deferred.promise;
         })
         .push(function () {
-          console.log("BINDING TO ONAUDIOPROCESS")
           return customLoopEventListener(props.node, "audioprocess", record);
         });
     })
@@ -274,7 +272,7 @@
       function form_submit_handler(my_event) {
         var queue = new RSVP.Queue();
 
-        if (props.recording) {
+        if (props.is_recording) {
           // stop, update memory storage and dom with new file
           form.querySelector("input").value = "Record";
           queue.push(function () {

@@ -19,7 +19,6 @@
         initialize(opts);
         break;
       case 'record':
-        console.log("RECORDING")
         record(opts.buffer);
         break;
       case 'exportWAV':
