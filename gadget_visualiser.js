@@ -101,7 +101,7 @@
         throw new TypeError("Browser does not support AnimationFrame");
       }
 
-      props.canvas_Node = props.element.querySelector(".kw-analyser");
+      props.canvas_node = props.element.querySelector(".kw-analyser");
       props.context = new AUDIO_CONTEXT();
 
       // XXX where to load trainer?

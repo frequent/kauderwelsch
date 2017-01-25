@@ -55,10 +55,12 @@
       cancelResolver();
     }
     function itsANonResolvableTrap(resolve, reject) {
+      console.log("trapped")
       handle_event_callback = function (evt) {
         cancelResolver();
         callback_promise = new RSVP.Queue()
           .push(function () {
+            console.log("heya")
             return my_callback(evt);
           })
           .push(undefined, function (error) {
@@ -77,8 +79,25 @@
 
   function handleCallback(my_event) {
     console.log(my_event);
-    switch (my_event.reply) {
-      // data is blob in my_event.data      
+    if (my_event.data.error) {
+      throw my_event.data.error;
+    }
+    switch (my_event.data.command) {
+      case "exportWav":
+        console.log(my_event.data.reply);
+        break;
+      case "exportMonoWav":
+        console.log(my_event.data.reply);
+        break;
+      case "clear":
+        console.log(my_event.data);
+        break;
+      case "getBuffers":
+        console.log(my_event.data.reply);
+        break;
+      case "init":
+        console.log("started");
+        break;
     }
   }
 
@@ -146,10 +165,10 @@
       // setup worker communication 
       return new RSVP.Promise(function (resolve, reject, notify) {
         props.recorder.onmessage = function (my_event) {
-          if (my_event.reply.error) {
-              reject(my_event);
+          if (my_event.data.error) {
+              reject(handleCallback(my_event));
             } else {
-              resolve(my_event);
+              resolve(handleCallback(my_event));
             }
           };
           return props.recorder.postMessage(my_message);
@@ -164,9 +183,10 @@
     .declareMethod("notify_record", function () {
       var gadget = this;
       
+      // recording should be triggered by onaudioprocess
       return new RSVP.Queue()
-        -push(function () {
-          return gadget.clear();
+        .push(function () {
+          return gadget.notify_clear();
         })
         .push(function () {
           gadget.property_dict.recording = true;
@@ -201,7 +221,9 @@
         props = gadget.property_dict;
       props.current_callback = my_callback;
       props.type = my_type || "audio/wav";
-      return gadget.sendMessage({"command": 'exportWav', "type": type});
+      return gadget.sendMessage({"command": 'exportWav', "option_dict": {
+        "type": type}
+      });
     })
 
     // dito
@@ -210,7 +232,9 @@
         props = gadget.property_dict;
       props.current_callback = my_callback;
       props.type = my_type || "audio/wav";
-      return gadget.sendMessage({"command": 'exportMonoWav', "type": type});      
+      return gadget.sendMessage({"command": 'exportMonoWav', "option_dict": {
+        "type": type
+      }});      
     })
 
     .declareService(function () {
@@ -222,10 +246,12 @@
         if (props.recording) {
           return;
         }
-        return gadget.sendMessage({"command": "record", "buffer": [
-          my_event.inputBuffer.getChannelData(0),
-          my_event.inputBuffer.getChannelData(1)
-        ]});
+        return gadget.sendMessage({"command": "record", "option_dict": {
+          "buffer": [
+            my_event.inputBuffer.getChannelData(0),
+            my_event.inputBuffer.getChannelData(1)
+          ]
+        }});
       }
 
       // if the script node is not connected to an output the 
@@ -236,6 +262,7 @@
           return deferred.promise;
         })
         .push(function () {
+          console.log("BINDING TO ONAUDIOPROCESS")
           return customLoopEventListener(props.node, "audioprocess", record);
         });
     })
