@@ -37,7 +37,7 @@
   // some methods
   /////////////////////////////
 
-  updateAnalyser = function () {
+  function updateAnalyser () {
     var freqByteData = new Uint8Array(ANALYSER_NODE.frequencyBinCount),
       magnitude,
       i;
@@ -60,7 +60,7 @@
       ANALYSER_CONTEXT.fillRect(i*1.5, ANALYSER_DOM_NODE.height/2, 1,  magnitude * 1);
     }
     ANALYSER_FRAME_ID = requestAnimationFrame( updateAnalyser );
-  };
+  }
 
 
   rJS(window)
@@ -175,3 +175,4 @@
     });
     
 }(window, rJS, RSVP));
+

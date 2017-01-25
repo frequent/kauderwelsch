@@ -4,9 +4,10 @@
   "use strict";
 
   // Stream Recording inspired by:
-  // Copyright © 2013 Matt Diamond - License (MIT)
+  // Copyright Â© 2013 Matt Diamond - License (MIT)
   // https://github.com/mattdiamond/Recorderjs
 
+  var WORKER_PATH = 'worker_recorder.js';
 
   /////////////////////////////
   // some methods 
@@ -109,24 +110,26 @@
       var gadget = this,
       props = gadget.property_dict;
 
-      // XXX shouldn't this be promisified?
-      props.recorder = new Worker('worker_recorder.js');
-      props.source = my_option_dict.input_node;
-      props.buffer_length = 4096;
-      props.context = props.source.context;
-      
-      if (!props.context.createScriptProcessor) {
-        props.node = props.context.createJavaScriptNode(buffer_length, 2, 2);
-      } else {
-        props.node = props.context.createScriptProcessor(buffer_length, 2, 2);
-      }
-
       // XXX Harmonize sendMessage API
       return new RSVP.Queue()
         .push(function () {
+          var buffer_length = 4096;
+
+          props.recorder = new Worker(WORKER_PATH);
+          props.source = my_option_dict.input_point;
+          props.context = props.source.context;
+          props.done_worker_init.resolve();
+
+          if (!props.context.createScriptProcessor) {
+            props.node = props.context.createJavaScriptNode(buffer_length, 2, 2);
+          } else {
+            props.node = props.context.createScriptProcessor(buffer_length, 2, 2);
+          }
+        })
+        .push(function () {
           return gadget.sendMessage({"command": 'init', "option_dict": {
             "sample_rate": props.context.sampleRate
-          }})
+          }});
         })
         .push(function () {
           props.recording = false;
@@ -149,7 +152,7 @@
               resolve(my_event);
             }
           };
-          return gadget.trainer.postMessage(my_message);
+          return props.recorder.postMessage(my_message);
         });
     })
     
@@ -158,7 +161,7 @@
       gadget.property_dict.recording = null;
     })
 
-    .declareMethod8("notify_record", function () {
+    .declareMethod("notify_record", function () {
       var gadget = this;
       
       return new RSVP.Queue()
@@ -185,7 +188,7 @@
     // XXX note sure the following are needed right away
     
     // fetch file?
-    .declareMethod("getBUffers", function (my_callback) {
+    .declareMethod("getBuffers", function (my_callback) {
       var gadget = this,
         props = gadget.property_dict;
       props.curren_callback = my_callback;
@@ -212,7 +215,8 @@
 
     .declareService(function () {
       var gadget = this,
-        props = gadget.property_dict;
+        props = gadget.property_dict,
+        deferred = new RSVP.defer();
 
       function record(my_event) {
         if (props.recording) {
@@ -223,10 +227,17 @@
           my_event.inputBuffer.getChannelData(1)
         ]});
       }
-        
+
       // if the script node is not connected to an output the 
       // "onaudioprocess" event is not triggered in chrome.
-      return customLoopEventListener(props.node, "audioprocess", record);
+      return new RSVP.Queue()
+        .push(function () {
+          props.done_worker_init = deferred;
+          return deferred.promise;
+        })
+        .push(function () {
+          return customLoopEventListener(props.node, "audioprocess", record);
+        });
     })
     .declareService(function () {
       var gadget = this,
@@ -261,3 +272,4 @@
     });
     
 }(window, rJS, RSVP, loopEventListener));
+
