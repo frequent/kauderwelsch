@@ -1,6 +1,6 @@
 /*jslint nomen: true, indent: 2, maxerr: 3 */
-/*global window, rJS, RSVP, loopEventListener */
-(function (window, rJS, RSVP, loopEventListener) {
+/*global window, document, rJS, RSVP, loopEventListener */
+(function (window, document, rJS, RSVP, loopEventListener) {
   "use strict";
 
   // Stream Recording inspired by:
@@ -10,9 +10,72 @@
   var WORKER_PATH = 'worker_recorder.js';
 
   /////////////////////////////
+  // templates
+  /////////////////////////////
+  var SOUND_CLIP_TEMPLATE = "<div class='kw-clip'>\
+    <canvas class='kw-clip' height='50'></canvas>\
+    <div class='kw-clip-audio-controls'>\
+      <audio controls></audio>\
+    </div>\
+    <div class='kw-clip-storage-controls'>\
+      <form name='kw-form-clip-save'>\
+        <input type='text' name='kw-clip-reference' value='Unnamed Clip' />\
+        <input type='checkbox' name='kw-clip-store-cache' value='Local' />\
+        <input type='checkbox' name='kw-clip-store-soundcloud' value='Soundcloud' />\
+        <input type='submit' value='Save' />\
+      </form>\
+    </div>\
+    <div class='kw-clip-delete-controls'>\
+      <form name='kw-form-clip-delete'>\
+        <input type='submit' value='Delete' />\
+      </form>\
+    </div>\
+  </div>";
+
+  /////////////////////////////
   // some methods 
   /////////////////////////////
-    
+  function drawBuffer(width, height, context, mono_data) {
+    var data = mono_data[0], 
+      step = Math.ceil( data.length / width ),
+      amp = height / 2,
+      min,
+      max,
+      datum,
+      i,
+      j;
+    context.fillStyle = "silver";
+    context.clearRect(0,0,width,height);
+    for(i=0; i < width; i++){
+        min = 1.0;
+        max = -1.0;
+        for (j=0; j<step; j++) {
+            datum = data[(i*step)+j]; 
+            if (datum < min)
+                min = datum;
+            if (datum > max)
+                max = datum;
+        }
+        context.fillRect(i, (1+min)*amp, 1, Math.max(1,(max-min)*amp*0.75));
+    }
+  }
+
+  function parseTemplate(my_template, my_value_list) {
+    var template = my_template,
+      value_list = my_value_list || [],
+      html_content = [],
+      counter = 0,
+      setHtmlContent = function (my_content_list) {
+        return function (my_snippet) {
+          var value = value_list[counter] || "";
+          my_content_list.push(my_snippet + value);
+          counter += 1;
+        };
+      };
+    template.split("%s").map(setHtmlContent(html_content));
+    return html_content.join("");
+  }
+  
   /*
   // called from listener, use later
   function saveAudio() {
@@ -27,7 +90,7 @@
     recIndex++;
   }
 
-  // called from listener, use on save with resampling
+  // orocess to mono during recording
   function convertToMono(input) {
     var gadget = this;
       splitter = gadget.audio.context.createChannelSplitter(2);
@@ -80,20 +143,17 @@
       throw my_event.data.error;
     }
     switch (my_event.data.command) {
-      case "exportWav":
-        console.log(my_event.data.reply);
-        break;
-      case "exportMonoWav":
-        console.log(my_event.data.reply);
-        break;
+      case "exportWAV":
+        return my_event.data.result;
+      case "exportMonoWAV":
+        return my_event.data.result;
       case "clear":
-        console.log(my_event.data);
+        //console.log("cleared");
         break;
       case "getBuffers":
-        console.log(my_event.data.reply);
-        break;
+        return my_event.data.result;
       case "init":
-        console.log("started");
+        //console.log("started");
         break;
     }
   }
@@ -112,6 +172,8 @@
         })
         .push(function (my_element) {
           my_gadget.property_dict.element = my_element;
+          my_gadget.property_dict.clip_list = 
+            my_element.querySelector(".kw-clip-list");
         });
     })
 
@@ -173,8 +235,43 @@
     })
     
     .declareMethod("notify_stop", function () {
-      var gadget = this;
-      gadget.property_dict.is_recording = null;
+      var gadget = this,
+        props = gadget.property_dict,
+        div = document.createElement("div"),
+        audio_element,
+        audio_url;
+
+      props.is_recording = null;
+      div.innerHTML = parseTemplate(SOUND_CLIP_TEMPLATE);
+      audio_element = div.querySelector("audio");  
+      audio_element.controls = true;
+      
+      function gotBuffers(my_canvas, my_buffer) {
+        drawBuffer(my_canvas.width, my_canvas.height, my_canvas.getContext('2d'), my_buffer);
+        return my_buffer;
+      }
+      
+      return new RSVP.Queue()
+        .push(function () {
+          return gadget.getBuffers();
+        })
+        .push(function (my_buffer) {
+          var clip = div.firstChild,
+            canvas;
+          
+          props.clip_list.appendChild(clip);
+          canvas = clip.querySelector("canvas");
+          canvas.setAttribute("width", clip.offsetWidth);
+          gotBuffers(canvas, my_buffer);
+          return gadget.exportWAV();
+        })
+        .push(function (my_data) {
+          
+          // XXX only use Mono channel?
+          audio_element.src = window.URL.createObjectURL(my_data);
+
+          // XXX bindings
+        })
     })
 
     .declareMethod("notify_record", function () {
@@ -206,32 +303,24 @@
     // XXX note sure the following are needed right away
     
     // fetch file?
-    .declareMethod("getBuffers", function (my_callback) {
-      var gadget = this,
-        props = gadget.property_dict;
-      props.curren_callback = my_callback;
+    .declareMethod("getBuffers", function () {
+      var gadget = this;
       return gadget.sendMessage({"command": 'getBuffers'});
     })
     
     // do different when saving
-    .declareMethod("exportWav", function (my_callback, my_type) {
-      var gadget = this,
-        props = gadget.property_dict;
-      props.current_callback = my_callback;
-      props.type = my_type || "audio/wav";
-      return gadget.sendMessage({"command": 'exportWav', "option_dict": {
-        "type": type}
-      });
+    .declareMethod("exportWAV", function (my_type) {
+      var gadget = this;
+      return gadget.sendMessage({"command": 'exportWAV', "option_dict": {
+        "type": my_type || "audio/wav"
+      }});
     })
 
     // dito
-    .declareMethod("exportMonoWav", function (my_callback, my_type) {
-      var gadget = this,
-        props = gadget.property_dict;
-      props.current_callback = my_callback;
-      props.type = my_type || "audio/wav";
-      return gadget.sendMessage({"command": 'exportMonoWav', "option_dict": {
-        "type": type
+    .declareMethod("exportMonoWAV", function (my_type) {
+      var gadget = this;
+      return gadget.sendMessage({"command": 'exportMonoWAV', "option_dict": {
+        "type": my_type || "audio/wav"
       }});      
     })
 
@@ -296,5 +385,5 @@
       return loopEventListener(form, "submit", false, form_submit_handler);
     });
     
-}(window, rJS, RSVP, loopEventListener));
+}(window, document, rJS, RSVP, loopEventListener));
 

@@ -53,8 +53,8 @@
       interleaved = interleave(bufferL, bufferR),
       dataview = encodeWAV(interleaved),
       audioBlob = new Blob([dataview], { type: my_type });
-  
-    worker_instance.postMessage({"command": "exportWav", "status": 200,
+
+    worker_instance.postMessage({"command": "exportWAV", "status": 200,
       "result": audioBlob
     });
   }
@@ -64,7 +64,7 @@
       dataview = encodeWAV(bufferL, true),
       audioBlob = new Blob([dataview], { type: my_type });
   
-    worker_instance.postMessage({"command": "exportMonoWav", "status": 200,
+    worker_instance.postMessage({"command": "exportMonoWAV", "status": 200,
       "result": audioBlob
     });
   }
