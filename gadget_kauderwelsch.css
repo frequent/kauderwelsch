@@ -56,8 +56,20 @@ h1 {
     width: 100%;
   }
 }
+.kw-clip {
+  position: relative;
+  padding-bottom: 2em;
+}
 .kw-clip canvas {
   background: #000;
+}
+.kw-clip-progress {
+  height: 50px;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  background: silver;
 }
 .kw-clip audio {
   width: 100%;
@@ -80,9 +92,4 @@ h1 {
     width: 50%;
   }
 }
-
-
-
-
-
 

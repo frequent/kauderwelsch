@@ -13,7 +13,8 @@
   // templates
   /////////////////////////////
   var SOUND_CLIP_TEMPLATE = "<div class='kw-clip'>\
-    <canvas class='kw-clip' height='50'></canvas>\
+    <span class='kw-clip-progress'></span>\
+    <canvas class='kw-clip-canvas' height='50'></canvas>\
     <div class='kw-clip-audio-controls'>\
       <audio controls></audio>\
     </div>\
@@ -239,7 +240,8 @@
         props = gadget.property_dict,
         div = document.createElement("div"),
         audio_element,
-        audio_url;
+        audio_url,
+        clip;
 
       props.is_recording = null;
       div.innerHTML = parseTemplate(SOUND_CLIP_TEMPLATE);
@@ -256,9 +258,9 @@
           return gadget.getBuffers();
         })
         .push(function (my_buffer) {
-          var clip = div.firstChild,
-            canvas;
+          var canvas;
           
+          clip = div.firstChild,
           props.clip_list.appendChild(clip);
           canvas = clip.querySelector("canvas");
           canvas.setAttribute("width", clip.offsetWidth);
@@ -266,11 +268,16 @@
           return gadget.exportWAV();
         })
         .push(function (my_data) {
+          var progress = clip.querySelector(".kw-clip-progress");
+          
+          function inProgress (my_event) {
+            var offset = Math.floor( clip.offsetWidth * audio_element.currentTime / audio_element.duration );
+            progress.style.left = offset + "px";
+          }
           
           // XXX only use Mono channel?
           audio_element.src = window.URL.createObjectURL(my_data);
-
-          // XXX bindings
+          return loopEventListener(audio_element, "timeupdate", false, inProgress);
         })
     })
 
