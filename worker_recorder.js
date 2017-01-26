@@ -3,6 +3,10 @@
 (function (worker_instance) {
   "use strict";
 
+  importScripts(
+    'worker_resampler.js'
+  );
+
   // Stream Recording inspired by:
   // Copyright Â© 2013 Matt Diamond - License (MIT)
   // https://github.com/mattdiamond/Recorderjs
@@ -58,12 +62,24 @@
       "result": audioBlob
     });
   }
-  
+
   function exportMonoWAV (my_type){
     var bufferL = mergeBuffers(REC_BUFFERS_LEFT, REC_LENGTH),
-      dataview = encodeWAV(bufferL, true),
-      audioBlob = new Blob([dataview], { type: my_type });
-  
+      resampled,
+      dataview,
+      audioBlob;
+      
+    resampler.initialize(SAMPLE_RATE, 16000, 1, bufferL.length);
+    resampled = resampler.resample(bufferL);
+    SAMPLE_RATE = 16000;
+    dataview = encodeWAV(resampled, true);
+    
+    // resampled = downSample(SAMPLE_RATE, 16000, 1, bufferL),
+    // resampled = new Resampler(SAMPLE_RATE, 16000, 1, bufferL),
+    // dataview = encodeWAV(resampled.outputBuffer, true),
+    // dataview = encodeWAV(bufferL, true),
+    audioBlob = new Blob([dataview], { type: my_type });
+
     worker_instance.postMessage({"command": "exportMonoWAV", "status": 200,
       "result": audioBlob
     });
@@ -111,7 +127,7 @@
     }
     return result;
   }
-  
+
   function floatTo16BitPCM(output, offset, input){
     for (var i = 0; i < input.length; i++, offset+=2){
       var s = Math.max(-1, Math.min(1, input[i]));
@@ -128,7 +144,10 @@
   function encodeWAV(samples, mono){
     var buffer = new ArrayBuffer(44 + samples.length * 2);
     var view = new DataView(buffer);
-  
+    
+    // https://gist.github.com/also/900023
+    // set Wave file headers
+
     /* RIFF identifier */
     writeString(view, 0, 'RIFF');
     /* file length */

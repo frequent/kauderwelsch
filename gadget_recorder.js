@@ -36,9 +36,16 @@
   /////////////////////////////
   // some methods 
   /////////////////////////////
-  function drawBuffer(width, height, context, mono_data) {
-    var data = mono_data[0], 
-      step = Math.ceil( data.length / width ),
+  function initializeDownload(blob, filename) {
+      var link = document.createElement("a");
+      link.href = (window.URL || window.webkitURL).createObjectURL(blob);
+      link.download = filename || 'output.wav';
+      link.textContent = "Download Me"
+      return link;
+    }
+
+  function drawBuffer(width, height, context, data) {
+    var step = Math.ceil( data.length / width ),
       amp = height / 2,
       min,
       max,
@@ -190,11 +197,11 @@
       props = gadget.property_dict;
       props.is_recording = null;
 
-      // XXX Harmonize sendMessage API
       return new RSVP.Queue()
         .push(function () {
           var buffer_length = 4096;
 
+          // Note: sample rate will be 48000
           props.recorder = new Worker(WORKER_PATH);
           props.source = my_option_dict.input_point;
           props.context = props.source.context;
@@ -258,27 +265,29 @@
           return gadget.getBuffers();
         })
         .push(function (my_buffer) {
-          var canvas;
-          
+          var mono_buffer = my_buffer[0],
+            canvas;
+
           clip = div.firstChild,
           props.clip_list.appendChild(clip);
           canvas = clip.querySelector("canvas");
           canvas.setAttribute("width", clip.offsetWidth);
-          gotBuffers(canvas, my_buffer);
-          return gadget.exportWAV();
+          gotBuffers(canvas, mono_buffer);
+
+          return gadget.exportMonoWAV();
         })
-        .push(function (my_data) {
+        .push(function (my_resample_data) {
           var progress = clip.querySelector(".kw-clip-progress");
           
           function inProgress (my_event) {
             var offset = Math.floor( clip.offsetWidth * audio_element.currentTime / audio_element.duration );
             progress.style.left = offset + "px";
           }
-          
-          // XXX only use Mono channel?
-          audio_element.src = window.URL.createObjectURL(my_data);
+
+          audio_element.src = window.URL.createObjectURL(my_resample_data);
+          audio_element.parentNode.appendChild(initializeDownload(my_resample_data, "punt.wav"));
           return loopEventListener(audio_element, "timeupdate", false, inProgress);
-        })
+        });
     })
 
     .declareMethod("notify_record", function () {
@@ -299,23 +308,12 @@
       var gadget = this;
       return gadget.sendMessage({command:'clear'});
     })
-    
-    .declareMethod('initializeDownload', function (blob, filename) {
-      // XXX fix once multiple files displayed
-      link = document.getElementById("save");
-      link.href = (window.URL || window.webkitURL).createObjectURL(blob);
-      link.download = filename || 'output.wav';
-    })
-    
-    // XXX note sure the following are needed right away
-    
-    // fetch file?
+
     .declareMethod("getBuffers", function () {
       var gadget = this;
       return gadget.sendMessage({"command": 'getBuffers'});
     })
     
-    // do different when saving
     .declareMethod("exportWAV", function (my_type) {
       var gadget = this;
       return gadget.sendMessage({"command": 'exportWAV', "option_dict": {
@@ -323,7 +321,6 @@
       }});
     })
 
-    // dito
     .declareMethod("exportMonoWAV", function (my_type) {
       var gadget = this;
       return gadget.sendMessage({"command": 'exportMonoWAV', "option_dict": {
