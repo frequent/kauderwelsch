@@ -1,4 +1,4 @@
-(function(globals) {
+(function(context) {
 var define, requireModule;
 
 (function() {
@@ -130,10 +130,12 @@ define("rsvp/async",
   ["exports"],
   function(__exports__) {
     "use strict";
-    var browserGlobal = (typeof window !== 'undefined') ? window : {};
-    var BrowserMutationObserver = browserGlobal.MutationObserver || browserGlobal.WebKitMutationObserver;
+
+    //var context_is_worker = typeof importScripts === 'function';
+    var contextGlobal = context || {};
+    var ContextMutationObserver = contextGlobal.MutationObserver || contextGlobal.WebKitMutationObserver;
     var async;
-    var local = (typeof global !== 'undefined') ? global : this;
+    var local = (typeof context !== 'undefined') ? local : this;
 
     // old node
     function useNextTick() {
@@ -157,7 +159,7 @@ define("rsvp/async",
     function useMutationObserver() {
       var queue = [];
 
-      var observer = new BrowserMutationObserver(function() {
+      var observer = new ContextMutationObserver(function() {
         var toProcess = queue.slice();
         queue = [];
 
@@ -171,7 +173,7 @@ define("rsvp/async",
       observer.observe(element, { attributes: true });
 
       // Chrome Memory Leak: https://bugs.webkit.org/show_bug.cgi?id=93661
-      window.addEventListener('unload', function(){
+      context.addEventListener('unload', function(){
         observer.disconnect();
         observer = null;
       }, false);
@@ -194,7 +196,7 @@ define("rsvp/async",
       async = useSetImmediate();
     } else if (typeof process !== 'undefined' && {}.toString.call(process) === '[object process]') {
       async = useNextTick();
-    } else if (BrowserMutationObserver) {
+    } else if (ContextMutationObserver) {
       async = useMutationObserver();
     } else {
       async = useSetTimeout();
@@ -997,5 +999,5 @@ define("rsvp",
     __exports__.resolve = resolve;
     __exports__.reject = reject;
   });
-window.RSVP = requireModule("rsvp");
-})(window);
+  context.RSVP = requireModule("rsvp");
+})(self || window);
