@@ -3,10 +3,6 @@
 (function (worker_instance) {
   "use strict";
 
-  importScripts(
-    'worker_resampler.js'
-  );
-
   // Stream Recording inspired by:
   // Copyright Â© 2013 Matt Diamond - License (MIT)
   // https://github.com/mattdiamond/Recorderjs
@@ -16,58 +12,36 @@
     REC_BUFFERS_RIGHT = [],
     SAMPLE_RATE;
   
-  worker_instance.onmessage = function(my_event){
-    var opts = my_event.data.option_dict;
-    switch(my_event.data.command){
-      case 'init':
-        initialize(opts);
-        break;
-      case 'record':
-        record(opts.buffer);
-        break;
-      case 'exportWAV':
-        exportWAV(opts.type);
-        break;
-      case 'exportMonoWAV':
-        exportMonoWAV(opts.type);
-        break;
-      case 'getBuffers':
-        getBuffers();
-        break;
-      case 'clear':
-        clear();
-        break;
-    }
+  var RECORDER = {};
+  
+  RECORDER.initialize = function (my_option_dict) {
+    SAMPLE_RATE = my_option_dict.sample_rate;
+    return;
+    //worker_instance.postMessage({"command": "init", "status": 200});
   };
   
-  function initialize (my_option_dict) {
-    SAMPLE_RATE = my_option_dict.sample_rate;
-    worker_instance.postMessage({"command": "init", "status": 200});
-  }
-  
-  function record (input_buffer){
+  RECORDER.record = function (input_buffer){
     REC_BUFFERS_LEFT.push(input_buffer[0]);
     REC_BUFFERS_RIGHT.push(input_buffer[1]);
     REC_LENGTH += input_buffer[0].length;
-  }
+  };
   
-  function exportWAV (my_type) {
+  RECORDER.exportWAV = function (my_type) {
     var bufferL = mergeBuffers(REC_BUFFERS_LEFT, REC_LENGTH),
       bufferR = mergeBuffers(REC_BUFFERS_RIGHT, REC_LENGTH),
       interleaved = interleave(bufferL, bufferR),
       dataview = encodeWAV(interleaved),
-      audioBlob = new Blob([dataview], { type: my_type });
+      audioBlob =  new Blob([dataview], { type: my_type });
+    return audioBlob;
+    //worker_instance.postMessage({"command": "exportWAV", "status": 200,
+    //  "result": audioBlob
+    //});
+  };
 
-    worker_instance.postMessage({"command": "exportWAV", "status": 200,
-      "result": audioBlob
-    });
-  }
-
-  function exportMonoWAV (my_type){
+  RECORDER.exportMonoWAV = function (my_type){
     var bufferL = mergeBuffers(REC_BUFFERS_LEFT, REC_LENGTH),
       resampled,
-      dataview,
-      audioBlob;
+      dataview;
       
     resampler.initialize(SAMPLE_RATE, 16000, 1, bufferL.length);
     resampled = resampler.resample(bufferL);
@@ -78,28 +52,30 @@
     // resampled = new Resampler(SAMPLE_RATE, 16000, 1, bufferL),
     // dataview = encodeWAV(resampled.outputBuffer, true),
     // dataview = encodeWAV(bufferL, true),
-    audioBlob = new Blob([dataview], { type: my_type });
+    return new Blob([dataview], { type: my_type });
 
-    worker_instance.postMessage({"command": "exportMonoWAV", "status": 200,
-      "result": audioBlob
-    });
-  }
+    //worker_instance.postMessage({"command": "exportMonoWAV", "status": 200,
+    //  "result": audioBlob
+    //});
+  };
   
-  function getBuffers() {
+  RECORDER.getBuffers = function () {
     var buffers = [];
     buffers.push( mergeBuffers(REC_BUFFERS_LEFT, REC_LENGTH) );
     buffers.push( mergeBuffers(REC_BUFFERS_RIGHT, REC_LENGTH) );
-    worker_instance.postMessage({"command": "getBuffers", "status": 200,
-      "result": buffers
-    });
-  }
+    return buffers
+    //worker_instance.postMessage({"command": "getBuffers", "status": 200,
+    //  "result": buffers
+    //});
+  };
   
-  function clear(){
+  RECORDER.clear = function(){
     REC_LENGTH = 0;
     REC_BUFFERS_LEFT = [];
     REC_BUFFERS_RIGHT = [];
-    worker_instance.postMessage({"command": "clear", "status": 200});
-  }
+    return;
+    //worker_instance.postMessage({"command": "clear", "status": 200});
+  };
   
   // utility methods
 
@@ -179,5 +155,7 @@
   
     return view;
   }
+  
+  worker_instance.recorder = RECORDER;
 
 }(self));

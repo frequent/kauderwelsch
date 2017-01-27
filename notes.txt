@@ -54,5 +54,28 @@ http://www.filezigzag.com/wav-zip-en.aspx
 // JIO soundcloud storage
 https://developers.soundcloud.com/docs/api/sdks#uploading
 e -> resample
- 
-                                  
+
+http://seapip.com/canvas/visualizer4/                                  
+http://stackoverflow.com/questions/27598270/resample-audio-buffer-from-44100-to-16000
+
+// worker indexeddb textparsing
+https://www.html5rocks.com/en/tutorials/file/dndfiles/
+https://www.html5rocks.com/en/tutorials/file/filesystem-sync/
+http://stackoverflow.com/questions/23331546/how-to-use-javascript-to-read-local-text-file-and-read-line-by-line
+https://www.codeproject.com/Articles/744986/How-to-do-some-magic-with-indexedDB
+
+https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API/Using_IndexedDB
+https://github.com/mdn/to-do-notifications/blob/gh-pages/scripts/todo.js
+http://www.codemag.com/article/1411041
+http://stackoverflow.com/questions/12084177/in-indexeddb-is-there-a-way-to-make-a-sorted-compound-query
+foo.split(/([A-Z ]*)\s*(\[[A-Z ]*\])\s*([a-z ]*)/)
+foo = "HELLO    [HELLO]     eh low"
+BUBBLY(2)       [BUBBLY(2)]     b ah b ah l iy
+bar.split(/([A-Z0-9]*)\s*([A-Z0-9]*)\s*([a-z ]*)/)
+
+// sound emitter
+http://www.szynalski.com/tone-generator/
+
+// serviceworker-prefetch and stream
+https://googlechrome.github.io/samples/service-worker/prefetch-video/
+

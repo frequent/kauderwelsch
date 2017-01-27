@@ -7,7 +7,7 @@
   // Copyright Â© 2013 Matt Diamond - License (MIT)
   // https://github.com/mattdiamond/Recorderjs
 
-  var WORKER_PATH = 'worker_recorder.js';
+  var WORKER_PATH = 'worker_router.js';
 
   /////////////////////////////
   // templates
