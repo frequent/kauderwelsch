@@ -35,7 +35,16 @@
       var gadget = this,
         props = gadget.property_dict;
 
-      return gadget;
+      return new RSVP.Queue()
+        .push(function () {
+          return gadget.getDeclaredGadget("serviceworker");
+        })
+        .push(function (my_serviceworker_gadget) {
+          return my_serviceworker_gadget.render({
+            "serviceworker_url": 'gadget_voxforge_serviceworker.js',
+            "scope": "./"
+          });
+        });
     });
     
 }(window, rJS, RSVP));
