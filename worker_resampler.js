@@ -44,7 +44,7 @@
     // Setup resampler bypass - just return
     if (fromSampleRate == toSampleRate) {
       RATIO_WEIGHT = 1;
-      RESAMPLER.resample = byPassResampler;
+      RESAMPLER.resampler = byPassResampler;
     } else {
 
       // Use generic linear interpolation if upsampling,
@@ -82,7 +82,7 @@
     }
   }
 
-  function bypassResampler (buffer) {
+  function byPassResampler (buffer) {
     // set the buffer passed as our own, as we don't need to resample it
     if (NO_RETURN) {
       OUTPUT_BUFFER = buffer;

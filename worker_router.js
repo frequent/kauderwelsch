@@ -14,15 +14,15 @@
       case 'init':
         return sendMessage("init", recorder.initialize(opts));
       case 'record':
-        return sendMessage("recording", reader.record(opts.buffer));
+        return sendMessage("recording", recorder.record(opts.buffer));
       case 'exportWAV':
-        return sendMessage("exportWAV", reader.exportWAV(opts.type));
+        return sendMessage("exportWAV", recorder.exportWAV(opts.type));
       case 'exportMonoWAV':
-        return sendMessage("exportMonoWAV", reader.exportMonoWAV(opts.type));
+        return sendMessage("exportMonoWAV", recorder.exportMonoWAV(opts.type));
       case 'getBuffers':
-        return sendMessage("getBuffers", reader.getBuffer());
+        return sendMessage("getBuffers", recorder.getBuffers());
       case 'clear':
-        return sendMssage("clear". reader.clear());
+        return sendMessage("clear", recorder.clear());
     }
   };
   
