@@ -36,13 +36,8 @@
         })
         .push(function (my_voxforge_gadget) {
           return my_voxforge_gadget.render(my_option_dict);
-        })
-        //.push(function () {
-        //  return gadget;
-        //});
-
+        });
     });
 
         
 }(window, rJS, RSVP));
-

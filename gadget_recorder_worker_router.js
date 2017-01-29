@@ -4,8 +4,8 @@
   "use strict";
 
   importScripts(
-    'worker_resampler.js',
-    'worker_recorder.js'
+    'gadget_recorder_worker_resampler.js',
+    'gadget_recorder_worker_recorder.js'
   );
 
   worker_instance.onmessage = function(my_event){

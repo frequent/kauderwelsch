@@ -9,7 +9,7 @@
 
   // XXX test for worker?
 
-  var WORKER_PATH = 'worker_router.js';
+  var WORKER_PATH = 'gadget_recorder_worker_router.js';
 
   /////////////////////////////
   // templates
