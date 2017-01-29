@@ -39,6 +39,7 @@
 // => https://developer.mozilla.org/en-US/docs/Web/API/Clients/claim
 // can also be used to not have to refresh page
 // => https://davidwalsh.name/offline-recipes-service-workers
+// => https://serviceworke.rs/immediate-claim_service-worker_doc.html
 
 // self.addEventListener('install', function(event) {
 //  event.waitUntil(self.skipWaiting());
@@ -60,10 +61,10 @@ var CURRENT_CACHE_VERSION = 1;
 var CURRENT_CACHE;
 var CURRENT_CACHE_DICT = {
   "self": "self-v" + CURRENT_CACHE_VERSION,
-  "prefetch": "prefetch-v" + CURRENT_CACHE_VERSION
+  "dictionary": "dictionary-v" + CURRENT_CACHE_VERSION
 };
 
-var PREFETCH_URL_LIST = [
+var DICTIONARY_URL_LIST = [
   //"VoxForgeDict.txt"
   "sample.txt"
 ];
@@ -71,13 +72,9 @@ var PREFETCH_URL_LIST = [
 // runs while an existing worker runs or nothing controls the page (update here)
 self.addEventListener('install', function (event) {
 
-  // force waiting worker to become active worker (claim)
-  // https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerGlobalScope/skipWaiting
-  self.skipWaiting();
-
-  event.waitUntil(caches.open(CURRENT_CACHE_DICT.prefetch)
+  event.waitUntil(caches.open(CURRENT_CACHE_DICT.dictionary)
     .then(function(cache) {
-      var cachePromises = PREFETCH_URL_LIST.map(function(prefetch_url) {
+      var cache_promise_list = DICTIONARY_URL_LIST.map(function(prefetch_url) {
         
         // This constructs a new URL object using the service worker's script
         // location as the base for relative URLs.
@@ -124,9 +121,16 @@ self.addEventListener('install', function (event) {
         });
       });
 
-      return Promise.all(cachePromises).then(function() {
+      return Promise.all(cache_promise_list).then(function() {
         console.log('Pre-fetching complete.');
       });
+    })
+    .then(function () {
+
+      // force waiting worker to become active worker (claim)
+      // https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerGlobalScope/skipWaiting
+      self.skipWaiting();
+
     }).catch(function(error) {
       console.error('Pre-fetching failed:', error);
     })
@@ -144,8 +148,7 @@ self.addEventListener('activate', function (event) {
   // XXX does not work?
   // self.clients.claim();
   
-  event.waitUntil(self.clients.claim()
-    .then(caches.keys)
+  event.waitUntil(caches.keys()
     .then(function(cache_name_list) {
       return Promise.all(
         cache_name_list.map(function(cache_name) {
@@ -164,6 +167,10 @@ self.addEventListener('activate', function (event) {
           }
         })
       );
+    })
+    .then(function () {
+      console.log("[ServiceWorker] Claiming clients for version");
+      return self.clients.claim();
     })
   );
 });
@@ -289,7 +296,11 @@ self.addEventListener('message', function (event) {
     item,
     mime_type,
     result_list;
-
+  console.log("???")
+  console.log(event)
+  console.log(param.command)
+  console.log(param.id)
+  console.log("param")
   switch (param.command) {
     
     // case 'post' not possible
@@ -456,12 +467,16 @@ self.addEventListener('message', function (event) {
     break;
 
     case 'getAttachment':
+      console.log("YOO")
+      console.log(param)
+      console.log(param.id)
+      console.log(param.name)
       CURRENT_CACHE = param.id + "-v" + CURRENT_CACHE_VERSION;
       caches.open(CURRENT_CACHE)
         .then(function(cache) {
           return cache.match(param.name)
           .then(function(response) {
-
+            console.log(response)
             // the response body is a ReadableByteStream which cannot be
             // passed back through postMessage apparently. This link
             // https://jakearchibald.com/2015/thats-so-fetch/ explains
@@ -504,6 +519,8 @@ self.addEventListener('message', function (event) {
           });
         })
         .catch(function(error) {
+          console.log("Hum")
+          console.log(error)
           event.ports[0].postMessage({
             error: {'message': error.toString()}
           });
@@ -542,6 +559,5 @@ self.addEventListener('message', function (event) {
       throw 'Unknown command: ' + event.data.command;
   }
 });  
-
 
 

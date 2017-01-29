@@ -4,7 +4,7 @@
   "use strict";
 
   // Stream Recording inspired by:
-  // Copyright Â© 2013 Matt Diamond - License (MIT)
+  // Copyright © 2013 Matt Diamond - License (MIT)
   // https://github.com/mattdiamond/Recorderjs
 
   var REC_LENGTH = 0,

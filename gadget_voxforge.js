@@ -78,9 +78,9 @@
             my_gadget_list[1].render({})
           ]);
         })
-        .push(function () {
-          return initializeStorage(gadget, "serviceworker");
-        });
+        //.push(function () {
+        //  return initializeStorage(gadget, "serviceworker");
+        //});
     })
     
     .declareMethod('setActiveStorage', function (my_type) {
@@ -136,4 +136,3 @@
     });
     
 }(window, rJS, RSVP));
-

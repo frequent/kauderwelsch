@@ -4,7 +4,7 @@
   "use strict";
 
   // Stream Recording inspired by:
-  // Copyright Â© 2013 Matt Diamond - License (MIT)
+  // Copyright © 2013 Matt Diamond - License (MIT)
   // https://github.com/mattdiamond/Recorderjs
 
   // XXX test for worker?
@@ -190,6 +190,9 @@
     /////////////////////////////
     // acquired methods
     /////////////////////////////
+    .declareAcquiredMethod('setActiveStorage', 'setActiveStorage')
+    .declareAcquiredMethod('jio_create', 'jio_create')
+    .declareAcquiredMethod('jio_getAttachment', 'jio_getAttachment')
 
     /////////////////////////////
     // declared methods
@@ -215,6 +218,12 @@
           } else {
             props.node = props.context.createScriptProcessor(buffer_length, 2, 2);
           }
+        })
+        .push(function () {
+          return gadget.setActiveStorage("serviceworker");
+        })
+        .push(function () {
+          return gadget.jio_create({"type": "serviceworker"});
         })
         .push(function () {
           return gadget.sendMessage({"command": 'init', "option_dict": {
@@ -308,7 +317,11 @@
           return gadget.notify_clear();
         })
         .push(function () {
-          gadget.property_dict.is_recording = true;
+          gadget.jio_getAttachment("dictionary", "sample.txt");
+        })
+        .push(function (my_sample) {
+          console.log(my_sample)
+          //gadget.property_dict.is_recording = true;
         });
     })
     
@@ -398,4 +411,3 @@
     });
     
 }(window, document, rJS, RSVP, loopEventListener));
-

@@ -171,6 +171,8 @@
               return;
             });
         })
+
+        // main error handler
         .push(null, function (my_error) {
           console.log(my_error);
           throw my_error;
@@ -178,4 +180,3 @@
     });
     
 }(window, rJS, RSVP));
-
