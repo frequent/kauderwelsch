@@ -69,7 +69,9 @@
     // ready
     /////////////////////////////
     .ready(function (my_gadget) {
-      my_gadget.property_dict = {};
+      my_gadget.property_dict = {
+        "deferred": new RSVP.defer()
+      };
 
       return new RSVP.Queue()
         .push(function () {
@@ -104,10 +106,9 @@
       props.canvas_node = props.element.querySelector(".kw-analyser");
       props.context = new AUDIO_CONTEXT();
 
-      // XXX where to load trainer?
-      // props.trainer = new Worker(my_option_dict.pathToTrainer || 'kauderwelsch_trainer.js');
-
-      return gadget;
+      if (props.deferred) {
+        return props.deferred.resolve();
+      }
     })
     
     .declareMethod("initializeAnalyser", function () {
@@ -133,45 +134,47 @@
     .declareService(function () {
       var gadget = this,
         props = gadget.property_dict;
-
-      return new RSVP.Queue()
-      .push(function () {
-        return MEDIA_DEVICES.getUserMedia(AUDIO_OPTIONS);
-      })
-      .push(function (my_stream) {
-        var input_point = props.context.createGain(),
-          zero_gain;
-
-        // set source to input stream, connect & Create audio node from stream
-        props.source = props.context.createMediaStreamSource(my_stream);
-        props.source.connect(input_point);
-
         return new RSVP.Queue()
-          .push(function () {
-            return gadget.getDeclaredGadget("recorder");
-          })
-          .push(function (my_recorder_gadget) {
-            return my_recorder_gadget.render({"input_point": input_point});
-          })
-          .push(function () {
+        .push(function () {
+          return props.deferred.promise;
+        })
+        .push(function () {
+          return MEDIA_DEVICES.getUserMedia(AUDIO_OPTIONS);
+        })
+        .push(function (my_stream) {
+          var input_point = props.context.createGain(),
+            zero_gain;
+  
+          // set source to input stream, connect & Create audio node from stream
+          props.source = props.context.createMediaStreamSource(my_stream);
+          props.source.connect(input_point);
+  
+          return new RSVP.Queue()
+            .push(function () {
+              return gadget.getDeclaredGadget("recorder");
+            })
+            .push(function (my_recorder_gadget) {
+              return my_recorder_gadget.render({"input_point": input_point});
+            })
+            .push(function () {
+            
+              zero_gain = props.context.createGain();
+              zero_gain.gain.value = 0.0;
+              input_point.connect(zero_gain);
+              zero_gain.connect(props.context.destination);
           
-            zero_gain = props.context.createGain();
-            zero_gain.gain.value = 0.0;
-            input_point.connect(zero_gain);
-            zero_gain.connect(props.context.destination);
-        
-            // initialize analyser and connect with destination
-            return gadget.initializeAnalyser();
-          })
-          .push(function () {
-            input_point.connect(props.analyser);
-            return;
-          });
-      })
-      .push(null, function (my_error) {
-        console.log(my_error);
-        throw my_error;
-      });
+              // initialize analyser and connect with destination
+              return gadget.initializeAnalyser();
+            })
+            .push(function () {
+              input_point.connect(props.analyser);
+              return;
+            });
+        })
+        .push(null, function (my_error) {
+          console.log(my_error);
+          throw my_error;
+        });
     });
     
 }(window, rJS, RSVP));

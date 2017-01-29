@@ -10,7 +10,6 @@
     })
     .declareMethod('render', function (my_option_dict) {
       //this.state_parameter_dict.label = my_option_dict.label;
-      return this;
     })
 
     .declareMethod('createJIO', function (jio_options) {

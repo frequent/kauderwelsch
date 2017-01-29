@@ -43,6 +43,7 @@
 
     // Setup resampler bypass - just return
     if (fromSampleRate == toSampleRate) {
+      console.log("WHAY")
       RATIO_WEIGHT = 1;
       RESAMPLER.resampler = byPassResampler;
     } else {
@@ -60,10 +61,9 @@
       } else {
         LAST_WEIGHT = 0;
         TAIL_EXISTS = false;
-        console.log("tapping");
         RESAMPLER.resample = multiTap;
       }
-
+      
       // Initialize the internal buffer:
       initializeBuffers();
       RATIO_WEIGHT = fromSampleRate / toSampleRate;
@@ -88,7 +88,7 @@
       OUTPUT_BUFFER = buffer;
       return buffer.length;
     }
-
+    console.log("?")
     // just return the buffer passsed
     return buffer;
   }
@@ -303,6 +303,9 @@
     return offlineCtx.startRendering();
   }
   */
+  
+  // error handling
+  // worker_instance.close();
 
   worker_instance.resampler = RESAMPLER;
 

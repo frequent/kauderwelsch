@@ -63,8 +63,9 @@
     .declareMethod('render', function (my_option_dict) {
       var gadget = this;
 
+      /*
       if ('serviceWorker' in navigator) {
-        return new RSVP.QUeue()
+        return new RSVP.Queue()
           .push(function () {
             return navigator.serviceWorker.register(
               my_option_dict.serviceworker_url || 'serviceworker.js',
@@ -77,6 +78,9 @@
           .push(function (installation) {
             return claimScope(installation);
           })
+          .push(function () {
+            return gadget;
+          })
           .push(null, function (my_error) {
             console.log(my_error);
             throw my_error;
@@ -84,6 +88,7 @@
       } else {
         throw new Error("Browser does not support serviceworker.");
       }
+      */
     });
 
 }(window, rJS, navigator));

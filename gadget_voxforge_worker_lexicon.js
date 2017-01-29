@@ -46,5 +46,7 @@
     });
   }
 
-
+  // error handling
+  // worker_instance.close();
+  
 }(self));

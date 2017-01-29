@@ -42,7 +42,7 @@
     var bufferL = mergeBuffers(REC_BUFFERS_LEFT, REC_LENGTH),
       resampled,
       dataview;
-      
+
     resampler.initialize(SAMPLE_RATE, 16000, 1, bufferL.length);
     resampled = resampler.resample(bufferL);
     SAMPLE_RATE = 16000;
@@ -63,7 +63,7 @@
     var buffers = [];
     buffers.push( mergeBuffers(REC_BUFFERS_LEFT, REC_LENGTH) );
     buffers.push( mergeBuffers(REC_BUFFERS_RIGHT, REC_LENGTH) );
-    return buffers
+    return buffers;
     //worker_instance.postMessage({"command": "getBuffers", "status": 200,
     //  "result": buffers
     //});
@@ -158,4 +158,7 @@
   
   worker_instance.recorder = RECORDER;
 
+  // error handling
+  // worker_instance.close();
+  
 }(self));

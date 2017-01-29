@@ -59,13 +59,79 @@
 var CURRENT_CACHE_VERSION = 1;
 var CURRENT_CACHE;
 var CURRENT_CACHE_DICT = {
-  "self": "self-v" + CURRENT_CACHE_VERSION
+  "self": "self-v" + CURRENT_CACHE_VERSION,
+  "prefetch": "prefetch-v" + CURRENT_CACHE_VERSION
 };
 
+var PREFETCH_URL_LIST = [
+  //"VoxForgeDict.txt"
+  "sample.txt"
+];
+
 // runs while an existing worker runs or nothing controls the page (update here)
-//self.addEventListener('install', function (event) {
-//  XXX CACHE SELF?
-//});
+self.addEventListener('install', function (event) {
+
+  // force waiting worker to become active worker (claim)
+  // https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerGlobalScope/skipWaiting
+  self.skipWaiting();
+
+  event.waitUntil(caches.open(CURRENT_CACHE_DICT.prefetch)
+    .then(function(cache) {
+      var cachePromises = PREFETCH_URL_LIST.map(function(prefetch_url) {
+        
+        // This constructs a new URL object using the service worker's script
+        // location as the base for relative URLs.
+        var url = new URL(prefetch_url, location.href),
+          request;
+
+        // Append a cache-bust=TIMESTAMP URL parameter to each URL's query 
+        // string. This is particularly important when precaching resources 
+        // that are later used in the fetch handler as responses directly, 
+        // without consulting the network (i.e. cache-first). If we were to 
+        // get back a response from the HTTP browser cache for this precaching 
+        // request then that stale response would be used indefinitely, or at 
+        // least until the next time the service worker script changes 
+        // triggering the install flow.
+        url.search += (url.search ? '&' : '?') + 'cache-bust=' +  Date.now();
+  
+        // It's very important to use {mode: 'no-cors'} if there is any chance
+        // that the resources being fetched are served off of a server that 
+        // doesn't support CORS. See
+        // (http://en.wikipedia.org/wiki/Cross-origin_resource_sharing).
+        // If the server doesn't support CORS the fetch() would fail if the 
+        // default mode of 'cors' was used for the fetch() request. The drawback
+        // of hardcoding {mode: 'no-cors'} is that the response from all 
+        // cross-origin hosts will always be opaque
+        // (https://slightlyoff.github.io/ServiceWorker/spec/service_worker/index.html#cross-origin-resources)
+        // and it is not possible to determine whether an opaque response 
+        // represents a success or failure
+        // (https://github.com/whatwg/fetch/issues/14).
+          request = new Request(url, {mode: 'no-cors'});
+
+        return fetch(request).then(function(response) {
+          if (response.status >= 400) {
+            throw new Error('request for ' + prefetch_url +
+              ' failed with status ' + response.statusText);
+          }
+  
+          // Use the original URL without the cache-busting parameter as 
+          // the key for cache.put().
+          // XXX User jIO interface for internal caching?
+          // XXX parse file using worker?
+          return cache.put(prefetch_url, response);
+        }).catch(function(error) {
+          console.error('Not caching ' + prefetch_url + ' due to ' + error);
+        });
+      });
+
+      return Promise.all(cachePromises).then(function() {
+        console.log('Pre-fetching complete.');
+      });
+    }).catch(function(error) {
+      console.error('Pre-fetching failed:', error);
+    })
+  );
+});
 
 // runs active page, changes here (like deleting old cache) breaks page
 self.addEventListener('activate', function (event) {
@@ -75,8 +141,11 @@ self.addEventListener('activate', function (event) {
   });
 
   // claim the scope immediately
+  // XXX does not work?
+  // self.clients.claim();
+  
   event.waitUntil(self.clients.claim()
-    .then(caches.keys())
+    .then(caches.keys)
     .then(function(cache_name_list) {
       return Promise.all(
         cache_name_list.map(function(cache_name) {
@@ -84,11 +153,13 @@ self.addEventListener('activate', function (event) {
           
           // removes caches which are out of version
           if (!(version && parseInt(version, 10) === CURRENT_CACHE_VERSION)) {
+            console.log('Deleting out of date cache:' + cache_name);
             return caches.delete(cache_name);
           }
           
           // removes caches which are not on the list of expected names 
           if (expected_cache_name_list.indexOf(cache_name) === -1) {
+            console.log('Deleting non-listed cache:' + cache_name);
             return caches.delete(cache_name);
           }
         })
@@ -101,6 +172,68 @@ self.addEventListener('activate', function (event) {
 // intercept network requests, allows to serve form cache or fetch from network
 /*
 self.addEventListener('fetch', function (event) {
+  
+  if (event.request.headers.get('range')) {
+    var pos =
+    Number(/^bytes\=(\d+)\-$/g.exec(event.request.headers.get('range'))[1]);
+    console.log('Range request for', event.request.url,
+      ', starting position:', pos);
+    event.respondWith(
+      caches.open(CURRENT_CACHES.prefetch)
+      .then(function(cache) {
+        return cache.match(event.request.url);
+      }).then(function(res) {
+        if (!res) {
+          return fetch(event.request)
+          .then(res => {
+            return res.arrayBuffer();
+          });
+        }
+        return res.arrayBuffer();
+      }).then(function(ab) {
+        return new Response(
+          ab.slice(pos),
+          {
+            status: 206,
+            statusText: 'Partial Content',
+            headers: [
+              // ['Content-Type', 'video/webm'],
+              ['Content-Range', 'bytes ' + pos + '-' +
+                (ab.byteLength - 1) + '/' + ab.byteLength]]
+          });
+      }));
+  } else {
+    console.log('Non-range request for', event.request.url);
+    event.respondWith(
+    // caches.match() will look for a cache entry in all of the caches available to the service worker.
+    // It's an alternative to first opening a specific named cache and then matching on that.
+    caches.match(event.request).then(function(response) {
+      if (response) {
+        console.log('Found response in cache:', response);
+        return response;
+      }
+      console.log('No response found in cache. About to fetch from network...');
+      // event.request will always have the proper mode set ('cors, 'no-cors', etc.) so we don't
+      // have to hardcode 'no-cors' like we do when fetch()ing in the install handler.
+      return fetch(event.request).then(function(response) {
+        console.log('Response from network is:', response);
+
+        return response;
+      }).catch(function(error) {
+        // This catch() will handle exceptions thrown from the fetch() operation.
+        // Note that a HTTP error response (e.g. 404) will NOT trigger an exception.
+        // It will return a normal response object that has the appropriate error code set.
+        console.error('Fetching failed:', error);
+
+        throw error;
+      });
+    })
+    );
+  }
+
+  
+  // ========================
+  
   var url = event.request.url,
     cacheable_list = [],
     isCacheable = function (el) {

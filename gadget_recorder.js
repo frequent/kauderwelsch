@@ -7,6 +7,8 @@
   // Copyright Â© 2013 Matt Diamond - License (MIT)
   // https://github.com/mattdiamond/Recorderjs
 
+  // XXX test for worker?
+
   var WORKER_PATH = 'worker_router.js';
 
   /////////////////////////////
@@ -202,7 +204,8 @@
           var buffer_length = 4096;
 
           // Note: sample rate will be 48000
-          props.recorder = new Worker(WORKER_PATH);
+          // XXX error handling, need to terminate worker .terminate()
+          props.router = new Worker(WORKER_PATH);
           props.source = my_option_dict.input_point;
           props.context = props.source.context;
           props.done_worker_init.resolve();
@@ -221,7 +224,6 @@
         .push(function () {
           props.source.connect(props.node);
           props.node.connect(props.context.destination);
-          return gadget;
         });
     })
     
@@ -231,14 +233,14 @@
   
       // setup worker communication 
       return new RSVP.Promise(function (resolve, reject, notify) {
-        props.recorder.onmessage = function (my_event) {
+        props.router.onmessage = function (my_event) {
           if (my_event.data.error) {
               reject(handleCallback(my_event));
             } else {
               resolve(handleCallback(my_event));
             }
           };
-          return props.recorder.postMessage(my_message);
+          return props.router.postMessage(my_message);
         });
     })
     
@@ -277,15 +279,21 @@
           return gadget.exportMonoWAV();
         })
         .push(function (my_resample_data) {
+          audio_element.src = window.URL.createObjectURL(my_resample_data);
+          audio_element.parentNode.appendChild(initializeDownload(my_resample_data, "punt.wav"));
+          
+          return gadget.sendMessage({"command": 'init', "option_dict": {
+            "sample_rate": props.context.sampleRate
+          }});
+        })
+        .push(function () {
           var progress = clip.querySelector(".kw-clip-progress");
           
+          // XXX animation frames, too?
           function inProgress (my_event) {
             var offset = Math.floor( clip.offsetWidth * audio_element.currentTime / audio_element.duration );
             progress.style.left = offset + "px";
           }
-
-          audio_element.src = window.URL.createObjectURL(my_resample_data);
-          audio_element.parentNode.appendChild(initializeDownload(my_resample_data, "punt.wav"));
           return loopEventListener(audio_element, "timeupdate", false, inProgress);
         });
     })
@@ -337,7 +345,7 @@
         if (!props.is_recording) {
           return;
         }
-        //Debug: console.log("recording...")
+
         return gadget.sendMessage({"command": "record", "option_dict": {
           "buffer": [
             my_event.inputBuffer.getChannelData(0),
@@ -367,13 +375,13 @@
 
         if (props.is_recording) {
           // stop, update memory storage and dom with new file
-          form.querySelector("input").value = "Record";
+          form.querySelector("input[type='submit']").value = "Record";
           queue.push(function () {
             return gadget.notify_stop();
           });
         } else {
           // record
-          form.querySelector("input").value = "Stop";
+          form.querySelector("input[type='submit']").value = "Stop";
           queue.push(function () {
             return gadget.notify_record();
           });

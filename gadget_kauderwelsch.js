@@ -29,17 +29,20 @@
     /////////////////////////////
     .declareMethod('render', function (my_option_dict) {
       var gadget = this;
-      
+
       return new RSVP.Queue()
         .push(function () {
-          return gadget.getDeclaredGadget("visualiser");
+          return gadget.getDeclaredGadget("voxforge");
         })
-        .push(function (my_visualiser_gadget) {
-          return my_visualiser_gadget.render(my_option_dict);
-        });
+        .push(function (my_voxforge_gadget) {
+          return my_voxforge_gadget.render(my_option_dict);
+        })
+        //.push(function () {
+        //  return gadget;
+        //});
+
     });
 
-    // bridge
         
 }(window, rJS, RSVP));
 
