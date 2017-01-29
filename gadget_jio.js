@@ -4,12 +4,14 @@
   "use strict";
 
   rJS(window)
-
     .ready(function (gadget) {
       gadget.state_parameter_dict = {};
     })
     .declareMethod('render', function (my_option_dict) {
+
       //this.state_parameter_dict.label = my_option_dict.label;
+      // need to return the rendered gadget to expose storage API
+      return this;
     })
 
     .declareMethod('createJIO', function (jio_options) {
@@ -57,4 +59,3 @@
     });
 
 }(window, rJS, jIO));
-
