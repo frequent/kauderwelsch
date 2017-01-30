@@ -92,7 +92,7 @@
   // refreshing should not be necessary if scope is claimed on activate
   function claimScope(registration) {
     return new RSVP.Promise(function (resolve, reject) {
-      if (registration.active.state) {
+      if (registration.active.state === 'activated') {
         resolve();
       } else {
         reject(new Error("Please refresh to initialize serviceworker."));
@@ -149,4 +149,3 @@
     });
 
 }(window, rJS, navigator));
-
