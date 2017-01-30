@@ -296,11 +296,7 @@ self.addEventListener('message', function (event) {
     item,
     mime_type,
     result_list;
-  console.log("???")
-  console.log(event)
-  console.log(param.command)
-  console.log(param.id)
-  console.log("param")
+  
   switch (param.command) {
     
     // case 'post' not possible
@@ -467,16 +463,32 @@ self.addEventListener('message', function (event) {
     break;
 
     case 'getAttachment':
-      console.log("YOO")
-      console.log(param)
-      console.log(param.id)
-      console.log(param.name)
       CURRENT_CACHE = param.id + "-v" + CURRENT_CACHE_VERSION;
       caches.open(CURRENT_CACHE)
         .then(function(cache) {
           return cache.match(param.name)
           .then(function(response) {
-            console.log(response)
+            var is_range = response.headers.get('range') || param.options.range,
+              start,
+              end,
+              split, blobber;
+
+            mime_type = response.headers.get('Content-Type');
+
+            // range requests
+            if (is_range) {
+              split = is_range.split("bytes=")[1].split("-");
+              start = split[0];
+              end = split[1];
+              
+              return response.arrayBuffer()
+                .then(function (array_buffer) {
+                  var dataView = new DataView(array_buffer.slice(start, end));
+                  return new Blob([dataView], {"type": mime_type});
+                });
+
+            } else {
+            
             // the response body is a ReadableByteStream which cannot be
             // passed back through postMessage apparently. This link
             // https://jakearchibald.com/2015/thats-so-fetch/ explains
@@ -484,11 +496,11 @@ self.addEventListener('message', function (event) {
             
             // XXX Improve
             // However, calling blob() does not allow to set mime-type, so
-            // for currently the blob is created, read, stored as new blob
+            // currently the blob is created, read, stored as new blob
             // and returned (to be read again)
             // https://github.com/whatwg/streams/blob/master/docs/ReadableByteStream.md
-            mime_type = response.headers.get('Content-Type');
             return response.clone().blob();
+            }
           })
           .then(function (response_as_blob) {
             return new Promise(function(resolve) {
@@ -497,12 +509,15 @@ self.addEventListener('message', function (event) {
               blob_reader.readAsText(response_as_blob);
             });
           })
+          // XXX why am I doing this? just to add the mime-type?
           .then(function (reader_response) {
+            console.log(reader_response)
             return new Blob([reader_response.target.result], {
               "type": mime_type
             });
           })
           .then(function (converted_response) {
+            console.log(converted_response)
             if (converted_response) {
               event.ports[0].postMessage({
                 error: null,
@@ -559,5 +574,6 @@ self.addEventListener('message', function (event) {
       throw 'Unknown command: ' + event.data.command;
   }
 });  
+
 
 

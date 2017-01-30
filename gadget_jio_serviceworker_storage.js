@@ -151,10 +151,8 @@
       });
   };
   
-  ServiceWorkerStorage.prototype.getAttachment = function (id, url) {
-    console.log("HELLO")
-    console.log(id)
-    console.log(url)
+  ServiceWorkerStorage.prototype.getAttachment = function (id, url, options) {
+
     // NOTE: alternatively get could also be run "official" way via
     // an ajax request, which the serviceworker would catch via fetch listener!
     // for a filesystem equivalent however, we don't assume fetching resources
@@ -165,11 +163,11 @@
         return validateConnection();
       })
       .push(function () {
-        console.log("SENDING MESSAGE")
         return sendMessage({
           command: 'getAttachment',
           id: restrictDocumentId(id),
-          name: url
+          name: url,
+          options: options || {}
         });
       })
       .push(function (my_blob_response) {
@@ -247,3 +245,4 @@
   jIO.addStorage('serviceworker', ServiceWorkerStorage);
 
 }(jIO, RSVP, Blob, navigator));
+

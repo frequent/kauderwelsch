@@ -1,10 +1,10 @@
 /*jslint nomen: true, indent: 2, maxerr: 3 */
-/*global window, document, rJS, RSVP, loopEventListener */
-(function (window, document, rJS, RSVP, loopEventListener) {
+/*global window, document, rJS, RSVP, loopEventListener, jIO */
+(function (window, document, rJS, RSVP, loopEventListener, jIO) {
   "use strict";
 
   // Stream Recording inspired by:
-  // Copyright © 2013 Matt Diamond - License (MIT)
+  // Copyright Â© 2013 Matt Diamond - License (MIT)
   // https://github.com/mattdiamond/Recorderjs
 
   // XXX test for worker?
@@ -317,10 +317,14 @@
           return gadget.notify_clear();
         })
         .push(function () {
-          gadget.jio_getAttachment("dictionary", "sample.txt");
+          return gadget.jio_getAttachment("dictionary", "sample.txt", {
+            "range": "bytes=210-226",
+            "format": "text"
+          });
         })
-        .push(function (my_sample) {
-          console.log(my_sample)
+        .push(function (my_text_content) {
+          console.log("WHAT DO I GET")
+          console.log(my_text_content);
           //gadget.property_dict.is_recording = true;
         });
     })
@@ -410,4 +414,5 @@
       return loopEventListener(form, "submit", false, form_submit_handler);
     });
     
-}(window, document, rJS, RSVP, loopEventListener));
+}(window, document, rJS, RSVP, loopEventListener, jIO));
+
