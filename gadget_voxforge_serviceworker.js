@@ -105,20 +105,67 @@ self.addEventListener('install', function (event) {
         // (https://github.com/whatwg/fetch/issues/14).
           request = new Request(url, {mode: 'no-cors'});
 
-        return fetch(request).then(function(response) {
-          if (response.status >= 400) {
-            throw new Error('request for ' + prefetch_url +
-              ' failed with status ' + response.statusText);
-          }
-  
-          // Use the original URL without the cache-busting parameter as 
-          // the key for cache.put().
-          // XXX User jIO interface for internal caching?
-          // XXX parse file using worker?
-          return cache.put(prefetch_url, response);
-        }).catch(function(error) {
-          console.error('Not caching ' + prefetch_url + ' due to ' + error);
-        });
+        // XXX differentiate handler based on desired content-type? 
+        // (ArrayBuffer, BinaryString, DataUrl, String)
+        return fetch(request)
+          .then(function(response) {
+            if (response.status >= 400) {
+              throw new Error('request for ' + prefetch_url +
+                ' failed with status ' + response.statusText);
+            }
+            
+            // ====
+            // XXX using Array buffer
+            return response.arrayBuffer(); 
+          })
+          .then(function(buffer) {
+            
+            // parse file, remove whitespace, not 2-depths boundaries in index
+            function compressAndIndexFile(my_buffer) {
+              var chunk_size = 1024,
+                offset = 0,
+                file_reader = new FileReader();
+
+              return new Promise(function (resolve, reject) {
+                file_reader.onmessage = function (my_event) {
+                  var view,
+                    i;
+                  if (my_event.target.error) {
+                    resolve("did not work...");
+                  }
+                  view = new Uint8Array(my_event.target.result);
+                  for (i = 9; i < view.length; i += 1) {
+                    // loop over file, remove white space between characters
+                    // check character and write to new buffer?
+                    console.log(view[i]);
+                  }
+                  offset += chunk_size;
+                  loopOverBuffer();
+                };
+                  
+                function loopOverBuffer() {
+                  var slice;
+                  // done, store the file, here too
+                  if (offset >= my_buffer.size) {
+                    resolve("FINISHED");
+                  }
+                  slice = my_buffer.slice(oofset, offset + chunk_size);
+                  file_reader.readAsArrayBuffer(slice);
+                }
+                  
+                loopOverBuffer();
+              });
+            }
+
+            return cache.put(prefetch_url, compressAndIndexFile(buffer));
+            // ================
+            // Use the original URL without the cache-busting parameter as 
+            // the key for cache.put().
+            // XXX Use jIO interface here, too after moving out the methods
+            // return cache.put(prefetch_url, response);
+          }).catch(function(error) {
+            console.error('Not caching ' + prefetch_url + ' due to ' + error);
+          });
       });
 
       return Promise.all(cache_promise_list).then(function() {
@@ -574,6 +621,5 @@ self.addEventListener('message', function (event) {
       throw 'Unknown command: ' + event.data.command;
   }
 });  
-
 
 
