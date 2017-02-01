@@ -64,6 +64,8 @@ var CURRENT_CACHE_DICT = {
   "dictionary": "dictionary-v" + CURRENT_CACHE_VERSION
 };
 
+var LINE_BREAK = /(.*?[\r\n])/g;
+var HAS_LINE_BREAK = /\r|\n/;
 var DICTIONARY_URL_LIST = [
   //"VoxForgeDict.txt"
   "sample.txt"
@@ -116,48 +118,72 @@ self.addEventListener('install', function (event) {
             
             // ====
             // XXX using Array buffer
-            return response.arrayBuffer(); 
+            return response.blob(); 
           })
-          .then(function(buffer) {
-            
+          .then(function(blob) {
+
             // parse file, remove whitespace, not 2-depths boundaries in index
-            function compressAndIndexFile(my_buffer) {
-              var chunk_size = 1024,
-                offset = 0,
-                file_reader = new FileReader();
-
+            function compressAndIndexFile(my_blob) {
+              var file_reader = new FileReader(),
+                chunk_size = 1024,
+                offset = 0;
               return new Promise(function (resolve, reject) {
-                file_reader.onmessage = function (my_event) {
-                  var view,
-                    i;
-                  if (my_event.target.error) {
-                    resolve("did not work...");
+                var boundary_dict = {},
+                  hang_over = "";
+                file_reader.onload = function (my_event) {
+                  var chunk = my_event.target.result,
+                    line_list = chunk.split(LINE_BREAK).filter(Boolean),
+                    len = line_list.length,
+                    i,
+                    first,
+                    second,
+                    iterator,
+                    line,
+                    pos = 0;
+                  for (i = 0; i < len; i += 1) {
+                    line = line_list[i];
+                    if (i === 0) {
+                      line = hang_over + line;
+                      hang_over = "";
+                    }
+                    iterator = line[0] + line[1];
+                    if (boundary_dict.hasOwnProperty[iterator] === false) {
+                      boundary_dict[iterator] = pos;
+                    }
+                    if (HAS_LINE_BREAK.test(line) === false) {
+                      hang_over = line;
+                    } else {
+                      pos += line.length;
+                    }
                   }
-                  view = new Uint8Array(my_event.target.result);
-                  for (i = 9; i < view.length; i += 1) {
-                    // loop over file, remove white space between characters
-                    // check character and write to new buffer?
-                    console.log(view[i]);
-                  }
+                  
+                  console.log(boundary_dict)
                   offset += chunk_size;
-                  loopOverBuffer();
-                };
-                  
-                function loopOverBuffer() {
-                  var slice;
-                  // done, store the file, here too
-                  if (offset >= my_buffer.size) {
-                    resolve("FINISHED");
+                  if (offset > 2048) {
+                    // store the file, then resolve
+                    resolve("End of story");
+                    return;
                   }
-                  slice = my_buffer.slice(oofset, offset + chunk_size);
-                  file_reader.readAsArrayBuffer(slice);
+                  return loopOverBlob(offset);
+                };
+                file_reader.onerror = function (my_event) {
+                  reject(my_event);
+                };
+                
+                function loopOverBlob(my_offset) {
+                  return file_reader.readAsText(
+                    blob.slice(my_offset, my_offset += chunk_size)
+                  );
                 }
-                  
-                loopOverBuffer();
-              });
+                return loopOverBlob(offset);
+              });              
             }
-
-            return cache.put(prefetch_url, compressAndIndexFile(buffer));
+            return compressAndIndexFile(blob);
+          })
+          .then(function(what) {
+            console.log("DONE")
+            console.log(what)
+            return cache.put(prefetch_url, what);
             // ================
             // Use the original URL without the cache-busting parameter as 
             // the key for cache.put().
@@ -621,5 +647,6 @@ self.addEventListener('message', function (event) {
       throw 'Unknown command: ' + event.data.command;
   }
 });  
+
 
 
