@@ -126,43 +126,49 @@ self.addEventListener('install', function (event) {
             function compressAndIndexFile(my_blob) {
               var file_reader = new FileReader(),
                 chunk_size = 1024,
-                offset = 0;
+                offset = 0,
+                boundary_dict = {},
+                hang_over = "",
+                pos = 0;
               return new Promise(function (resolve, reject) {
-                var boundary_dict = {},
-                  hang_over = "";
                 file_reader.onload = function (my_event) {
                   var chunk = my_event.target.result,
                     line_list = chunk.split(LINE_BREAK).filter(Boolean),
                     len = line_list.length,
                     i,
-                    first,
-                    second,
                     iterator,
                     line,
-                    pos = 0;
+                    request,
+                    response;
                   for (i = 0; i < len; i += 1) {
                     line = line_list[i];
                     if (i === 0) {
                       line = hang_over + line;
                       hang_over = "";
                     }
-                    iterator = line[0] + line[1];
-                    if (boundary_dict.hasOwnProperty[iterator] === false) {
+                    iterator = line[0] + (line[1] || "");
+                    if (boundary_dict.hasOwnProperty(iterator) === false) {
                       boundary_dict[iterator] = pos;
                     }
                     if (HAS_LINE_BREAK.test(line) === false) {
                       hang_over = line;
                     } else {
+                      hang_over = "";
                       pos += line.length;
                     }
                   }
-                  
-                  console.log(boundary_dict)
                   offset += chunk_size;
-                  if (offset > 2048) {
-                    // store the file, then resolve
-                    resolve("End of story");
-                    return;
+                  if (offset >= my_blob.size) {
+                    console.log("done");
+                    console.log(my_blob.size);
+                    console.log(boundary_dict);
+                    request = new Request("index.sample.txt", {mode: 'no-cors'});
+                    response = new Response(boundary_dict);
+                    return cache.put(request, response)
+                      .then(function () {
+                        return resolve(new Response(my_blob));
+                      });
+                    
                   }
                   return loopOverBlob(offset);
                 };
