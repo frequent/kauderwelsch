@@ -67,8 +67,8 @@ var CURRENT_CACHE_DICT = {
 var LINE_BREAK = /(.*?[\r\n])/g;
 var HAS_LINE_BREAK = /\r|\n/;
 var DICTIONARY_URL_LIST = [
-  //"VoxForgeDict.txt"
-  "sample.txt"
+  "VoxForgeDict.txt"
+  //"sample.txt"
 ];
 
 // runs while an existing worker runs or nothing controls the page (update here)
@@ -78,126 +78,139 @@ self.addEventListener('install', function (event) {
     .then(function(cache) {
       var cache_promise_list = DICTIONARY_URL_LIST.map(function(prefetch_url) {
         
-        // This constructs a new URL object using the service worker's script
-        // location as the base for relative URLs.
-        var url = new URL(prefetch_url, location.href),
-          request;
+        // check if file is already on cache
+        return cache.match(prefetch_url);
+      }).then(function(cached_file_response) {
+        var request,
+          url;
 
-        // Append a cache-bust=TIMESTAMP URL parameter to each URL's query 
-        // string. This is particularly important when precaching resources 
-        // that are later used in the fetch handler as responses directly, 
-        // without consulting the network (i.e. cache-first). If we were to 
-        // get back a response from the HTTP browser cache for this precaching 
-        // request then that stale response would be used indefinitely, or at 
-        // least until the next time the service worker script changes 
-        // triggering the install flow.
-        url.search += (url.search ? '&' : '?') + 'cache-bust=' +  Date.now();
-  
-        // It's very important to use {mode: 'no-cors'} if there is any chance
-        // that the resources being fetched are served off of a server that 
-        // doesn't support CORS. See
-        // (http://en.wikipedia.org/wiki/Cross-origin_resource_sharing).
-        // If the server doesn't support CORS the fetch() would fail if the 
-        // default mode of 'cors' was used for the fetch() request. The drawback
-        // of hardcoding {mode: 'no-cors'} is that the response from all 
-        // cross-origin hosts will always be opaque
-        // (https://slightlyoff.github.io/ServiceWorker/spec/service_worker/index.html#cross-origin-resources)
-        // and it is not possible to determine whether an opaque response 
-        // represents a success or failure
-        // (https://github.com/whatwg/fetch/issues/14).
-          request = new Request(url, {mode: 'no-cors'});
+        // file is not on cache yet
+        if (!cached_file_response) {
+          console.log("loading ", prefetch_url, " to be cached.")
+          // This constructs a new URL object using the service worker's script
+          // location as the base for relative URLs.
+          url = new URL(prefetch_url, location.href);
 
-        // XXX differentiate handler based on desired content-type? 
-        // (ArrayBuffer, BinaryString, DataUrl, String)
-        return fetch(request)
-          .then(function(response) {
-            if (response.status >= 400) {
-              throw new Error('request for ' + prefetch_url +
-                ' failed with status ' + response.statusText);
-            }
+          // Append a cache-bust=TIMESTAMP URL parameter to each URL's query 
+          // string. This is particularly important when precaching resources 
+          // that are later used in the fetch handler as responses directly, 
+          // without consulting the network (i.e. cache-first). If we were to 
+          // get back a response from the HTTP browser cache for this precaching 
+          // request then that stale response would be used indefinitely, or at 
+          // least until the next time the service worker script changes 
+          // triggering the install flow.
+          url.search += (url.search ? '&' : '?') + 'cache-bust=' +  Date.now();
+    
+          // It's very important to use {mode: 'no-cors'} if there is any chance
+          // that the resources being fetched are served off of a server that 
+          // doesn't support CORS. See
+          // (http://en.wikipedia.org/wiki/Cross-origin_resource_sharing).
+          // If the server doesn't support CORS the fetch() would fail if the 
+          // default mode of 'cors' was used for the fetch() request. The drawback
+          // of hardcoding {mode: 'no-cors'} is that the response from all 
+          // cross-origin hosts will always be opaque
+          // (https://slightlyoff.github.io/ServiceWorker/spec/service_worker/index.html#cross-origin-resources)
+          // and it is not possible to determine whether an opaque response 
+          // represents a success or failure
+          // (https://github.com/whatwg/fetch/issues/14).
+            request = new Request(url, {mode: 'no-cors'});
+
+          // XXX differentiate handler based on desired content-type? 
+          // (ArrayBuffer, BinaryString, DataUrl, String)
+          return fetch(request)
+            .then(function(response) {
+              if (response.status >= 400) {
+                throw new Error('request for ' + prefetch_url +
+                  ' failed with status ' + response.statusText);
+              }
             
-            // ====
-            // XXX using Array buffer
-            return response.blob(); 
-          })
-          .then(function(blob) {
+              // ======== 
+              // XXX the whole indexing of the file should be done somewhere
+              // else. has nothing to do with fetching and caching files
+              // consider indexStorage?
+              return response.blob(); 
+            });
+        } 
+        return cached_file_response.blob();
+      })
+      .then(function(blob) {
 
-            // parse file, remove whitespace, not 2-depths boundaries in index
-            function compressAndIndexFile(my_blob) {
-              var file_reader = new FileReader(),
-                chunk_size = 1024,
-                offset = 0,
-                boundary_dict = {},
-                hang_over = "",
-                pos = 0;
-              return new Promise(function (resolve, reject) {
-                file_reader.onload = function (my_event) {
-                  var chunk = my_event.target.result,
-                    line_list = chunk.split(LINE_BREAK).filter(Boolean),
-                    len = line_list.length,
-                    i,
-                    iterator,
-                    line,
-                    request,
-                    response;
-                  for (i = 0; i < len; i += 1) {
-                    line = line_list[i];
-                    if (i === 0) {
-                      line = hang_over + line;
-                      hang_over = "";
-                    }
-                    iterator = line[0] + (line[1] || "");
-                    if (boundary_dict.hasOwnProperty(iterator) === false) {
-                      boundary_dict[iterator] = pos;
-                    }
-                    if (HAS_LINE_BREAK.test(line) === false) {
-                      hang_over = line;
-                    } else {
-                      hang_over = "";
-                      pos += line.length;
-                    }
-                  }
-                  offset += chunk_size;
-                  if (offset >= my_blob.size) {
-                    console.log("done");
-                    console.log(my_blob.size);
-                    console.log(boundary_dict);
-                    request = new Request("index.sample.txt", {mode: 'no-cors'});
-                    response = new Response(boundary_dict);
-                    return cache.put(request, response)
-                      .then(function () {
-                        return resolve(new Response(my_blob));
-                      });
-                    
-                  }
-                  return loopOverBlob(offset);
-                };
-                file_reader.onerror = function (my_event) {
-                  reject(my_event);
-                };
-                
-                function loopOverBlob(my_offset) {
-                  return file_reader.readAsText(
-                    blob.slice(my_offset, my_offset += chunk_size)
-                  );
+        // parse file, remove whitespace, not 2-depths boundaries in index
+        function compressAndIndexFile(my_blob) {
+          var file_reader = new FileReader(),
+            chunk_size = 1024,
+            offset = 0,
+            boundary_dict = {},
+            hang_over = "",
+            pos = 0;
+          return new Promise(function (resolve, reject) {
+            file_reader.onload = function (my_event) {
+              var chunk = my_event.target.result,
+                line_list = chunk.split(LINE_BREAK).filter(Boolean),
+                len = line_list.length,
+                i,
+                iterator,
+                line,
+                request,
+                response;
+              for (i = 0; i < len; i += 1) {
+                line = line_list[i];
+                if (i === 0) {
+                  line = hang_over + line;
+                  hang_over = "";
                 }
-                return loopOverBlob(offset);
-              });              
+                iterator = line[0] + (line[1] || "");
+                if (boundary_dict.hasOwnProperty(iterator) === false) {
+                  boundary_dict[iterator] = pos;
+                }
+                if (HAS_LINE_BREAK.test(line) === false) {
+                  hang_over = line;
+                } else {
+                  hang_over = "";
+                  pos += line.length;
+                }
+              }
+              offset += chunk_size;
+              //if (offset >= my_blob.size) {
+              if (offset >= 8193) {
+                console.log("DONE")
+                console.log(boundary_dict);
+                request = new Request("index.VoxForgeDict.txt", {mode: 'no-cors'});
+                response = new Response(boundary_dict);
+                return cache.put(request, response)
+                  .then(function () {
+                    return resolve(nmy_blob);
+                  });
+                
+              }
+              return loopOverBlob(offset);
+            };
+            file_reader.onerror = function (my_event) {
+              reject(my_event);
+            };
+            
+            function loopOverBlob(my_offset) {
+              return file_reader.readAsText(
+                blob.slice(my_offset, my_offset += chunk_size)
+              );
             }
-            return compressAndIndexFile(blob);
-          })
-          .then(function(what) {
-            console.log("DONE")
-            console.log(what)
-            return cache.put(prefetch_url, what);
-            // ================
-            // Use the original URL without the cache-busting parameter as 
-            // the key for cache.put().
-            // XXX Use jIO interface here, too after moving out the methods
-            // return cache.put(prefetch_url, response);
-          }).catch(function(error) {
-            console.error('Not caching ' + prefetch_url + ' due to ' + error);
-          });
+            return loopOverBlob(offset);
+          });              
+        }
+
+        return compressAndIndexFile(blob);
+      })
+      .then(function(what) {
+        console.log("DONE")
+        console.log(what)
+        return cache.put(prefetch_url, what);
+        // ================
+        // Use the original URL without the cache-busting parameter as 
+        // the key for cache.put().
+        // XXX Use jIO interface here, too after moving out the methods
+        // return cache.put(prefetch_url, response);
+      }).catch(function(error) {
+        console.error('Not caching ' + prefetch_url + ' due to ' + error);
       });
 
       return Promise.all(cache_promise_list).then(function() {
@@ -222,10 +235,6 @@ self.addEventListener('activate', function (event) {
   var expected_cache_name_list = Object.keys(CURRENT_CACHE_DICT).map(function(key) {
     return CURRENT_CACHE_DICT[key];
   });
-
-  // claim the scope immediately
-  // XXX does not work?
-  // self.clients.claim();
   
   event.waitUntil(caches.keys()
     .then(function(cache_name_list) {
@@ -248,7 +257,7 @@ self.addEventListener('activate', function (event) {
       );
     })
     .then(function () {
-      console.log("[ServiceWorker] Claiming clients for version");
+      console.log("'activate': Claiming clients for version");
       return self.clients.claim();
     })
   );
@@ -258,67 +267,6 @@ self.addEventListener('activate', function (event) {
 // intercept network requests, allows to serve form cache or fetch from network
 /*
 self.addEventListener('fetch', function (event) {
-  
-  if (event.request.headers.get('range')) {
-    var pos =
-    Number(/^bytes\=(\d+)\-$/g.exec(event.request.headers.get('range'))[1]);
-    console.log('Range request for', event.request.url,
-      ', starting position:', pos);
-    event.respondWith(
-      caches.open(CURRENT_CACHES.prefetch)
-      .then(function(cache) {
-        return cache.match(event.request.url);
-      }).then(function(res) {
-        if (!res) {
-          return fetch(event.request)
-          .then(res => {
-            return res.arrayBuffer();
-          });
-        }
-        return res.arrayBuffer();
-      }).then(function(ab) {
-        return new Response(
-          ab.slice(pos),
-          {
-            status: 206,
-            statusText: 'Partial Content',
-            headers: [
-              // ['Content-Type', 'video/webm'],
-              ['Content-Range', 'bytes ' + pos + '-' +
-                (ab.byteLength - 1) + '/' + ab.byteLength]]
-          });
-      }));
-  } else {
-    console.log('Non-range request for', event.request.url);
-    event.respondWith(
-    // caches.match() will look for a cache entry in all of the caches available to the service worker.
-    // It's an alternative to first opening a specific named cache and then matching on that.
-    caches.match(event.request).then(function(response) {
-      if (response) {
-        console.log('Found response in cache:', response);
-        return response;
-      }
-      console.log('No response found in cache. About to fetch from network...');
-      // event.request will always have the proper mode set ('cors, 'no-cors', etc.) so we don't
-      // have to hardcode 'no-cors' like we do when fetch()ing in the install handler.
-      return fetch(event.request).then(function(response) {
-        console.log('Response from network is:', response);
-
-        return response;
-      }).catch(function(error) {
-        // This catch() will handle exceptions thrown from the fetch() operation.
-        // Note that a HTTP error response (e.g. 404) will NOT trigger an exception.
-        // It will return a normal response object that has the appropriate error code set.
-        console.error('Fetching failed:', error);
-
-        throw error;
-      });
-    })
-    );
-  }
-
-  
-  // ========================
   
   var url = event.request.url,
     cacheable_list = [],
@@ -378,6 +326,7 @@ self.addEventListener('message', function (event) {
   
   switch (param.command) {
     
+    // XXX make methods callable from within this file, too
     // case 'post' not possible
     
     // test if cache exits
@@ -553,13 +502,15 @@ self.addEventListener('message', function (event) {
               split, blobber;
 
             mime_type = response.headers.get('Content-Type');
-
+            console.log("GEtting attachment")
+            console.log(is_range)
             // range requests
             if (is_range) {
               split = is_range.split("bytes=")[1].split("-");
               start = split[0];
               end = split[1];
-              
+              console.log("finished getAttachment")
+              console.log("returning blob")
               return response.arrayBuffer()
                 .then(function (array_buffer) {
                   var dataView = new DataView(array_buffer.slice(start, end));
@@ -653,6 +604,4 @@ self.addEventListener('message', function (event) {
       throw 'Unknown command: ' + event.data.command;
   }
 });  
-
-
 
