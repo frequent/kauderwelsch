@@ -2,11 +2,6 @@
  * JIO Service Worker Storage Backend.
  */
 
-// POLYFILL: => https://developer.mozilla.org/en-US/docs/Web/API/Cache
-// this polyfill provides Cache.add(), Cache.addAll(), and CacheStorage.match(),
-// should not be needed for Chromium > 47 And Firefox > 39
-// importScripts('./serviceworker-cache-polyfill.js');
-
 // DEBUG:
 // chrome://cache/
 // chrome://inspect/#service-workers
@@ -33,30 +28,6 @@
 // list all caches
 // caches.keys().then(function(key_list) {console.log(key_list);return caches.open(key_list[0]);}).then(function(cache) {return cache.keys().then(function(request_list) {console.log(request_list);})});
 
-// CONFLICTING CONTROLLERS/NO CONTROLLER
-// if using same scope (for example ./) => https://github.com/w3c/ServiceWorker/issues/921
-// hijack using claim() which triggers oncontrollerchange on other serviceworkers
-// => https://developer.mozilla.org/en-US/docs/Web/API/Clients/claim
-// can also be used to not have to refresh page
-// => https://davidwalsh.name/offline-recipes-service-workers
-// => https://serviceworke.rs/immediate-claim_service-worker_doc.html
-
-// self.addEventListener('install', function(event) {
-//  event.waitUntil(self.skipWaiting());
-// });
-// self.addEventListener('activate', function(event) {
-//  event.waitUntil(self.clients.claim());
-// });
-
-// STUFF
-// intro => https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API/Using_Service_Workers
-// intro => http://www.html5rocks.com/en/tutorials/service-worker/introduction/
-// selective cache => https://github.com/GoogleChrome/samples/blob/gh-pages/service-worker/selective-caching/service-worker.js
-// handling POST with indexedDB => https://serviceworke.rs/request-deferrer.html
-// prefetch during install => https://googlechrome.github.io/samples/service-worker/prefetch/
-// serve range from cache => https://googlechrome.github.io/samples/service-worker/prefetch-video/
-
-// versioning allows to keep a clean cache, current_cache is accessed on fetch
 var CURRENT_CACHE_VERSION = 1;
 var CURRENT_CACHE;
 var CURRENT_CACHE_DICT = {
@@ -66,10 +37,319 @@ var CURRENT_CACHE_DICT = {
 
 var LINE_BREAK = /(.*?[\r\n])/g;
 var HAS_LINE_BREAK = /\r|\n/;
+
+// could this be fetched from a repo?
+// prefetch
 var DICTIONARY_URL_LIST = [
   "VoxForgeDict.txt"
-  //"sample.txt"
 ];
+
+// check if a cache exists
+function jio_get(my_param, my_event) {
+  return new Promise(function (resolve, reject) {
+    return caches.keys()
+      .then(function(key_list) {
+        var answer,
+          len,
+          i;
+
+        CURRENT_CACHE = my_param.id + "-v" + CURRENT_CACHE_VERSION;
+        for (i = 0, len = key_list.length; i < len; i += 1) {
+          if (key_list[i] === CURRENT_CACHE) {
+            answer = {"error": null};
+          }
+        }
+        if (!answer) {
+          answer = {"status": 404, "message": "Cache does not exist."};
+        }
+
+        // event.ports[0] corresponds to the MessagePort that was transferred 
+        // as part of the controlled page's call to controller.postMessage(). 
+        // Therefore, event.ports[0].postMessage() will trigger the onmessage
+        // handler from the controlled page. It's up to you how to structure 
+        // the messages that you send back; this is just one example.
+        if (my_event) {
+          resolve(my_event.ports[0].postMessage(answer));
+        }
+        resolve(answer);
+      })
+      .catch(function(error) {
+        var answer = {"error": {'message': error.toString()}};
+        if (my_event) {
+          reject(my_event.ports[0].postMessage(answer));
+        }
+        throw answer;
+      });
+  });
+}
+
+// create new cache by opening it. this will only run once per cache/folder
+function jio_put(my_param, my_event) {
+  return new Promise(function (resolve, reject) {
+    var answer;
+    
+    // I declare: self is reserved
+    if (my_param.id === "self") {
+      answer = {"error": {'status': 406, 'message': "Reserved cache name."}};
+      if (my_event) {
+        resolve(my_event.port[0].postMessage(answer));
+      }
+      resolve(answer);
+    }
+
+    CURRENT_CACHE = my_param.id + "-v" + CURRENT_CACHE_VERSION;
+    CURRENT_CACHE_DICT[my_param.id] = CURRENT_CACHE;
+    return caches.open(CURRENT_CACHE)
+      .then(function() {
+        answer = {"error": null, data: param.id};
+        if (my_event) {
+          resolve(my_event.port[0].postMessage(answer));
+        }
+        resolve(answer);
+      })
+      .catch(function(error) {
+        var answer = {"error": {'message': error.toString()}};
+        if (my_event) {
+          reject(my_event.ports[0].postMessage(answer));
+        }
+        throw answer;
+      });
+  });
+}
+
+// remove a cache
+function jio_remove(my_param, my_event) {
+  return new Promise(function (resolve, reject) { 
+    var answer = {"error": null};
+    delete CURRENT_CACHE_DICT[my_param.id];
+    return caches.delete(CURRENT_CACHE)
+      .then(function() {
+        if (my_event) {
+          resolve(my_event.ports[0].postMessage(answer));
+        }
+        resolve(answer);
+      })
+      .catch(function(error) {
+        var answer = {"error": {'message': error.toString()}};
+        if (my_event) {
+          reject(my_event.ports[0].postMessage(answer));
+        }
+        throw answer;
+      });
+  });
+}
+
+// return list of caches ~ folders
+function jio_allDocs(my_param, my_event) {
+  return new Promise(function (resolve, reject) { 
+    return caches.keys().then(function(key_list) {
+      var result_list = [],
+        answer,
+        id,
+        i;
+
+      for (i = 0; i < key_list.length; i += 1) {
+        id = key_list[i].split("-v")[0];
+        if (id !== "self") {
+          result_list.push({"id": id, "value": {}});
+        }
+      }
+      answer = {"error": null, data: result_list};
+      if (my_event) {
+        resolve(my_event.ports[0].postMessage(answer));
+      }
+      resolve(answer);
+    })
+    .catch(function(error) {
+      var answer = {"error": {'message': error.toString()}};
+      if (my_event) {
+        reject(my_event.ports[0].postMessage(answer));
+      }
+      throw answer;
+    });
+  });
+}
+
+// return all urls stored in a cache
+function jio_allAttachments(my_param, my_event) {
+  return new Promise(function (resolve, reject) { 
+    CURRENT_CACHE = my_param.id + "-v" + CURRENT_CACHE_VERSION;
+
+    // returns a list of the URLs corresponding to the Request objects
+    // that serve as keys for the current cache. We assume all files
+    // are kept in cache, so there will be no network requests.
+    return caches.open(CURRENT_CACHE)
+      .then(function(cache) {
+        return cache.keys()
+          .then(function (request_list) {
+            var result_list = request_list.map(function(request) {
+              return request.url;
+            }),
+              attachment_dict = {},
+              answer,
+              i, 
+              len;
+              
+            for (i = 0, len = result_list.length; i < len; i += 1) {
+              attachment_dict[result_list[i]] = {};
+            }
+            answer = {"error": null, data: attachment_dict};
+            if (my_event) {
+              resolve(my_event.ports[0].postMessage(answer));
+            }
+            resolve(answer);
+          });
+      })
+      .catch(function(error) {
+        var answer = {"error": {'message': error.toString()}};
+        if (my_event) {
+          reject(my_event.ports[0].postMessage(answer));
+        }
+        throw answer;
+      });
+  });
+}
+
+// delete a file from a cache
+function jio_removeAttachment(my_param, my_event) {
+  return new Promise(function (resolve, reject) { 
+    CURRENT_CACHE = my_param.id + "-v" + CURRENT_CACHE_VERSION;
+    return caches.open(CURRENT_CACHE)
+      .then(function(cache) {
+        request = new Request(my_param.name, {mode: 'no-cors'});
+        cache.delete(request)
+          .then(function(success) {
+            var answer = {"error": success ? null : {
+              'status': 404,
+              'message': 'Item not found in cache.'
+            }};
+            if (my_event) {
+              resolve(event.ports[0].postMessage(answer));
+            }
+            resolve(my_event);
+          });
+      })
+      .catch(function(error) {
+        var answer = {"error": {'message': error.toString()}};
+        if (my_event) {
+          reject(my_event.ports[0].postMessage(answer));
+        }
+        throw answer;
+      });
+  });
+}
+
+// add a file to a cache
+function jio_putAttachment(my_param, my_event) {
+  return new Promise(function (resolve, reject) {
+    CURRENT_CACHE = my_param.id + "-v" + CURRENT_CACHE_VERSION;
+    return caches.open(CURRENT_CACHE)
+      .then(function(cache) {
+
+        // If event.data.url isn't a valid URL, new Request() will throw a 
+        // TypeError which will be handled by the outer .catch().
+        // Hardcode {mode: 'no-cors} since the default for new Requests 
+        // constructed from strings is to require CORS, and we don't have any 
+        // way of knowing whether an arbitrary URL that a user entered 
+        // supports CORS.
+        request = new Request(my_param.name, {mode: 'no-cors'});
+        response = new Response(my_param.content);
+        return cache.put(request, response);
+      })
+      .then(function() {
+        var answer = {"error": null};
+        if (my_event) {
+          resolve(my_event.ports[0].postMessage(answer));
+        }
+        resolve(answer);
+      })
+      .catch(function(error) {
+        var answer = {"error": {'message': error.toString()}};
+        if (my_event) {
+          reject(my_event.ports[0].postMessage(answer));
+        }
+        throw answer;
+      });
+  });
+}
+
+// get a file from cache
+function jio_getAttachment(my_param, my_event) {
+  return new Promise(function (resolve, reject) {
+    CURRENT_CACHE = my_param.id + "-v" + CURRENT_CACHE_VERSION;
+    return caches.open(CURRENT_CACHE)
+      .then(function(cache) {
+        var mime_type;
+        return cache.match(my_param.name)
+          .then(function(response) {
+            var start,
+              end,
+              split;
+
+            is_range = response.headers.get('range') || my_param.options.range;
+            mime_type = response.headers.get('Content-Type');
+
+            // range requests
+            if (response.headers.get('range') || my_param.options.range) {
+              split = is_range.split("bytes=")[1].split("-");
+              start = split[0];
+              end = split[1];
+
+              return response.arrayBuffer()
+                .then(function (array_buffer) {
+                  var dataView = new DataView(array_buffer.slice(start, end));
+                  return new Blob([dataView], {"type": mime_type});
+                });
+            
+            // XXX improve - regular requests
+            } else {
+            
+              // the response body is a ReadableByteStream which cannot be
+              // passed back through postMessage apparently. This link
+              // https://jakearchibald.com/2015/thats-so-fetch/ explains
+              // what can be done to get a Blob to return
+
+              // However, calling blob() does not allow to set mime-type, so
+              // currently the blob is created, read, stored as new blob
+              // and returned (to be read again)
+              // https://github.com/whatwg/streams/blob/master/docs/ReadableByteStream.md
+              return response.clone().blob();
+            }
+          })
+          .then(function (response_as_blob) {
+            return new Promise(function(resolve) {
+              var blob_reader = new FileReader();
+              blob_reader.onload = resolve;
+              blob_reader.readAsText(response_as_blob);
+            });
+          })
+          // XXX why am I doing this? just to add the mime-type?
+          .then(function (reader_response) {
+            return new Blob([reader_response.target.result], {"type": mime_type});
+          })
+          .then(function (converted_response) {
+            if (converted_response) {
+              answer = {"error": null, data: converted_response};
+            } else {
+              answer = {"error": {'status': 404, 'message': 'Item not found in cache.'}};
+            }
+            if (my_event) {
+              resolve(my_event.ports[0].postMessage(answer));
+            }
+            resolve(answer);
+          });
+        })
+      .catch(function(error) {
+        var answer = {"error": {'message': error.toString()}};
+        if (my_event) {
+          reject(my_event.ports[0].postMessage(answer));
+        }
+        throw answer;
+      });
+  }); 
+}
+
+// listeners
 
 // runs while an existing worker runs or nothing controls the page (update here)
 self.addEventListener('install', function (event) {
@@ -130,11 +410,13 @@ self.addEventListener('install', function (event) {
                   // consider indexStorage?
                   return response.blob(); 
                 });
-            } 
+            }
+            console.log("FILE IS ALREADY CACHED")
             return cached_file_response.blob();
       })
           .then(function(blob) {
 
+            // this should go into indexedDB!
             // parse file, remove whitespace, not 2-depths boundaries in index
             function compressAndIndexFile(my_blob) {
               var file_reader = new FileReader(),
@@ -172,7 +454,7 @@ self.addEventListener('install', function (event) {
                   }
                   offset += chunk_size;
                   //if (offset >= my_blob.size) {
-                  if (offset >= 8193) {
+                  if (offset >= 16385) {
                     console.log("DONE")
                     console.log(boundary_dict);
                     request = new Request("index.VoxForgeDict.txt", {mode: 'no-cors'});
@@ -181,7 +463,6 @@ self.addEventListener('install', function (event) {
                       .then(function () {
                         return resolve(my_blob);
                       });
-                    
                   }
                   return loopOverBlob(offset);
                 };
@@ -202,7 +483,7 @@ self.addEventListener('install', function (event) {
           .then(function(what) {
             console.log("DONE")
             console.log(what)
-            return cache.put(prefetch_url, what);
+            return cache.put(prefetch_url, new Response(what));
             // ================
             // Use the original URL without the cache-busting parameter as 
             // the key for cache.put().
@@ -318,287 +599,24 @@ self.addEventListener('fetch', function (event) {
 */
 
 self.addEventListener('message', function (event) {
-  var param = event.data,
-    item,
-    mime_type,
-    result_list;
-  
+  var param = event.data;
   switch (param.command) {
-    
-    // XXX make methods callable from within this file, too
-    // case 'post' not possible
-    
-    // test if cache exits
     case 'get':
-      caches.keys().then(function(key_list) {
-        var i, len;
-        CURRENT_CACHE = param.id + "-v" + CURRENT_CACHE_VERSION;
-        for (i = 0, len = key_list.length; i < len; i += 1) {
-          if (key_list[i] === CURRENT_CACHE) {
-            event.ports[0].postMessage({
-              error: null
-            });
-          }
-        }
-      
-        // event.ports[0] corresponds to the MessagePort that was transferred 
-        // as part of the controlled page's call to controller.postMessage(). 
-        // Therefore, event.ports[0].postMessage() will trigger the onmessage
-        // handler from the controlled page. It's up to you how to structure 
-        // the messages that you send back; this is just one example.
-        event.ports[0].postMessage({
-          error: {
-            "status": 404,
-            "message": "Cache does not exist."
-          }
-        });
-      })
-      .catch(function(error) {
-        event.ports[0].postMessage({
-          error: {'message': error.toString()}
-        });
-      });
-
-      break;
-
-    // create new cache by opening it. this will only run once per cache/folder
+      return jio_get(param, event);
     case 'put':
-      if (param.id === "self") {
-        event.port[0].postMessage({
-          error: {
-            'status': 406,
-            'message': "Reserved cache name. Please choose a different name."
-          }
-        });
-      }
-      CURRENT_CACHE = param.id + "-v" + CURRENT_CACHE_VERSION;
-      CURRENT_CACHE_DICT[param.id] = CURRENT_CACHE;
-      caches.open(CURRENT_CACHE)
-        .then(function() {
-          event.ports[0].postMessage({
-            error: null,
-            data: param.id
-          });
-        })
-        .catch(function(error) {
-          event.ports[0].postMessage({
-            error: {'message': error.toString()}
-          });
-        });
-    break;
-    
-    // remove a cache
+      return jio_put(param, event);
     case 'remove':
-      delete CURRENT_CACHE_DICT[param.id];
-      CURRENT_CACHE = param.id + "-v" + CURRENT_CACHE_VERSION;
-      caches.delete(CURRENT_CACHE)
-        .then(function() {
-          event.ports[0].postMessage({
-            error: null
-          });
-        })
-        .catch(function(error) {
-          event.ports[0].postMessage({
-            error: {'message': error.toString()}
-          });
-        });
-    break;
-
-    // return list of caches ~ folders
+      return jio_remove(param, event);
     case 'allDocs':
-      caches.keys().then(function(key_list) {
-        var result_list = [],
-          id,
-          i;
-        for (i = 0; i < key_list.length; i += 1) {
-          id = key_list[i].split("-v")[0];
-          if (id !== "self") {
-            result_list.push({
-              "id": id,
-              "value": {}
-            });
-          }
-        }
-        event.ports[0].postMessage({
-          error: null,
-          data: result_list
-        });
-      })
-      .catch(function(error) {
-        event.ports[0].postMessage({
-          error: {'message': error.toString()}
-        });
-      });
-    break;
-    
-    // return all urls stored in a cache
+      return jio_allDocs(param, event);
     case 'allAttachments':
-      CURRENT_CACHE = param.id + "-v" + CURRENT_CACHE_VERSION;
-
-      // returns a list of the URLs corresponding to the Request objects
-      // that serve as keys for the current cache. We assume all files
-      // are kept in cache, so there will be no network requests.
-
-      caches.open(CURRENT_CACHE)
-        .then(function(cache) {
-          cache.keys()
-          .then(function (request_list) {
-            var result_list = request_list.map(function(request) {
-              return request.url;
-            }),
-              attachment_dict = {},
-              i, 
-              len;
-              
-            for (i = 0, len = result_list.length; i < len; i += 1) {
-              attachment_dict[result_list[i]] = {};
-            }
-            event.ports[0].postMessage({
-              error: null,
-              data: attachment_dict
-            });
-          });
-        })
-        .catch(function(error) {
-          event.ports[0].postMessage({
-            error: {'message': error.toString()}
-          });
-        });
-    break;
-  
+      return jio_allAttachments(param, event);
     case 'removeAttachment':
-      CURRENT_CACHE = param.id + "-v" + CURRENT_CACHE_VERSION;
-
-      caches.open(CURRENT_CACHE)
-        .then(function(cache) {
-          request = new Request(param.name, {mode: 'no-cors'});
-          cache.delete(request)
-            .then(function(success) {
-              event.ports[0].postMessage({
-                error: success ? null : {
-                  'status': 404,
-                  'message': 'Item not found in cache.'
-                }
-              });
-            });
-        })
-        .catch(function(error) {
-          event.ports[0].postMessage({
-            error: {'message': error.toString()}
-          });
-        });
-    break;
-
-    case 'getAttachment':
-      CURRENT_CACHE = param.id + "-v" + CURRENT_CACHE_VERSION;
-      caches.open(CURRENT_CACHE)
-        .then(function(cache) {
-          return cache.match(param.name)
-          .then(function(response) {
-            var is_range = response.headers.get('range') || param.options.range,
-              start,
-              end,
-              split, blobber;
-
-            mime_type = response.headers.get('Content-Type');
-            console.log("GEtting attachment")
-            console.log(is_range)
-            // range requests
-            if (is_range) {
-              split = is_range.split("bytes=")[1].split("-");
-              start = split[0];
-              end = split[1];
-              console.log("finished getAttachment")
-              console.log("returning blob")
-              return response.arrayBuffer()
-                .then(function (array_buffer) {
-                  var dataView = new DataView(array_buffer.slice(start, end));
-                  return new Blob([dataView], {"type": mime_type});
-                });
-
-            } else {
-            
-              // the response body is a ReadableByteStream which cannot be
-              // passed back through postMessage apparently. This link
-              // https://jakearchibald.com/2015/thats-so-fetch/ explains
-              // what can be done to get a Blob to return
-              
-              // XXX Improve
-              // However, calling blob() does not allow to set mime-type, so
-              // currently the blob is created, read, stored as new blob
-              // and returned (to be read again)
-              // https://github.com/whatwg/streams/blob/master/docs/ReadableByteStream.md
-              return response.clone().blob();
-            }
-          })
-          .then(function (response_as_blob) {
-            return new Promise(function(resolve) {
-              var blob_reader = new FileReader();
-              blob_reader.onload = resolve;
-              blob_reader.readAsText(response_as_blob);
-            });
-          })
-          // XXX why am I doing this? just to add the mime-type?
-          .then(function (reader_response) {
-            console.log(reader_response)
-            return new Blob([reader_response.target.result], {
-              "type": mime_type
-            });
-          })
-          .then(function (converted_response) {
-            console.log(converted_response)
-            if (converted_response) {
-              event.ports[0].postMessage({
-                error: null,
-                data: converted_response
-              });
-            } else {
-              event.ports[0].postMessage({
-                error: {
-                  'status': 404,
-                  'message': 'Item not found in cache.'
-                }
-              });
-            }
-          });
-        })
-        .catch(function(error) {
-          console.log("Hum")
-          console.log(error)
-          event.ports[0].postMessage({
-            error: {'message': error.toString()}
-          });
-        });
-    break;  
-      
+      return jio_removeAttachment(param, event);
     case 'putAttachment':
-      CURRENT_CACHE = param.id + "-v" + CURRENT_CACHE_VERSION;
-      caches.open(CURRENT_CACHE)
-        .then(function(cache) {
-
-          // If event.data.url isn't a valid URL, new Request() will throw a 
-          // TypeError which will be handled by the outer .catch().
-          // Hardcode {mode: 'no-cors} since the default for new Requests 
-          // constructed from strings is to require CORS, and we don't have any 
-          // way of knowing whether an arbitrary URL that a user entered 
-          // supports CORS.
-          request = new Request(param.name, {mode: 'no-cors'});
-          response = new Response(param.content);
-          return cache.put(request, response);
-        })
-        .then(function() {
-          event.ports[0].postMessage({
-            error: null
-          });
-        })
-        .catch(function(error) {
-          event.ports[0].postMessage({
-            error: {'message': error.toString()}
-          });
-        });
-    break;
-    
-    // refuse all else
+      return jio_putAttachment(param, event);
+    case 'getAttachment':
+      return jio_getAttachment(param, event);
     default:
       throw 'Unknown command: ' + event.data.command;
   }
