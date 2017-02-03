@@ -42,7 +42,7 @@
       var link = document.createElement("a");
       link.href = (window.URL || window.webkitURL).createObjectURL(blob);
       link.download = filename || 'output.wav';
-      link.textContent = "Download Me"
+      link.textContent = "Download Meno";
       return link;
     }
 
@@ -145,6 +145,117 @@
       my_target["on" + my_type] = my_callback;
     }
     return new RSVP.Promise(itsANonResolvableTrap, canceller);
+  }
+
+  function getCharacterPointers(my_input_list) {
+    var output_array = [],
+      len = my_input_list.length,
+      input_array,
+      input_value,
+      single,
+      double,
+      follow_up,
+      i;
+    for (i = 0; i < len; i ++) {
+      input_array = [];
+      input_value = my_input_list[i];
+      single = input_value.charAt(0);
+      double = input_value.charAt(1);
+      // XXX hm
+      follow_up = String.fromCharCode(double.charCodeAt(0) + 1);
+      input_array.push(single + double);
+      input_array.push(single + follow_up);
+      output_array.push(input_array);
+    }
+    return output_array;
+      
+    
+    /*
+    return my_input_list.reduce(function(current, value) {
+      var single = value.charAt(0),
+        double = value.charAt(1),
+        follow_up = String.fromCharCode(double.charCodeAt(0) + 1),
+        output_array = [];
+      console.log(single)
+      console.log(double)
+      console.log(follow_up)
+      output_array.push(single + double);
+      output_array.push(single + follow_up);
+      return current.push(output_array);
+    }, []);
+    */
+  }
+
+  function setPointer(my_index, my_pointer) {
+    if (my_index.hasOwnProperty(my_pointer)) {
+      return my_index[my_pointer];
+    }
+    console.log(my_pointer)
+    if (my_pointer[1] === "Z") {
+      throw new Error("Better stop looping before reaching infinity, non?")
+    }
+    console.log(my_pointer)
+    console.log("did not find: " + my_pointer + " going to " + my_pointer[0] + String.fromCharCode(my_pointer.charCodeAt(1) + 1))
+    return setPointer(my_index, my_pointer[0] + String.fromCharCode(my_pointer.charCodeAt(1) + 1))
+  }
+
+  function getBoundaryList(my_pointer_list, my_index) {
+    var output_list = [],
+      len = my_pointer_list.length,
+      i,
+      start_pointer,
+      end_pointer;
+    console.log(my_pointer_list)
+    console.log(my_index)
+    
+    for (i = 0; i < len; i += 1) {
+      start_pointer = setPointer(my_index, my_pointer_list[i][0]) 
+      end_pointer = setPointer(my_index, my_pointer_list[i][1]);
+      output_list.push(start_pointer + "-" + end_pointer);
+    }
+    console.log("DONE POINTER")
+    console.log(output_list)
+    return output_list.join(",");
+  }
+
+  // check dictionary whether words to be spoken are in it, throw if not
+  // XXX this is a worker task, no?
+  function validateAgainstDict(my_gadget, my_input_value) {
+    console.log("starting with ", my_input_value)
+    return new RSVP.Queue()
+      .push(function () {
+        return my_gadget.jio_getAttachment("dictionary", "index.VoxForgeDict.txt", {
+          format: "text"
+        });
+      })
+      .push(function (my_index) {
+        var pointer_dict = JSON.parse(my_index);
+        console.log(pointer_dict);
+        console.log(my_input_value)
+        console.log(my_input_value.split(","))
+        console.log(getCharacterPointers(my_input_value.split(",")))
+        console.log("let's get boundaries")
+        return getBoundaryList(getCharacterPointers(my_input_value.split(",")), pointer_dict)
+      })
+      .push(function (boundary_list) {
+        console.log("setting range to ", boundary_list)
+          return my_gadget.jio_getAttachment("dictionary", "VoxForgeDict.txt", {
+            "range": "bytes=" + boundary_list,
+            "format": "text"
+          });
+        })
+        .push(function (my_dictionary_content) {
+          console.log(my_dictionary_content);
+          console.log("YEAH")
+          // look through this for the text from my_invput_value, return or missing words.
+
+        })
+        .push(undefined, function (my_error_list) {
+          console.log("NOPE")
+          console.log(my_error_list)
+          throw my_error_list
+          // words could not be found, throw the words, so user can update
+        });
   }
 
 
@@ -317,15 +428,7 @@
           return gadget.notify_clear();
         })
         .push(function () {
-          return gadget.jio_getAttachment("dictionary", "sample.txt", {
-            "range": "bytes=210-226",
-            "format": "text"
-          });
-        })
-        .push(function (my_text_content) {
-          console.log("WHAT DO I GET")
-          console.log(my_text_content);
-          //gadget.property_dict.is_recording = true;
+          gadget.property_dict.is_recording = true;
         });
     })
     
@@ -388,28 +491,36 @@
         form = props.element.querySelector(".kw-controls form");
 
       function form_submit_handler(my_event) {
-        var queue = new RSVP.Queue();
-
-        if (props.is_recording) {
-          // stop, update memory storage and dom with new file
-          form.querySelector("input[type='submit']").value = "Record";
-          queue.push(function () {
-            return gadget.notify_stop();
+        return new RSVP.Queue()
+          .push(function () {
+            my_event.preventDefault();
+            console.log("submit")
+            if (props.is_recording) {
+              
+              // stop, update memory storage and dom with new file
+              form.querySelector("input[type='submit']").value = "Record";
+              return gadget.notify_stop();
+            } else {
+              console.log("check if we can record")
+              // validate and record
+              return new RSVP.Queue()
+                .push(function () {
+                  var text_input = form.querySelector("input[type='text']");
+                  console.log(text_input.value)
+                  return validateAgainstDict(gadget, text_input.value);
+                })
+                .push(function (my_is_validated_entry) {
+                  if (my_is_validated_entry) {
+                    return gadget.notify_record();
+                  }
+                  console.log("NOPE, broken on ", my_is_validated_entry);
+                  return;
+                });
+            }
+          })
+          .push(function () {
+            return false;
           });
-        } else {
-          // record
-          form.querySelector("input[type='submit']").value = "Stop";
-          queue.push(function () {
-            return gadget.notify_record();
-          });
-        }
-
-        queue.push(function () {
-          my_event.preventDefault();
-          return false;
-        });
-
-        return queue;
       }
       return loopEventListener(form, "submit", false, form_submit_handler);
     });

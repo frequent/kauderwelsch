@@ -79,140 +79,139 @@ self.addEventListener('install', function (event) {
       var cache_promise_list = DICTIONARY_URL_LIST.map(function(prefetch_url) {
         
         // check if file is already on cache
-        return cache.match(prefetch_url);
-      }).then(function(cached_file_response) {
-        var request,
-          url;
-
-        // file is not on cache yet
-        if (!cached_file_response) {
-          console.log("loading ", prefetch_url, " to be cached.")
-          // This constructs a new URL object using the service worker's script
-          // location as the base for relative URLs.
-          url = new URL(prefetch_url, location.href);
-
-          // Append a cache-bust=TIMESTAMP URL parameter to each URL's query 
-          // string. This is particularly important when precaching resources 
-          // that are later used in the fetch handler as responses directly, 
-          // without consulting the network (i.e. cache-first). If we were to 
-          // get back a response from the HTTP browser cache for this precaching 
-          // request then that stale response would be used indefinitely, or at 
-          // least until the next time the service worker script changes 
-          // triggering the install flow.
-          url.search += (url.search ? '&' : '?') + 'cache-bust=' +  Date.now();
+        return cache.match(prefetch_url)
+          .then(function(cached_file_response) {
+            var request,
+              url;
     
-          // It's very important to use {mode: 'no-cors'} if there is any chance
-          // that the resources being fetched are served off of a server that 
-          // doesn't support CORS. See
-          // (http://en.wikipedia.org/wiki/Cross-origin_resource_sharing).
-          // If the server doesn't support CORS the fetch() would fail if the 
-          // default mode of 'cors' was used for the fetch() request. The drawback
-          // of hardcoding {mode: 'no-cors'} is that the response from all 
-          // cross-origin hosts will always be opaque
-          // (https://slightlyoff.github.io/ServiceWorker/spec/service_worker/index.html#cross-origin-resources)
-          // and it is not possible to determine whether an opaque response 
-          // represents a success or failure
-          // (https://github.com/whatwg/fetch/issues/14).
-            request = new Request(url, {mode: 'no-cors'});
-
-          // XXX differentiate handler based on desired content-type? 
-          // (ArrayBuffer, BinaryString, DataUrl, String)
-          return fetch(request)
-            .then(function(response) {
-              if (response.status >= 400) {
-                throw new Error('request for ' + prefetch_url +
-                  ' failed with status ' + response.statusText);
-              }
-            
-              // ======== 
-              // XXX the whole indexing of the file should be done somewhere
-              // else. has nothing to do with fetching and caching files
-              // consider indexStorage?
-              return response.blob(); 
-            });
-        } 
-        return cached_file_response.blob();
-      })
-      .then(function(blob) {
-
-        // parse file, remove whitespace, not 2-depths boundaries in index
-        function compressAndIndexFile(my_blob) {
-          var file_reader = new FileReader(),
-            chunk_size = 1024,
-            offset = 0,
-            boundary_dict = {},
-            hang_over = "",
-            pos = 0;
-          return new Promise(function (resolve, reject) {
-            file_reader.onload = function (my_event) {
-              var chunk = my_event.target.result,
-                line_list = chunk.split(LINE_BREAK).filter(Boolean),
-                len = line_list.length,
-                i,
-                iterator,
-                line,
-                request,
-                response;
-              for (i = 0; i < len; i += 1) {
-                line = line_list[i];
-                if (i === 0) {
-                  line = hang_over + line;
-                  hang_over = "";
-                }
-                iterator = line[0] + (line[1] || "");
-                if (boundary_dict.hasOwnProperty(iterator) === false) {
-                  boundary_dict[iterator] = pos;
-                }
-                if (HAS_LINE_BREAK.test(line) === false) {
-                  hang_over = line;
-                } else {
-                  hang_over = "";
-                  pos += line.length;
-                }
-              }
-              offset += chunk_size;
-              //if (offset >= my_blob.size) {
-              if (offset >= 8193) {
-                console.log("DONE")
-                console.log(boundary_dict);
-                request = new Request("index.VoxForgeDict.txt", {mode: 'no-cors'});
-                response = new Response(boundary_dict);
-                return cache.put(request, response)
-                  .then(function () {
-                    return resolve(nmy_blob);
-                  });
+            // file is not on cache yet
+            if (!cached_file_response) {
+              console.log("loading ", prefetch_url, " to be cached.")
+              // This constructs a new URL object using the service worker's script
+              // location as the base for relative URLs.
+              url = new URL(prefetch_url, location.href);
+    
+              // Append a cache-bust=TIMESTAMP URL parameter to each URL's query 
+              // string. This is particularly important when precaching resources 
+              // that are later used in the fetch handler as responses directly, 
+              // without consulting the network (i.e. cache-first). If we were to 
+              // get back a response from the HTTP browser cache for this precaching 
+              // request then that stale response would be used indefinitely, or at 
+              // least until the next time the service worker script changes 
+              // triggering the install flow.
+              url.search += (url.search ? '&' : '?') + 'cache-bust=' +  Date.now();
+        
+              // It's very important to use {mode: 'no-cors'} if there is any chance
+              // that the resources being fetched are served off of a server that 
+              // doesn't support CORS. See
+              // (http://en.wikipedia.org/wiki/Cross-origin_resource_sharing).
+              // If the server doesn't support CORS the fetch() would fail if the 
+              // default mode of 'cors' was used for the fetch() request. The drawback
+              // of hardcoding {mode: 'no-cors'} is that the response from all 
+              // cross-origin hosts will always be opaque
+              // (https://slightlyoff.github.io/ServiceWorker/spec/service_worker/index.html#cross-origin-resources)
+              // and it is not possible to determine whether an opaque response 
+              // represents a success or failure
+              // (https://github.com/whatwg/fetch/issues/14).
+                request = new Request(url, {mode: 'no-cors'});
+    
+              // XXX differentiate handler based on desired content-type? 
+              // (ArrayBuffer, BinaryString, DataUrl, String)
+              return fetch(request)
+                .then(function(response) {
+                  if (response.status >= 400) {
+                    throw new Error('request for ' + prefetch_url +
+                      ' failed with status ' + response.statusText);
+                  }
                 
-              }
-              return loopOverBlob(offset);
-            };
-            file_reader.onerror = function (my_event) {
-              reject(my_event);
-            };
-            
-            function loopOverBlob(my_offset) {
-              return file_reader.readAsText(
-                blob.slice(my_offset, my_offset += chunk_size)
-              );
-            }
-            return loopOverBlob(offset);
-          });              
-        }
-
-        return compressAndIndexFile(blob);
+                  // ======== 
+                  // XXX the whole indexing of the file should be done somewhere
+                  // else. has nothing to do with fetching and caching files
+                  // consider indexStorage?
+                  return response.blob(); 
+                });
+            } 
+            return cached_file_response.blob();
       })
-      .then(function(what) {
-        console.log("DONE")
-        console.log(what)
-        return cache.put(prefetch_url, what);
-        // ================
-        // Use the original URL without the cache-busting parameter as 
-        // the key for cache.put().
-        // XXX Use jIO interface here, too after moving out the methods
-        // return cache.put(prefetch_url, response);
-      }).catch(function(error) {
-        console.error('Not caching ' + prefetch_url + ' due to ' + error);
-      });
+          .then(function(blob) {
 
+            // parse file, remove whitespace, not 2-depths boundaries in index
+            function compressAndIndexFile(my_blob) {
+              var file_reader = new FileReader(),
+                chunk_size = 1024,
+                offset = 0,
+                boundary_dict = {},
+                hang_over = "",
+                pos = 0;
+              return new Promise(function (resolve, reject) {
+                file_reader.onload = function (my_event) {
+                  var chunk = my_event.target.result,
+                    line_list = chunk.split(LINE_BREAK).filter(Boolean),
+                    len = line_list.length,
+                    i,
+                    iterator,
+                    line,
+                    request,
+                    response;
+                  for (i = 0; i < len; i += 1) {
+                    line = line_list[i];
+                    if (i === 0) {
+                      line = hang_over + line;
+                      hang_over = "";
+                    }
+                    iterator = line[0] + (line[1] || "");
+                    if (boundary_dict.hasOwnProperty(iterator) === false) {
+                      boundary_dict[iterator] = pos;
+                    }
+                    if (HAS_LINE_BREAK.test(line) === false) {
+                      hang_over = line;
+                    } else {
+                      hang_over = "";
+                      pos += line.length;
+                    }
+                  }
+                  offset += chunk_size;
+                  //if (offset >= my_blob.size) {
+                  if (offset >= 8193) {
+                    console.log("DONE")
+                    console.log(boundary_dict);
+                    request = new Request("index.VoxForgeDict.txt", {mode: 'no-cors'});
+                    response = new Response(JSON.stringify(boundary_dict));
+                    return cache.put(request, response)
+                      .then(function () {
+                        return resolve(my_blob);
+                      });
+                    
+                  }
+                  return loopOverBlob(offset);
+                };
+                file_reader.onerror = function (my_event) {
+                  reject(my_event);
+                };
+                
+                function loopOverBlob(my_offset) {
+                  return file_reader.readAsText(
+                    blob.slice(my_offset, my_offset += chunk_size)
+                  );
+                }
+                return loopOverBlob(offset);
+              });              
+            }
+            return compressAndIndexFile(blob);
+          })
+          .then(function(what) {
+            console.log("DONE")
+            console.log(what)
+            return cache.put(prefetch_url, what);
+            // ================
+            // Use the original URL without the cache-busting parameter as 
+            // the key for cache.put().
+            // XXX Use jIO interface here, too after moving out the methods
+            // return cache.put(prefetch_url, response);
+          }).catch(function(error) {
+            console.error('Not caching ' + prefetch_url + ' due to ' + error);
+          });
+      });
       return Promise.all(cache_promise_list).then(function() {
         console.log('Pre-fetching complete.');
       });
@@ -519,17 +518,17 @@ self.addEventListener('message', function (event) {
 
             } else {
             
-            // the response body is a ReadableByteStream which cannot be
-            // passed back through postMessage apparently. This link
-            // https://jakearchibald.com/2015/thats-so-fetch/ explains
-            // what can be done to get a Blob to return
-            
-            // XXX Improve
-            // However, calling blob() does not allow to set mime-type, so
-            // currently the blob is created, read, stored as new blob
-            // and returned (to be read again)
-            // https://github.com/whatwg/streams/blob/master/docs/ReadableByteStream.md
-            return response.clone().blob();
+              // the response body is a ReadableByteStream which cannot be
+              // passed back through postMessage apparently. This link
+              // https://jakearchibald.com/2015/thats-so-fetch/ explains
+              // what can be done to get a Blob to return
+              
+              // XXX Improve
+              // However, calling blob() does not allow to set mime-type, so
+              // currently the blob is created, read, stored as new blob
+              // and returned (to be read again)
+              // https://github.com/whatwg/streams/blob/master/docs/ReadableByteStream.md
+              return response.clone().blob();
             }
           })
           .then(function (response_as_blob) {
