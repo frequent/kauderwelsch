@@ -65,8 +65,8 @@
           return RSVP.all([
             my_gadget_list[0].render({
               "serviceworker_url": 'gadget_voxforge_serviceworker.js?some=thing',
-              "scope": "./",
-              "worker_url": 'gadget_voxforge_lexicon_worker.js'
+              "scope": "./"
+              //, "prefetch_url_list": ['VoxForgeDict.txt']
             }),
             my_gadget_list[1].render()
           ]);
