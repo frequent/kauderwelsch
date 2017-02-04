@@ -6,16 +6,6 @@
   /////////////////////////////
   // some methods
   /////////////////////////////
-  
-  function initializeStorage(my_gadget, my_name) {
-    return new RSVP.Queue()
-      .push(function () {
-        return my_gadget.setActiveStorage([my_name]);
-      })
-      .push(function () {
-        my_gadget.routeStorageRequest("createJIO", {"type": my_name});
-      });
-  }
 
   rJS(window)
 
@@ -34,17 +24,13 @@
           my_gadget.property_dict.element = my_element;
           my_gadget.property_dict.storage_dict = {};
           my_gadget.property_dict.storage_dict.active = null;
-          return RSVP.all([
-            my_gadget.getDeclaredGadget("jio_gadget")
-          ]);
+          return my_gadget.getDeclaredGadget("jio_gadget");
         })
-        .push(function (my_declared_gadget_list) {
-          return RSVP.all([
-            my_declared_gadget_list[0].render({"label": "storage-serviceworker"}),
-          ]);
+        .push(function (my_declared_gadget) {
+          return my_declared_gadget.render({"label": "storage-serviceworker"});
         })
-        .push(function (my_rendered_list) {
-          my_gadget.property_dict.storage_dict.serviceworker = my_rendered_list[0];
+        .push(function (my_rendered_gadget) {
+          my_gadget.property_dict.storage_dict.serviceworker = my_rendered_gadget;
         });
     })
 
@@ -71,16 +57,19 @@
         .push(function (my_gadget_list) {
           return RSVP.all([
             my_gadget_list[0].render({
-              "serviceworker_url": 'gadget_voxforge_serviceworker.js',
+              "serviceworker_url": 'gadget_voxforge_serviceworker.js?some=thing',
               "scope": "./",
               "worker_url": 'gadget_voxforge_lexicon_worker.js'
             }),
             my_gadget_list[1].render({})
           ]);
         })
-        //.push(function () {
-        //  return initializeStorage(gadget, "serviceworker");
-        //});
+        .push(function () {
+          return gadget.setActiveStorage(["serviceworker"]);
+        })
+        .push(function () {
+          return gadget.routeStorageRequest("createJIO", {"type": "serviceworker"});
+        });
     })
     
     .declareMethod('setActiveStorage', function (my_type) {
@@ -97,7 +86,6 @@
     })
 
     // jIO bridge
-    // expose calling the serviceworker to this and other gadgets
     .allowPublicAcquisition("setActiveStorage", function (param_list) {
       return this.setActiveStorage(param_list);
     })
@@ -136,3 +124,4 @@
     });
     
 }(window, rJS, RSVP));
+
