@@ -24,13 +24,20 @@
           my_gadget.property_dict.element = my_element;
           my_gadget.property_dict.storage_dict = {};
           my_gadget.property_dict.storage_dict.active = null;
-          return my_gadget.getDeclaredGadget("jio_gadget");
+          return my_gadget.getDeclaredGadget("jio_gadget_serviceworker");
         })
         .push(function (my_declared_gadget) {
           return my_declared_gadget.render({"label": "storage-serviceworker"});
         })
         .push(function (my_rendered_gadget) {
           my_gadget.property_dict.storage_dict.serviceworker = my_rendered_gadget;
+          return my_gadget.getDeclaredGadget("jio_gadget_indexeddb");
+        })
+        .push(function (my_declared_gadget) {
+          return my_declared_gadget.render({"label": "storage-indexeddb"});
+        })
+        .push(function (my_rendered_gadget) {
+          my_gadget.property_dict.storage_dict.indexeddb = my_rendered_gadget;
         });
     })
 
@@ -61,8 +68,16 @@
               "scope": "./",
               "worker_url": 'gadget_voxforge_lexicon_worker.js'
             }),
-            my_gadget_list[1].render({})
+            my_gadget_list[1].render()
           ]);
+        })
+        .push(function () {
+          return gadget.setActiveStorage(["indexeddb"]);
+        })
+        .push(function () {
+          return gadget.routeStorageRequest("createJIO", {"type": "indexeddb",
+            "database": "lexicon"
+          });
         })
         .push(function () {
           return gadget.setActiveStorage(["serviceworker"]);
