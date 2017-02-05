@@ -91,13 +91,17 @@
 
   // refreshing should not be necessary if scope is claimed on activate
   function claimScope(registration) {
+    return;
+    /*
+    // XXX something is not in async - install does not wait for prefetching
     return new RSVP.Promise(function (resolve, reject) {
-      if (registration.active.state === 'activated') {
+      if (registration.active && registration.active.state === 'activated') {
         resolve();
       } else {
         reject(new Error("Please refresh to initialize serviceworker."));
       }
     });
+    */
   }
 
   rJS(window)
@@ -107,13 +111,6 @@
     /////////////////////////////
     .ready(function (my_gadget) {
       my_gadget.property_dict = {};
-    //  return new RSVP.Queue()
-    //    .push(function () {
-    //      return my_gadget.getElement();
-    //    })
-    //    .push(function (my_element) {
-    //      my_gadget.property_dict.element = my_element;
-    //    });
     })
 
     /////////////////////////////
