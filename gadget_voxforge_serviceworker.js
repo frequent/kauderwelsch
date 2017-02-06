@@ -28,6 +28,7 @@
 // list all caches
 // caches.keys().then(function(key_list) {console.log(key_list);return caches.open(key_list[0]);}).then(function(cache) {return cache.keys().then(function(request_list) {console.log(request_list);})});
 
+
 var CURRENT_CACHE_VERSION = 1;
 var CURRENT_CACHE;
 var CURRENT_CACHE_DICT = {
@@ -37,14 +38,25 @@ var CURRENT_CACHE_DICT = {
 
 var LINE_BREAK = /(.*?[\r\n])/g;
 var HAS_LINE_BREAK = /\r|\n/;
+var PREFETCH_URL_LIST = [];
 
-// could this be fetched from a repo?
-// prefetch
-var DICTIONARY_URL_LIST = [
-  "VoxForgeDict.txt"
-];
+// URL parameter parsing
 
-// check if a cache exists
+function deserializeUrlParameters(query_string) {
+  return new Map(query_string.split('&').map(function(key_value_pair) {
+    var splits = key_value_pair.split('=');
+    var key = decodeURIComponent(splits[0]);
+    var value = decodeURIComponent(splits[1]);
+    if (value.indexOf(',') >= 0) {
+      value = value.split(',');
+    }
+
+    return [key, value];
+  }));
+}
+
+// jIO API
+
 function jio_get(my_param, my_event) {
   return new Promise(function (resolve, reject) {
     return caches.keys()
@@ -339,15 +351,23 @@ function jio_getAttachment(my_param, my_event) {
             resolve(answer);
           });
         })
-      .catch(function(error) {
-        var answer = {"error": {'message': error.toString()}};
-        if (my_event) {
-          reject(my_event.ports[0].postMessage(answer));
-        }
-        throw answer;
-      });
+        .catch(function(error) {
+          var answer = {"error": {'message': error.toString()}};
+          if (my_event) {
+            reject(my_event.ports[0].postMessage(answer));
+          }
+          throw answer;
+        });
   }); 
 }
+
+// here we go:
+self.param_dict = deserializeUrlParameters(location.search.substring(1));
+
+if (self.param_dict.hasOwnProperty('prefetch_url_list')) {
+  PREFETCH_URL_LIST = self.param_dict['prefetch_url_list'];
+}
+
 
 // listeners
 
@@ -356,7 +376,7 @@ self.addEventListener('install', function (event) {
 
   event.waitUntil(caches.open(CURRENT_CACHE_DICT.dictionary)
     .then(function(cache) {
-      var cache_promise_list = DICTIONARY_URL_LIST.map(function(prefetch_url) {
+      var cache_promise_list = PREFETCH_URL_LIST.map(function(prefetch_url) {
         
         // check if file is already on cache
         return cache.match(prefetch_url)
@@ -417,6 +437,18 @@ self.addEventListener('install', function (event) {
           .then(function(blob) {
 
             // this should go into indexedDB!
+            // not on prefetch either
+            // we could check in recorder if the index exists, if not
+            // still the question is how would I run this properly into
+            // indexeddb, because if I want to cache stuff it should
+            // be done in the right format directly.
+            // this is probably what mapping storage does, so the question is
+            // how to differentiate between files I want to cache as is and files
+            // I would like to map+store
+            // duplicate? no, prefetch files need to be indexed, everything else
+            // will be cached normally in another cache. I can make as many 
+            // caches as I want, so no problem.
+            
             // parse file, remove whitespace, not 2-depths boundaries in index
             function compressAndIndexFile(my_blob) {
               var file_reader = new FileReader(),
@@ -511,7 +543,7 @@ self.addEventListener('install', function (event) {
 
 // runs active page, changes here (like deleting old cache) breaks page
 self.addEventListener('activate', function (event) {
-
+  
   var expected_cache_name_list = Object.keys(CURRENT_CACHE_DICT).map(function(key) {
     return CURRENT_CACHE_DICT[key];
   });

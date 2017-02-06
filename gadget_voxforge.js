@@ -15,7 +15,6 @@
     .ready(function (my_gadget) {
       my_gadget.property_dict = {};
 
-      // initialize all required storages (only serviceworker so far)
       return new RSVP.Queue()
         .push(function () {
           return my_gadget.getElement();
@@ -64,9 +63,9 @@
         .push(function (my_gadget_list) {
           return RSVP.all([
             my_gadget_list[0].render({
-              "serviceworker_url": 'gadget_voxforge_serviceworker.js?some=thing',
-              "scope": "./"
-              //, "prefetch_url_list": ['VoxForgeDict.txt']
+              "serviceworker_url": 'gadget_voxforge_serviceworker.js',
+              "scope": "./",
+              "prefetch_url_list": ['VoxForgeDict.txt']
             }),
             my_gadget_list[1].render()
           ]);

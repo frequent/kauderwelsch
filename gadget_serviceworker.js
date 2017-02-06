@@ -4,6 +4,7 @@
   "use strict";
 
   var SW = navigator.serviceWorker;
+  var PRE = "?prefetch_url_list=";
 
   /////////////////////////////
   // some methods
@@ -53,14 +54,16 @@
         return SW.getRegistration();
       })
       .push(function (is_registered_worker) {
-        
+        var url = my_option_dict.serviceworker_url || 'serviceworker.js';
+
+        // XXX pass more ... sexy
+        if (my_option_dict.prefetch_url_list) {
+          url += PRE + my_option_dict.prefetch_url_list;
+        }
+
         // XXX What if this isn't mine?
         if (!is_registered_worker) {
-          return SW.register(
-            my_option_dict.serviceworker_url || 'serviceworker.js', {
-              "scope": my_option_dict.scope || './'
-            }
-          );   
+          return SW.register(url, {"scope": my_option_dict.scope || './'});   
         }
         return is_registered_worker;
       });
