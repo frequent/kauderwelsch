@@ -13,16 +13,10 @@
     // ready
     /////////////////////////////
     .ready(function (my_gadget) {
-      my_gadget.property_dict = {};
+      my_gadget.property_dict = {"storage_dict": {"active": null}};
 
       return new RSVP.Queue()
         .push(function () {
-          return my_gadget.getElement();
-        })
-        .push(function (my_element) {
-          my_gadget.property_dict.element = my_element;
-          my_gadget.property_dict.storage_dict = {};
-          my_gadget.property_dict.storage_dict.active = null;
           return my_gadget.getDeclaredGadget("jio_gadget_serviceworker");
         })
         .push(function (my_declared_gadget) {
@@ -65,7 +59,8 @@
             my_gadget_list[0].render({
               "serviceworker_url": 'gadget_voxforge_serviceworker.js',
               "scope": "./",
-              "prefetch_url_list": ['VoxForgeDict.txt']
+              "prefetch_url_list": ['VoxForgeDict.txt'],
+              "worker": "gadget_voxforge_worker_mapping.js"
             }),
             my_gadget_list[1].render()
           ]);
@@ -74,6 +69,7 @@
           return gadget.setActiveStorage(["indexeddb"]);
         })
         .push(function () {
+          // this should have mapping storage on top
           return gadget.routeStorageRequest("createJIO", {"type": "indexeddb",
             "database": "lexicon"
           });
