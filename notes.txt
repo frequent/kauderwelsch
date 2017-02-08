@@ -1,3 +1,24 @@
+
+// POLYFILL: => https://developer.mozilla.org/en-US/docs/Web/API/Cache
+// this polyfill provides Cache.add(), Cache.addAll(), and CacheStorage.match(),
+// should not be needed for Chromium > 47 And Firefox > 39
+// importScripts('./serviceworker-cache-polyfill.js');
+// CONFLICTING CONTROLLERS/NO CONTROLLER
+// if using same scope (for example ./) => https://github.com/w3c/ServiceWorker/issues/921
+// hijack using claim() which triggers oncontrollerchange on other serviceworkers
+// => https://developer.mozilla.org/en-US/docs/Web/API/Clients/claim
+// can also be used to not have to refresh page
+// => https://davidwalsh.name/offline-recipes-service-workers
+// => https://serviceworke.rs/immediate-claim_service-worker_doc.html
+
+// STUFF
+// intro => https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API/Using_Service_Workers
+// intro => http://www.html5rocks.com/en/tutorials/service-worker/introduction/
+// selective cache => https://github.com/GoogleChrome/samples/blob/gh-pages/service-worker/selective-caching/service-worker.js
+// handling POST with indexedDB => https://serviceworke.rs/request-deferrer.html
+// prefetch during install => https://googlechrome.github.io/samples/service-worker/prefetch/
+// serve range from cache => https://googlechrome.github.io/samples/service-worker/prefetch-video/
+
 emscripten tutorial:
 http://blog.scottlogic.com/2014/03/12/native-code-emscripten-webgl-simmer-gently.html
 
