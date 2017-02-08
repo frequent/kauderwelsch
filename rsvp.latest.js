@@ -1,4 +1,4 @@
-(function(context) {
+(function(globals) {
 var define, requireModule;
 
 (function() {
@@ -130,12 +130,33 @@ define("rsvp/async",
   ["exports"],
   function(__exports__) {
     "use strict";
-
-    //var context_is_worker = typeof importScripts === 'function';
-    var contextGlobal = context || {};
-    var ContextMutationObserver = contextGlobal.MutationObserver || contextGlobal.WebKitMutationObserver;
+    var browserGlobal = (typeof window !== 'undefined') ? window : {};
+    var BrowserMutationObserver = browserGlobal.MutationObserver || browserGlobal.WebKitMutationObserver;
     var async;
-    var local = (typeof context !== 'undefined') ? local : this;
+    var local = (typeof global !== 'undefined') ? global : this;
+
+    function checkNativePromise() {
+      if (typeof Promise === "function" &&
+          typeof Promise.resolve === "function") {
+        try {
+          /* global Promise */
+          var promise = new Promise(function(){});
+          if ({}.toString.call(promise) === "[object Promise]") {
+            return true;
+          }
+        } catch (e) {}
+      }
+      return false;
+    }
+
+    function useNativePromise() {
+      var nativePromise = Promise.resolve();
+      return function(callback, arg) {
+        nativePromise.then(function () {
+          callback(arg);
+        });
+      };
+    }
 
     // old node
     function useNextTick() {
@@ -159,7 +180,7 @@ define("rsvp/async",
     function useMutationObserver() {
       var queue = [];
 
-      var observer = new ContextMutationObserver(function() {
+      var observer = new BrowserMutationObserver(function() {
         var toProcess = queue.slice();
         queue = [];
 
@@ -173,7 +194,7 @@ define("rsvp/async",
       observer.observe(element, { attributes: true });
 
       // Chrome Memory Leak: https://bugs.webkit.org/show_bug.cgi?id=93661
-      context.addEventListener('unload', function(){
+      window.addEventListener('unload', function(){
         observer.disconnect();
         observer = null;
       }, false);
@@ -196,8 +217,10 @@ define("rsvp/async",
       async = useSetImmediate();
     } else if (typeof process !== 'undefined' && {}.toString.call(process) === '[object process]') {
       async = useNextTick();
-    } else if (ContextMutationObserver) {
+    } else if (BrowserMutationObserver) {
       async = useMutationObserver();
+    } else if (checkNativePromise()) {
+      async = useNativePromise();
     } else {
       async = useSetTimeout();
     }
@@ -999,5 +1022,5 @@ define("rsvp",
     __exports__.resolve = resolve;
     __exports__.reject = reject;
   });
-  context.RSVP = requireModule("rsvp");
-})(self || window);
+window.RSVP = requireModule("rsvp");
+})(window);

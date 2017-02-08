@@ -1,20 +1,33 @@
+/*jslint indent: 2 */
 /*global window, rJS, jIO */
-/*jslint indent: 2, maxerr: 3 */
 (function (window, rJS, jIO) {
   "use strict";
 
+  /////////////////////////////
+  // some methods
+  /////////////////////////////
+
   rJS(window)
-    .ready(function (gadget) {
-      gadget.state_parameter_dict = {};
-    })
-    .declareMethod('render', function (my_option_dict) {
 
-      //this.state_parameter_dict.label = my_option_dict.label;
-      // need to return the rendered gadget to expose storage API
-      return this;
+    /////////////////////////////
+    // ready
+    /////////////////////////////
+    .ready(function () {
+      this.state_parameter_dict = {};
     })
 
-    .declareMethod('createJIO', function (jio_options) {
+    /////////////////////////////
+    // acquired methods
+    /////////////////////////////
+    
+    /////////////////////////////
+    // published methods
+    /////////////////////////////
+
+    /////////////////////////////
+    // declared methods
+    /////////////////////////////
+    .declareMethod('createJio', function (jio_options) {
       this.state_parameter_dict.jio_storage = jIO.createJIO(jio_options);
     })
     .declareMethod('allDocs', function () {
@@ -57,5 +70,9 @@
       var storage = this.state_parameter_dict.jio_storage;
       return storage.repair.apply(storage, arguments);
     });
+  
+    /////////////////////////////
+    // declared services
+    /////////////////////////////
 
 }(window, rJS, jIO));
