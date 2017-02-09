@@ -4,7 +4,7 @@
   "use strict";
 
   var CONFIGURATION = {
-    "type": "serviceWorker",
+    "type": "worker",
     "scope": "./",
     "url": "gadget_voxforge_serviceworker.js",
     "prefetch_url_list": ["VoxForgeDict.txt"],
@@ -60,3 +60,4 @@
     /////////////////////////////
 
 }(window, rJS, RSVP));
+

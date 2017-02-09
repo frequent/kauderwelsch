@@ -51,18 +51,19 @@
     });
   }
   
-  function installWorker(spec) {
+  function installServiceWorker(spec) {
     return new RSVP.Queue()
       .push(function () {
         return spec.sw.getRegistration();
       })
       .push(function (registered_worker) {
-        if (!registered_worker) {
-          return spec.sw.register(spec.url, {"scope": spec.scope});   
-        }
-
-        // XXX What if this isn't mine?
-        return registered_worker;
+        return new RSVP.Promise(function (resolve) {
+          if (!registered_worker) {
+            return resolve(spec.sw.register(spec.url, {"scope": spec.scope}));   
+          }
+          // XXX What if this isn't mine?
+          return resolve(registered_worker);
+        });
       });
   }
 
@@ -92,18 +93,13 @@
   }
 
   function claimScope(registration) {
-    
-    // refreshing should not be necessary if scope is claimed on activate
-    // XXX something is not in async - install does not wait for prefetching
-    return;
-    
-    //return new RSVP.Promise(function (resolve, reject) {
-    //  if (registration.active && registration.active.state === 'activated') {
-    //    resolve();
-    //  } else {
-    //    reject(new Error("Please refresh to initialize serviceworker."));
-    //  }
-    //});
+    return new RSVP.Promise(function (resolve, reject) {
+      if (registration.active && registration.active.state === 'activated') {
+        resolve();
+      } else {
+        reject(new Error("Please refresh to initialize serviceworker."));
+      }
+    });
   }
 
   /**
@@ -113,31 +109,27 @@
    * @constructor
    */
   function WorkerStorage (spec) {
-    if (spec.type === "serviceWorker" && spec.type in navigator === false) {
-      throw new jIO.util.jIOError("Serviceworker not available.",
-                                  503);
+    if (spec.scope && "serviceWorker" in navigator === false) {
+      throw new jIO.util.jIOError("Serviceworker not available.", 503);
     }
-    if (spec.type === "Worker" && spec.type in global === false) {
-      throw new jIO.util.jIOError("WebWorker not available.",
-                                  503);
+    if (!spec.scope && "Worker" in global === false) {
+      throw new jIO.util.jIOError("WebWorker not available.", 503);
     }
     if (!spec.sub_storage) {
-      throw new jIO.util.jIOError("Worker storage requires a sub_storage.",
-                                  400);
+      throw new jIO.util.jIOError("Worker storage requires a sub_storage.", 400);
     }
     if (!spec.url) {
-      throw new jIO.util.jIOError("Worker storage requires a url.",
-                                  400);
+      throw new jIO.util.jIOError("Worker storage requires a url.", 400);
     }
-
-    spec.scope = spec.scope || "./";
-    spec.url = spec += "?" + serializeUrlList(spec.prefetch_url_list) + "&" +
-      encodeURIComponent(JSON.stringify(spec.sub_storage));
     
-    if (spec.type === "serviceWorker") {
+    // pack sub storage definition into the url
+    spec.url = spec.url += "?" + serializeUrlList(spec.prefetch_url_list) + "&" +
+      encodeURIComponent(JSON.stringify(spec.sub_storage));
+
+    if (spec.scope) {
       spec.sw = navigator.serviceWorker;
       return new RSVP.Queue()
-    -   push(function () {
+        .push(function () {
           // XXX PromiseEventListener(navigator.serviceWorker, "controllerchange", false, console)
           return installServiceWorker(spec);
         })
@@ -148,8 +140,9 @@
           return claimScope(installation);
         });
     }
-
-    if (spec.type === "Worker") {
+    
+    // Worker initialization
+    if (!spec.scope) {
       return new RSVP.Queue()
         .push(function () {
           return new Worker(spec.url);
@@ -322,3 +315,4 @@
   jIO.addStorage('worker', WorkerStorage);
 
 }(window || self, jIO, RSVP, Blob, navigator));
+
