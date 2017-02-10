@@ -14,7 +14,7 @@
         "type": "cache"
         }, {
         "type": "index",
-        "processor": "gadget_voxforge_worker_mapping.js",
+        "processor": "gadget_voxforge_worker_processor.js",
         "sub_storage": {
           "type": "indexeddb",
           "database": "lexicon"
@@ -60,4 +60,3 @@
     /////////////////////////////
 
 }(window, rJS, RSVP));
-
