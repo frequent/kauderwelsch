@@ -362,18 +362,32 @@ function jio_getAttachment(my_param, my_event) {
 }
 
 // here we go:
+// https://github.com/PolymerElements/platinum-sw/blob/master/service-worker.js
 self.param_dict = deserializeUrlParameters(location.search.substring(1));
-
-if (self.param_dict.hasOwnProperty('prefetch_url_list')) {
-  PREFETCH_URL_LIST = self.param_dict['prefetch_url_list'];
+console.log(self.param_dict)
+if (self.param_dict.has('worker')) {
+  //importScripts.apply(null, self.param_dict["worker"]);
+  importScripts(self.param_dict.get("worker"))
 }
+console.log("yeah")
+try {
+  hello(123)
+} catch (e) {
+  console.log(e)
+}
+if (self.param_dict.has('prefetch_url_list')) {
+  console.log("let's fetch")
+  console.log(self.param_dict.get("prefetch_url_list"))
+  PREFETCH_URL_LIST = [self.param_dict.get('prefetch_url_list')];
+}
+console.log("prefetch")
 
 
 // listeners
 
 // runs while an existing worker runs or nothing controls the page (update here)
 self.addEventListener('install', function (event) {
-
+  console.log("A FECTHIN")
   event.waitUntil(caches.open(CURRENT_CACHE_DICT.dictionary)
     .then(function(cache) {
       var cache_promise_list = PREFETCH_URL_LIST.map(function(prefetch_url) {
@@ -449,6 +463,15 @@ self.addEventListener('install', function (event) {
             // will be cached normally in another cache. I can make as many 
             // caches as I want, so no problem.
             
+            // as I can pass through the url now, I could also pass more complex
+            // stuff such as ... if I setup the indexeddb like I want, for example
+            // with a mapping storage and indexStorage, which maintains an index
+            // in indexeddeb and mapping means we tae the field value and only
+            // store the first two characters as id. then I could somehow pass
+            // a param in the url telling the serviceworer to ? store the index
+            // on indexeddb? how do I communicate in and out? need to think
+            // about this.
+
             // parse file, remove whitespace, not 2-depths boundaries in index
             function compressAndIndexFile(my_blob) {
               var file_reader = new FileReader(),
@@ -515,6 +538,11 @@ self.addEventListener('install', function (event) {
           .then(function(what) {
             console.log("DONE")
             console.log(what)
+            
+            // this is actually putting the item into cache!
+            // I guess it is here, that I should somehow return the file
+            // to a place where I can call the "front end" to actually store 
+            // the file
             return cache.put(prefetch_url, new Response(what));
             // ================
             // Use the original URL without the cache-busting parameter as 
@@ -533,8 +561,9 @@ self.addEventListener('install', function (event) {
 
       // force waiting worker to become active worker (claim)
       // https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerGlobalScope/skipWaiting
-      self.skipWaiting();
-
+      if (self.param_dict.hasOwnProperty('skip_waiting') !== false) {
+        self.skipWaiting();
+      }
     }).catch(function(error) {
       console.error('Pre-fetching failed:', error);
     })
@@ -570,7 +599,9 @@ self.addEventListener('activate', function (event) {
     })
     .then(function () {
       console.log("'activate': Claiming clients for version");
-      return self.clients.claim();
+      if (self.param_dict.hasOwnProperty('clients_claim') !== false) {
+        return self.clients.claim();
+      }
     })
   );
 });
