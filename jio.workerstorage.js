@@ -18,20 +18,11 @@
     return url_param.substring(0, url_param.length - 1);
   }
 
-  // no need to validate attachment name, because serviceworker.js will throw
-  function restrictDocumentId(id) {
-    if (id.indexOf("/") > -1) {
-      throw new jIO.util.jIOError("id should be a project name, not a path)",
-                                  400);
-    }
-    return id;
-  }
-
   // This wraps the message posting/response in a promise, which will resolve if
   // the response doesn't contain an error, and reject with the error if it does.
   // Alternatively, onmessage handle and controller.postMessage() could be used
   function sendMessage(message) {
-    return new RSVP.Promise(function (resolve, reject, notify) {
+    return new RSVP.Promise(function (resolve, reject) {
       var messageChannel = new MessageChannel();
       messageChannel.port1.onmessage = function (event) {
         if (event.data.error) {
@@ -119,10 +110,10 @@
       throw new jIO.util.jIOError("Worker storage requires a sub_storage.", 400);
     }
     if (!spec.url) {
-      throw new jIO.util.jIOError("Worker storage requires a url.", 400);
+      throw new jIO.util.jIOError("Worker storage requires a (service)worker url.", 400);
     }
     
-    // pack sub storage definition into the url
+    // pass configuration to serviceworker via url
     spec.url = spec.url += "?" + serializeUrlList(spec.prefetch_url_list) + "&" +
       encodeURIComponent(JSON.stringify(spec.sub_storage));
 
@@ -154,143 +145,49 @@
   }
 
   WorkerStorage.prototype.post = function () {
-    throw new jIO.util.jIOError("Storage requires 'put' to create new cache",
-                                400);
+    return sendMessage({"command": "post", "param": arguments});
   };
 
-  WorkerStorage.prototype.get = function (id) {
-    return new RSVP.Queue()
-      .push(function () {
-        return sendMessage({
-          command: 'get',
-          id: restrictDocumentId(id)
-        });
-      })
-      .push(undefined, function (error) {
-        if (error.status === 404) {
-          throw new jIO.util.jIOError(error.message, 404);
-        }
-        throw error;
-      });
+  WorkerStorage.prototype.get = function () {
+    return sendMessage({"command": "get", "param": arguments});
   };
 
-  WorkerStorage.prototype.put = function (id) {
-    return new RSVP.Queue()
-      .push(function () {
-        return sendMessage({
-          command: 'get',
-          id: restrictDocumentId(id)
-        });
-      })
-      .push(undefined, function (error) {
-        if (error.status === 404) {
-          return new RSVP.Queue()
-            .push(function () {
-              return sendMessage({
-                command: 'put',
-                id: id
-              });
-            });
-          }
-          throw error;
-      });
+  WorkerStorage.prototype.put = function () {
+    return sendMessage({"command": "put", "param": arguments});
   };
 
-  WorkerStorage.prototype.remove = function (id) {
-    return new RSVP.Queue()
-      .push(function () {
-        return sendMessage({
-          command: 'allAttachments',
-          id: restrictDocumentId(id)
-        });
-      })
-      .push(function (attachment_dict) {
-        var url_list = [],
-          url;
-        for (url in attachment_dict) {
-          if (attachment_dict.hasOwnProperty(url)) {
-            url_list.append(sendMessage({
-              command: 'removeAttachment',
-              id: url
-            }));
-          }
-        }
-        return RSVP.all(url_list);
-      })
-      .push(function () {
-        return sendMessage({
-          command: 'remove',
-          id: restrictDocumentId(id)
-        });
-      });
+  WorkerStorage.prototype.remove = function () {
+    return sendMessage({"command": "remove", "param": arguments});
   };
-  
-  WorkerStorage.prototype.removeAttachment = function (id, url) {
-    return new RSVP.Queue()
-      .push(function () {
-        return sendMessage({
-          command: 'removeAttachment',
-          id: restrictDocumentId(id),
-          name: url
-        });
-      });
-  };
-  
-  WorkerStorage.prototype.getAttachment = function (id, url, options) {
 
-    // NOTE: in serviceworker, alternatively get could also be run via
-    // an ajax request, which the serviceworker would catch wth fetch listener!
-    // for a filesystem equivalent however, we don't assume fetching resources
+  WorkerStorage.prototype.removeAttachment = function () {
+    return sendMessage({"command": "removeAttachment", "param": arguments});
+  };
+
+  WorkerStorage.prototype.getAttachment = function () {
+
+    // NOTE: alternatively inside serviceworker, one could also do get via
+    // ajax request which the serviceworker would intercept using the fetch
+    //listener. For a pure storage however, we don't assume fetching resources
     // from the network, so all methods will go through sendMessage
 
-    return new RSVP.Queue()
-      .push(function () {
-        return sendMessage({
-          command: 'getAttachment',
-          id: restrictDocumentId(id),
-          name: url,
-          options: options || {}
-        });
-      })
-      .push(function (my_blob_response) {
-        return my_blob_response;
-      });
-  };
-  
-  WorkerStorage.prototype.putAttachment = function (id, name, param) {
-    return new RSVP.Queue()
-      .push(function () {
-        return sendMessage({
-          command: 'putAttachment',
-          id: id,
-          name: name,
-          content: param
-        });
-      });
-  };
-  
-  WorkerStorage.prototype.allAttachments = function (id) {
-    return new RSVP.Queue()
-      .push(function () {
-        return sendMessage({
-          command: 'allAttachments',
-          id: restrictDocumentId(id)
-        });
-      });
+    return sendMessage({"command": "getAttachment", "param": arguments});
   };
 
+  WorkerStorage.prototype.putAttachment = function () {
+    return sendMessage({"command": "putAttachment", "param": arguments});
+  };
+  
+  WorkerStorage.prototype.allAttachment = function () {
+    return sendMessage({"command": "allAttachment", "param": arguments});
+  };
+  
   WorkerStorage.prototype.hasCapacity = function (name) {
     return (name === "list");
   };
-
-  // returns a list of all caches ~ folders
-  WorkerStorage.prototype.allDocs = function (options) {
+  
+  WorkerStorage.prototype.allDocs = function () {
     var context = this;
-
-    if (options === undefined) {
-      options = {};
-    }
-
     return new RSVP.Queue()
       .push(function () {
         if (context.hasCapacity("list")) {
@@ -302,17 +199,11 @@
       });
   };
 
-  WorkerStorage.prototype.buildQuery = function (options) {
-    return new RSVP.Queue()
-      .push(function () {
-        return sendMessage({
-          command: 'allDocs',
-          options: options
-        });
-      });
+  WorkerStorage.prototype.buildQuery = function () {
+    return sendMessage({"command": "allDocs", "param": arguments});
   };
 
   jIO.addStorage('worker', WorkerStorage);
 
-}(window || self, jIO, RSVP, Blob, navigator));
+}(self, jIO, RSVP, Blob, navigator));
 

@@ -11,7 +11,8 @@
     "sub_storage": {
       "type": "parallel",
       "storage_list": [{
-        "type": "cache"
+        "type": "cache",
+        "version": 1
         }, {
         "type": "index",
         "processor": "gadget_voxforge_worker_processor.js",
@@ -60,3 +61,4 @@
     /////////////////////////////
 
 }(window, rJS, RSVP));
+

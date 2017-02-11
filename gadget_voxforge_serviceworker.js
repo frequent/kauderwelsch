@@ -44,9 +44,9 @@
     "jio.cachestorage.js",
     "jio.indexstorage.js"
   );
-
+  console.log("importing done")
   // methods
-
+  // XXX allow passing multiple files
   function deserializeUrlParameters(query_string) {
     return new Map(query_string.split('&').map(function(key_value_pair) {
       var splits = key_value_pair.split('=');
@@ -60,7 +60,7 @@
     }));
   }
   
-  // Custom loopEventListener
+  // custom loopEventListener
   function workerLoopEventListener(my_target, my_type, my_callback) {
     var handle_event_callback,
       callback_promise;
@@ -96,6 +96,7 @@
   
   // runs while an existing worker runs or nothing controls the page (update here)
   function installHandler(event) {
+    console.log("Install handler called");
     //event.waitUntil(
     return new RSVP.Queue() 
       .push(function () {
@@ -198,6 +199,7 @@
   
   // intercept network GET/POST requests, add and serve from cache
   function fetchHandler(event) {
+        console.log("Fetch handler called");
     if (event.request.method === "GET") {
       return new RSVP.Queue()
         .push(function () {
@@ -254,24 +256,55 @@
 
   // storage communication
   function messageHandler(event) {
-    var param = event.data;
-    switch (param.command) {
+    console.log("Message handler called");
+    var data = event.data;
+    switch (data.command) {
+      case 'post':
+        
+        // data.param should include apply-ed arguments, the sub_storage
+        // has to cope with whatever is being passed.
+        
+        // event.ports[0] corresponds to the MessagePort that was transferred 
+        // as part of the controlled page's call to controller.postMessage(). 
+        // Therefore, event.ports[0].postMessage() will trigger the onmessage
+        // handler from the controlled page. It's up to you how to structure 
+        // the messages that you send back; this is just one example.
+
+        return event.port[0].postMessage(
+          STORAGE.post.apply(self, data.param)
+        );
       case 'get':
-        return STORAGE.jio_get(param, event);
+        return event.port[0].postMessage(
+          STORAGE.get.apply(self, data.param)
+        );
       case 'put':
-        return STORAGE.jio_put(param, event);
+        return event.port[0].postMessage(
+          STORAGE.put.apply(self, data.param)
+        );
       case 'remove':
-        return STORAGE.jio_remove(param, event);
+        return event.port[0].postMessage(
+          STORAGE.remove.apply(self, data.param)
+        );
       case 'allDocs':
-        return STORAGE.jio_allDocs(param, event);
+        return event.port[0].postMessage(
+          STORAGE.allDocs.apply(self, data.param)
+        );
       case 'allAttachments':
-        return STORAGE.jio_allAttachments(param, event);
+        return event.port[0].postMessage(
+          STORAGE.allAttachments.apply(self, data.param)
+        );
       case 'removeAttachment':
-        return STORAGE.jio_removeAttachment(param, event);
+        return event.port[0].postMessage(
+          STORAGE.removeAttachment.apply(self, data.param)
+        );
       case 'putAttachment':
-        return STORAGE.jio_putAttachment(param, event);
+        return event.port[0].postMessage(
+          STORAGE.putAttachment.apply(self, data.param)
+        );
       case 'getAttachment':
-        return STORAGE.jio_getAttachment(param, event);
+        return event.port[0].postMessage(
+          STORAGE.getAttachment.apply(self, data.param)
+        );
       default:
         throw 'Unknown command: ' + event.data.command;
     }
@@ -279,7 +312,7 @@
 
   // runs active page, changes here (like deleting old cache) breaks page
   function activateHandler(event) {
-    
+    console.log("Activate handler called")
     var expected_cache_name_list = Object.keys(CURRENT_CACHE_DICT).map(function(key) {
       return CURRENT_CACHE_DICT[key];
     });
@@ -317,7 +350,7 @@
       //);
   }
   
-  console.log("done")
+  console.log("done, is RSVP defined?")
   console.log(RSVP)
   // here we go
   return new RSVP.Queue()
@@ -329,9 +362,12 @@
       console.log(self.param_dict)
       // importScripts.apply(null, self.param_dict.get("xxx"))
       
+      // shelve files to load on install
       if (self.param_dict.has('prefetch_url_list')) {
         PREFETCH_URL_LIST = [self.param_dict.get('prefetch_url_list')];
       }
+      console.log("creating JIO")
+      console.log(JSON.parse(self.param_dict.get("sub_storage")))
       return jIO.createJIO(JSON.parse(self.param_dict.get("sub_storage")));
     })
     .push(function (my_jio_storage) {
@@ -350,3 +386,4 @@
     });
 
 }(self, fetch, Request, Response, console, location, JSON));
+
