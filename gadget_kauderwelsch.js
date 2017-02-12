@@ -7,7 +7,7 @@
     "type": "worker",
     "scope": "./",
     "url": "gadget_voxforge_serviceworker.js",
-    "prefetch_url_list": ["VoxForgeDict.txt"],
+    "prefetch_url_list": ["sample.txt"],
     "sub_storage": {
       "type": "parallel",
       "storage_list": [{

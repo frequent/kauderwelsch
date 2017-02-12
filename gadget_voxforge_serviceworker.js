@@ -7,36 +7,16 @@
   // chrome://cache/
   // chrome://inspect/#service-workers
   // chrome://serviceworker-internals/
-  // 
-  // bar = new Promise(function (resolve, reject) {
-  //   return caches.keys()
-  //     .then(function (result) {
-  //      console.log(result);
-  //      return caches.open(result[0])
-  //        .then(function(cache){
-  //          return cache.keys()
-  //            .then(function (request_list) {
-  //              console.log(request_list);
-  //              console.log("DONE");
-  //              resolve();
-  //            });
-  //        });
-  //    });
-  //});
-  //
-  // clear last cache
-  // caches.keys().then(function(key_list) {console.log(key_list);return caches.open(key_list[0]);}).then(function(cache) {return cache.keys().then(function(request_list) {console.log(request_list); return cache.delete(request_list[0]);})});
-  // list all caches
-  // caches.keys().then(function(key_list) {console.log(key_list);return caches.open(key_list[0]);}).then(function(cache) {return cache.keys().then(function(request_list) {console.log(request_list);})});
   
   var PREFETCH_URL_LIST = [];
   var CURRENT_CACHE_VERSION = 1;
   var CURRENT_CACHE;
   var CURRENT_CACHE_DICT = {
-    "self": "self-v" + CURRENT_CACHE_VERSION
+    "self": "self-v" + CURRENT_CACHE_VERSION,
+    "prefetch": "prefetch-v" + CURRENT_CACHE_VERSION
   };
   var STORAGE = null;
-  console.log("importing")
+
   importScripts(
     "rsvp.latest.js",
     "jio.latest.js",
@@ -44,7 +24,7 @@
     "jio.cachestorage.js",
     "jio.indexstorage.js"
   );
-  console.log("importing done")
+
   // methods
   // XXX allow passing multiple files
   function deserializeUrlParameters(query_string) {
@@ -94,112 +74,108 @@
     return new RSVP.Promise(itsANonResolvableTrap, canceller);
   }
   
-  // runs while an existing worker runs or nothing controls the page (update here)
-  function installHandler(event) {
-    console.log("Install handler called");
-    //event.waitUntil(
-    return new RSVP.Queue() 
-      .push(function () {
-        return event.waitUntil(caches.open(CURRENT_CACHE_DICT.dictionary));
-      })
-      .push(function(cache) {
-        var cache_promise_list = PREFETCH_URL_LIST.map(function(prefetch_url) {
-
-          // check if file is already on cache
-          return new RSVP.Queue()
-            .push(function () {
-              return cache.match(prefetch_url);
-            })
-            .push(function(cached_file_response) {
-              var request,
-                url;
-      
-              // file is not on cache yet
-              if (!cached_file_response) {
-                console.log("loading ", prefetch_url, " to be cached.")
-                
-                // This constructs a new URL object using the service worker's script
-                // location as the base for relative URLs.
-                url = new URL(prefetch_url, location.href);
-      
-                // Append a cache-bust=TIMESTAMP URL parameter to each URL's query 
-                // string. This is particularly important when precaching resources 
-                // that are later used in the fetch handler as responses directly, 
-                // without consulting the network (i.e. cache-first). If we were to 
-                // get back a response from the HTTP browser cache for this precaching 
-                // request then that stale response would be used indefinitely, or at 
-                // least until the next time the service worker script changes 
-                // triggering the install flow.
-                url.search += (url.search ? '&' : '?') + 'cache-bust=' +  Date.now();
+  function fetchFile(prefetch_url) {
+    var request,
+      url;
           
-                // It's very important to use {mode: 'no-cors'} if there is any chance
-                // that the resources being fetched are served off of a server that 
-                // doesn't support CORS. See
-                // (http://en.wikipedia.org/wiki/Cross-origin_resource_sharing).
-                // If the server doesn't support CORS the fetch() would fail if the 
-                // default mode of 'cors' was used for the fetch() request. The drawback
-                // of hardcoding {mode: 'no-cors'} is that the response from all 
-                // cross-origin hosts will always be opaque
-                // (https://slightlyoff.github.io/ServiceWorker/spec/service_worker/index.html#cross-origin-resources)
-                // and it is not possible to determine whether an opaque response 
-                // represents a success or failure
-                // (https://github.com/whatwg/fetch/issues/14).
-                request = new Request(url, {mode: 'no-cors'});
-      
-                // XXX differentiate handler based on desired content-type? 
-                // (ArrayBuffer, BinaryString, DataUrl, String)
-                return new RSVP.Queue()
-                  .push(function () {
-                    return fetch(request);
-                  })  
-                  .push(function(response) {
-                    if (response.status >= 400) {
-                      throw new Error('request for ' + prefetch_url +
-                        ' failed with status ' + response.statusText);
-                    }
-                    return response.blob(); 
-                  });
-              }
-              console.log("FILE IS ALREADY CACHED");
-              return cached_file_response.blob();
-            })
-            .push(function(blob) {
-              return new RSVP.Queue()
-                .push(function () {
-                  return STORAGE.put("prefetch");
-                })
-                .push(function () {
-                  return STORAGE.putAttachment(blob);
-                });
-              
-            })
-            .push(undefined, function(error) {
-              console.error('Not caching ' + prefetch_url + ' due to ' + error);
-              throw error;
-            });
-        });
+    // This constructs a new URL object using the service worker's script
+    // location as the base for relative URLs.
+    url = new URL(prefetch_url, location.href);
 
-        return RSVP.all(cache_promise_list);
-      })
+    // Append a cache-bust=TIMESTAMP URL parameter to each URL's query 
+    // string. This is particularly important when precaching resources 
+    // that are later used in the fetch handler as responses directly, 
+    // without consulting the network (i.e. cache-first). If we were to 
+    // get back a response from the HTTP browser cache for this precaching 
+    // request then that stale response would be used indefinitely, or at 
+    // least until the next time the service worker script changes 
+    // triggering the install flow.
+    url.search += (url.search ? '&' : '?') + 'cache-bust=' +  Date.now();
+
+    // It's very important to use {mode: 'no-cors'} if there is any chance
+    // that the resources being fetched are served off of a server that 
+    // doesn't support CORS. See
+    // (http://en.wikipedia.org/wiki/Cross-origin_resource_sharing).
+    // If the server doesn't support CORS the fetch() would fail if the 
+    // default mode of 'cors' was used for the fetch() request. The drawback
+    // of hardcoding {mode: 'no-cors'} is that the response from all 
+    // cross-origin hosts will always be opaque
+    // (https://slightlyoff.github.io/ServiceWorker/spec/service_worker/index.html#cross-origin-resources)
+    // and it is not possible to determine whether an opaque response 
+    // represents a success or failure
+    // (https://github.com/whatwg/fetch/issues/14).
+    request = new Request(url, {mode: 'no-cors'});
+    
+    // XXX differentiate handler based on desired content-type? 
+    // (ArrayBuffer, BinaryString, DataUrl, String)
+    return new RSVP.Queue()
       .push(function () {
-        console.log("pre-feteching complete");
-  
-        // force waiting worker to become active worker (claim)
-        // https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerGlobalScope/skipWaiting
-        if (self.param_dict.hasOwnProperty('skip_waiting') !== false) {
-          self.skipWaiting();
+        return fetch(request);
+      })  
+      .push(function(response) {
+        if (response.status >= 400) {
+          throw new Error('request for ' + prefetch_url +
+            ' failed with status ' + response.statusText);
         }
-      })
-      .push(undefined, function(error) {
-        console.error('Pre-fetching failed:', error);
-        throw error;
+        return response;
       });
-    //);
   }
   
+  // runs while an existing worker runs or nothing controls the page (update here)
+  function installHandler(event) {
+    return event.waitUntil(
+      new RSVP.Queue() 
+        .push(function () {
+          return STORAGE.put("prefetch");
+        })
+        .push(function() {
+          return RSVP.all(PREFETCH_URL_LIST.map(function(prefetch_url) {
+            return new RSVP.Queue()
+              .push(function () {
+                return STORAGE.getAttachment("prefetch", prefetch_url, {
+                  "range": "bytes=0-1"
+                });
+              })
+              .push(undefined, function (error) {
+                console.log(error);
+                if (error.status_code === 404) {
+                  return new RSVP.Queue()
+                    .push(function () {
+                      return fetchFile(prefetch_url);
+                    })
+                    .push(function (response) {
+                      console.log(response);
+                      return STORAGE.putAttachment("prefetch", prefetch_url, response);  
+                    });
+                }
+                throw error;
+              });
+              //.push(undefined, function (error) {
+              //  if (error.status_code === 404) {
+              //    console.log("handle network request failing");
+              //  }
+              //  throw error;
+              //});
+            })
+          );
+        })
+        .push(function () {
+          console.log("pre-feteching complete");
+          // force waiting worker to become active worker (claim)
+          // https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerGlobalScope/skipWaiting
+          if (self.param_dict.hasOwnProperty('skip_waiting') !== false) {
+            self.skipWaiting();
+          }
+        })
+        .push(undefined, function(error) {
+          console.error('Pre-fetching failed:', error);
+          throw error;
+        })
+    );
+  }
+
   // intercept network GET/POST requests, add and serve from cache
   function fetchHandler(event) {
-        console.log("Fetch handler called");
     if (event.request.method === "GET") {
       return new RSVP.Queue()
         .push(function () {
@@ -276,7 +252,6 @@
 
   // storage communication
   function messageHandler(event) {
-    console.log("Message handler called");
     var data = event.data;
     switch (data.command) {
       case 'post':
@@ -309,77 +284,66 @@
 
   // runs active page, changes here (like deleting old cache) breaks page
   function activateHandler(event) {
-    console.log("Activate handler called")
     var expected_cache_name_list = Object.keys(CURRENT_CACHE_DICT).map(function(key) {
       return CURRENT_CACHE_DICT[key];
     });
   
-    //event.waitUntil(
-    // XXX used ot be waitUntil(.... everything in here, caches.keys.then(function....)
-    return new RSVP.Queue()
-      .push(function() {
-        return event.waitUntil(caches.keys());
-      })
-      .push(function(cache_name_list) {
-        return RSVP.all(
-          cache_name_list.map(function(cache_name) {
-            version = cache_name.split("-v")[1];
-            
-            // removes caches which are out of version
-            if (!(version && parseInt(version, 10) === CURRENT_CACHE_VERSION)) {
-              console.log('Deleting out of date cache:' + cache_name);
-              return caches.delete(cache_name);
-            }
-            
-            // removes caches which are not on the list of expected names 
-            if (expected_cache_name_list.indexOf(cache_name) === -1) {
-              console.log('Deleting non-listed cache:' + cache_name);
-              return caches.delete(cache_name);
-            }
-          }));
-      })
-      .push(function () {
-        console.log("'activate': Claiming clients for version");
-        if (self.param_dict.hasOwnProperty('clients_claim') !== false) {
-          return self.clients.claim();
-        }
-      });
-      //);
+    return event.waitUntil(
+      new RSVP.Queue()
+        .push(function() {
+          caches.keys();
+        })
+        .push(function(cache_name_list) {
+          return RSVP.all(
+            cache_name_list.map(function(cache_name) {
+              version = cache_name.split("-v")[1];
+              
+              // removes caches which are out of version
+              if (!(version && parseInt(version, 10) === CURRENT_CACHE_VERSION)) {
+                console.log('Deleting out of date cache:' + cache_name);
+                return caches.delete(cache_name);
+              }
+              
+              // removes caches which are not on the list of expected names 
+              if (expected_cache_name_list.indexOf(cache_name) === -1) {
+                console.log('Deleting non-listed cache:' + cache_name);
+                return caches.delete(cache_name);
+              }
+            }));
+        })
+        .push(function () {
+          console.log("'activate': Claiming clients for version");
+          if (self.param_dict.hasOwnProperty('clients_claim') !== false) {
+            return self.clients.claim();
+          }
+        })
+      );
   }
-  
-  console.log("done, is RSVP defined?")
-  console.log(RSVP)
+
   // here we go
   return new RSVP.Queue()
     .push(function () {
       
       // https://github.com/PolymerElements/platinum-sw/blob/master/service-worker.js
       self.param_dict = deserializeUrlParameters(location.search.substring(1));
-      
-      console.log(self.param_dict)
+
       // importScripts.apply(null, self.param_dict.get("xxx"))
       
       // shelve files to load on install
       if (self.param_dict.has('prefetch_url_list')) {
         PREFETCH_URL_LIST = [self.param_dict.get('prefetch_url_list')];
       }
-      console.log("creating JIO")
-      console.log(JSON.parse(self.param_dict.get("sub_storage")))
       return jIO.createJIO(JSON.parse(self.param_dict.get("sub_storage")));
     })
     .push(function (my_jio_storage) {
       STORAGE = my_jio_storage;
-      
+
       return RSVP.all([
         //  workerLoopEventListener(self, "fetch", fetchHandler),
         workerLoopEventListener(self, "install", installHandler),
         workerLoopEventListener(self, "activate", activateHandler),
         workerLoopEventListener(self, "message", messageHandler)
       ]);
-    })
-    .push(undefined, function (my_error) {
-      console.log(my_error);
-      throw my_error;
     });
 
 }(self, fetch, Request, Response, console, location, JSON));

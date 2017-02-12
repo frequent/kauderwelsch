@@ -9,7 +9,7 @@
 
   // This wraps the message posting/response in a promise, which will resolve if
   // the response doesn't contain an error, and reject with the error if it does.
-  // XXX harmonize using sharesWorker which requires ports as serviceworker?
+  // XXX harmonize using sharedWorker which requires ports for messaging?
   function sendMessage(message) {
     return new RSVP.Promise(function (resolve, reject) {
       spec._processor.onmessage = function (event) {
@@ -59,29 +59,11 @@
       spec._processor = new Worker(spec.index_generator);
       spec._handler = sendMessage;
     }
-    
-    // alternatively I just roll my own indexedb?
-    // but how would I differentiate if folders are docs and files are attachments
-    // this is not an indxedb issue but a general one
-    // why do I store folders anway, I'm not using them. just store the indexed
-    // content, then I have to live with ... duplicates, no we don't. this means
-    // I somehow need info on allDocs, what file is relevant. I can pass the 
-    // language or a pointer with the limit?
 
-    return new RSVP.Queue()
-      .push(function () {
-        return RSVP.all([
-          jIO.createJIO(spec.index_storage),
-          jIO.createJIO(spec.sub_storage)
-        ]);
-      })
-      -push(function (storage_list) {
-        context._index_storage = storage_list[0];  
-        context._sub_storage = storage_list[1];
-      });
+    context._index_storage = jIO.createJIO(spec.index_storage);
+    context._sub_storage = jIO.createJIO(spec.sub_storage);
   }
 
-  // who does?
   IndexStorage.prototype.post = function (content) {
     throw new jIO.util.jIOError("Index Storage does not support post", 400);  
   };
@@ -101,16 +83,16 @@
     return storage.remove.call(storage, id);
   };
 
-  // XXX this is not really a good way, because we can't index attachment-content
-  // and store it inside an attachment. Find more elegant way... and I don't 
-  // know the file id, prefix
+  // XXX this is not optimal, because indexing multiple files will have all
+  // indices be mixed up in the [metadata] store. Would be better if multiple
+  // stores were possible ~ roll a different inedxeddb storage than the default
   IndexStorage.prototype.allDocs = function (options) {
     var opts = options || {},
       storage = this._sub_storage,
       index = this._index_storage;
     
-    // we expect the processor setting correct ids for put and the limit
-    // also containing correct ids! the storage is dumb!
+    // index is dumb = we expect the processor setting correct orefix and limit
+    // also containing correct prefix along with ids to lookup
     if (opts.limit !== undefined) {
       return index.allDocs.call(index, opts);
     }
@@ -123,13 +105,15 @@
   };
 
   // fetching a large file goes against indexing it and serving ranges
-  IndexStorage.prototype.getAttachments = function (id, name, options) {
+  // the idea is to call allDocs with limit [indexFrom, indexTo] and then only
+  // request the ranges returned
+  IndexStorage.prototype.getAttachment = function (id, name, options) {
     var storage = this._sub_storage;
-    return storage.getAttachment.apply(storage, id, name, options);
+    return storage.getAttachment.call(storage, id, name, options);
   };
 
-  // remove file and udpate index (in most inefficient way)
-  IndexStorage.prototype.removeAttachments = function (id, name) {
+  // XXX not so nice
+  IndexStorage.prototype.removeAttachment = function (id, name) {
     var storage = this._sub_storage,
       index = this._index_storage;
     return new RSVP.Queue()
@@ -147,6 +131,8 @@
           key;
         for (i = 0; i < data.total_rows; i += 1) {
           key = data.rows[i];
+
+          // XXX would be better to filter by id, not name
           if (key.indexOf(name) > -1) {
             garbage_list.push(index.remove(key));
           }
@@ -156,7 +142,7 @@
   };
 
   // store file as attachment and add indices (prefixed by cache)
-  IndexStorage.prototype.putAttachments = function (id, name, blob) {
+  IndexStorage.prototype.putAttachment = function (id, name, blob) {
     var handler = this._handler,
       storage = this._sub_storage,
       index = this._index_storage;

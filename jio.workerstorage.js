@@ -59,15 +59,25 @@
   }
 
   function waitForInstallation(registration) {
+    
     return new RSVP.Promise(function (resolve, reject) {
       if (registration.installing) {
         
+        // XXX this seems not supported, does not trigger, but wuold
+        // allow to differentiate between errors and replacing a serviceworker
+        //registration.installing.onerror = function (error) {
+        //  reject(error);
+        //};
+
         // If the current registration represents the "installing" service
         // worker, then wait until the installation step completes (during
         // which any defined resources are pre-fetched) to continue.
         registration.installing.addEventListener('statechange', function(e) {
           if (e.target.state == 'installed') {
             resolve(registration);
+          
+          // if activate/install fail or this worker is replaced by another
+          // https://bitsofco.de/the-service-worker-lifecycle/
           } else if (e.target.state == 'redundant') {
             reject(e);
           }
@@ -115,7 +125,7 @@
     
     // pass configuration to serviceworker via url
     spec.url = spec.url += "?" + serializeUrlList(spec.prefetch_url_list) + "&" +
-      encodeURIComponent(JSON.stringify(spec.sub_storage));
+      "sub_storage=" + encodeURIComponent(JSON.stringify(spec.sub_storage));
 
     if (spec.scope) {
       spec.sw = navigator.serviceWorker;
@@ -129,6 +139,11 @@
         })
         .push(function (installation) {
           return claimScope(installation);
+        })
+        .push(undefined, function (error) {
+          console.log("BAM")
+          console.log(error);
+          throw error;
         });
     }
     
