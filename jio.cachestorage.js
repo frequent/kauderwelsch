@@ -46,7 +46,7 @@
       
       // XXX keep reserved as internal cache?
       if (id === "self") {
-        return {"error": {'status': 406, 'message': "Reserved cache name."}};
+        throw {'status': 406, 'message': "Reserved cache name."};
       }
 
       // XXX not accessible from here - how to maintain/update caches
@@ -56,15 +56,14 @@
           return caches.open(id + "-v" + spec.version);    
         })
         .push(function () {
-          return {"error": null, data: id};
+          return id;
         })
         .push(undefined, function (error) {
-          throw {"error": {'message': error.toString()}};
+          throw new jIO.util.jIOError(error.toString(), 503);
         });
     });
   };
 
-  // validate cache exists  
   CacheStorage.prototype.get = function (id) {
     return new RSVP.Promise(function (resolve, reject) {
       return new RSVP.Queue()
@@ -78,13 +77,13 @@
             i;
           for (i = 0, len = key_list.length; i < len; i += 1) {
             if (key_list[i] === cache_name) {
-              return {"error": null};
+              return;
             }
           }
-          return {"error": {"status": 404, "message": "Cache does not exist."}};
+          throw new jIO.util.jIOError("Cache does not exist.", 404);
         })
         .push(undefined, function (error) {
-          throw {"error": {'message': error.toString()}};
+          throw new jIO.util.jIOError(error.toString(), 503);
         });
     });
   };
@@ -100,10 +99,10 @@
           return caches.delete(id + "-v" + spec.version);
         })
         .push(function() {
-          return {"error": null};
+          return;
         })
         .push(undefined, function (error) {
-          throw {"error": {'message': error.toString()}};
+          throw new jIO.util.jIOError(error.toString(), 503);
         });
     });
   };
@@ -127,13 +126,12 @@
           }
         }
         return {
-          "error": null,  data: {
-            "rows": result_list,
-            "total_rows": result_list.length
-          }};
+          "rows": result_list,
+          "total_rows": result_list.length
+        };
       })
       .push(undefined, function (error) {
-        throw {"error": {'message': error.toString()}};
+        throw new jIO.util.jIOError(error.toString(), 503);
       });
     });
   };
@@ -163,10 +161,10 @@
           for (i = 0, len = result_list.length; i < len; i += 1) {
             attachment_dict[result_list[i]] = {};
           }
-          return {"error": null, data: attachment_dict};
+          return attachment_dict;
         })
         .push(undefined, function (error) {
-          throw {"error": {'message': error.toString()}};
+          throw new jIO.util.jIOError(error.toString(), 503);
         });
     });
   };
@@ -185,18 +183,18 @@
         })
         .push(function (success) {
           if (success) {
-            return {"error": null};
+            return;
           }
-          return {"error": {'status': 404, 'message': 'Item not found in cache.'}};
+          throw new jIO.util.jIOError("Item not found in cache.", 404);
         });
       })
       .push(undefined, function (error) {
-        throw {"error": {'message': error.toString()}};
+        throw new jIO.util.jIOError(error.toString(), 503);
       });
   };
 
   // add a file to a cache
-  CacheStorage.prototype.putAttachment = function (id, name, content) {
+  CacheStorage.prototype.putAttachment = function (id, name, blob) {
     return new RSVP.Promise(function (resolve, reject) {
       return new RSVP.Queue()
         .push(function () {
@@ -205,7 +203,7 @@
         })
         .push(function(cache) {
           var request = new Request(name, {mode: 'no-cors'}),
-            response = new Response(content);
+            response = new Response(blob);
 
           // If name = attachment url => event.data.url is not a 
           // valid URL, new Request() will throw a TypeError which will be 
@@ -217,10 +215,10 @@
           return cache.put(request, response);
         })
         .push(function() {
-          return {"error": null};
+          return;
         })
         .push(undefined, function (error) {
-          throw {"error": {'message': error.toString()}};
+          throw new jIO.util.jIOError(error.toString(), 503);
         });
     });
   };
@@ -292,12 +290,12 @@
         })
         .push(function (converted_response) {
           if (converted_response) {
-            return {"error": null, data: converted_response};
+            return converted_response;
           }
-          return {"error": {'status': 404, 'message': 'Item not found in cache.'}};
+          throw new jIO.util.jIOError('Item not found in cache.', 404);
         })
         .push(undefined, function (error) {
-          throw {"error": {'message': error.toString()}};
+          throw new jIO.util.jIOError(error.toString(), 503);
         });
     }); 
   };
