@@ -1020,7 +1020,9 @@ var UriTemplate = (function () {
         else if (typeof window !== "undefined") {
             window.UriTemplate = UriTemplate;
         }
-        else {
+        else if (typeof importScripts === 'function') {
+            self.UriTemplate = UriTemplate;
+        } else {
             global.UriTemplate = UriTemplate;
         }
     }
@@ -6266,9 +6268,9 @@ return new Parser;
 })();;  return parser.parse(string);
 } // parseStringToObject
 
-;/*global RSVP, window, parseStringToObject*/
+;/*global RSVP, self, parseStringToObject*/
 /*jslint nomen: true, maxlen: 90*/
-(function (RSVP, window, parseStringToObject) {
+(function (RSVP, self, parseStringToObject) {
   "use strict";
 
   var query_class_dict = {},
@@ -7264,15 +7266,15 @@ return new Parser;
   Query.parseStringToObject = parseStringToObject;
   Query.objectToSearchText = objectToSearchText;
 
-  window.Query = Query;
-  window.SimpleQuery = SimpleQuery;
-  window.ComplexQuery = ComplexQuery;
-  window.QueryFactory = QueryFactory;
+  self.Query = Query;
+  self.SimpleQuery = SimpleQuery;
+  self.ComplexQuery = ComplexQuery;
+  self.QueryFactory = QueryFactory;
 
-}(RSVP, window, parseStringToObject));
+}(RSVP, self, parseStringToObject));
 ;/*global window, moment */
 /*jslint nomen: true, maxlen: 200*/
-(function (window, moment) {
+(function (self, moment) {
   "use strict";
 
 //   /**
@@ -7446,7 +7448,7 @@ return new Parser;
 //   _export('SEC', SEC);
 //   _export('MSEC', MSEC);
 
-  window.jiodate = {
+  self.jiodate = {
     JIODate: JIODate,
     YEAR: YEAR,
     MONTH: MONTH,
@@ -7456,15 +7458,15 @@ return new Parser;
     SEC: SEC,
     MSEC: MSEC
   };
-}(window, moment));
-;/*global window, RSVP, Blob, XMLHttpRequest, QueryFactory, Query, atob,
+}(self, moment));
+;/*global self, RSVP, Blob, XMLHttpRequest, QueryFactory, Query, atob,
   FileReader, ArrayBuffer, Uint8Array, navigator */
-(function (window, RSVP, Blob, QueryFactory, Query, atob,
+(function (self, RSVP, Blob, QueryFactory, Query, atob,
            FileReader, ArrayBuffer, Uint8Array, navigator) {
   "use strict";
 
-  if (window.openDatabase === undefined) {
-    window.openDatabase = function () {
+  if (self.openDatabase === undefined) {
+    self.openDatabase = function () {
       throw new Error('WebSQL is not supported by ' + navigator.userAgent);
     };
   }
@@ -7972,9 +7974,9 @@ return new Parser;
   // global
   /////////////////////////////////////////////////////////////////
   jIO = new JioBuilder();
-  window.jIO = jIO;
+  self.jIO = jIO;
 
-}(window, RSVP, Blob, QueryFactory, Query, atob,
+}(self, RSVP, Blob, QueryFactory, Query, atob,
   FileReader, ArrayBuffer, Uint8Array, navigator));
 ;/*
  * Rusha, a JavaScript implementation of the Secure Hash Algorithm, SHA-1,
@@ -8010,6 +8012,8 @@ return new Parser;
         module.exports = Rusha;
     } else if (typeof window !== 'undefined') {
         window.Rusha = Rusha;
+    } else if (typeof importScripts === 'function') {
+        self.Rusha = Rusha
     }
     // If we're running in a webworker, accept
     // messages containing a jobid and a buffer
@@ -9651,7 +9655,7 @@ return new Parser;
 // curl --verbose  -X OPTION http://domain/
 // In the headers: "WWW-Authenticate: Basic realm="DAV-upload"
 
-(function (jIO, RSVP, DOMParser, Blob) {
+(function (jIO, RSVP, self, Blob) {
   "use strict";
 
   function ajax(storage, options) {
@@ -9710,6 +9714,9 @@ return new Parser;
    * @constructor
    */
   function DavStorage(spec) {
+    if (self.DOMParser === undefined) {
+      throw new TypeError("DavStorage cannot be run inside Worker");
+    }
     if (typeof spec.url !== 'string') {
       throw new TypeError("DavStorage 'url' is not of type string");
     }
@@ -9939,7 +9946,7 @@ return new Parser;
 
   jIO.addStorage('dav', DavStorage);
 
-}(jIO, RSVP, DOMParser, Blob));
+}(jIO, RSVP, self, Blob));
 ;/*
  * Copyright 2015, Nexedi SA
  * Released under the LGPL license.
@@ -11724,7 +11731,7 @@ return new Parser;
  */
 
 /*jslint nomen: true*/
-/*global jIO, sessionStorage, localStorage, RSVP */
+/*global jIO, self, RSVP */
 
 /**
  * JIO Local Storage. Type = 'local'.
@@ -11740,14 +11747,17 @@ return new Parser;
  * @class LocalStorage
  */
 
-(function (jIO, sessionStorage, localStorage, RSVP) {
+(function (jIO, self, RSVP) {
   "use strict";
 
   function LocalStorage(spec) {
+    if (self.sessionStorage === undefined && self.localStorage === undefined) {
+      throw new TypeError("LocalStorage cannot be run inside Worker");
+    }
     if (spec.sessiononly === true) {
-      this._storage = sessionStorage;
+      this._storage = self.sessionStorage;
     } else {
-      this._storage = localStorage;
+      this._storage = self.localStorage;
     }
   }
 
@@ -11825,7 +11835,7 @@ return new Parser;
 
   jIO.addStorage('local', LocalStorage);
 
-}(jIO, sessionStorage, localStorage, RSVP));
+}(jIO, self, RSVP));
 ;/*
  * Copyright 2014, Nexedi SA
  * Released under the LGPL license.
@@ -11859,8 +11869,8 @@ return new Parser;
 /*global indexedDB, jIO, RSVP, Blob, Math, IDBKeyRange, IDBOpenDBRequest,
         DOMError, Event*/
 
-(function (indexedDB, jIO, RSVP, Blob, Math, IDBKeyRange, IDBOpenDBRequest,
-           DOMError) {
+(function (indexedDB, jIO, RSVP, Blob, Math, IDBKeyRange, IDBOpenDBRequest/*,
+           DOMError*/) {
   "use strict";
 
   // Read only as changing it can lead to data corruption
@@ -11920,8 +11930,8 @@ return new Parser;
           request.result.close();
         }
         if ((error !== undefined) &&
-            (error.target instanceof IDBOpenDBRequest) &&
-            (error.target.error instanceof DOMError)) {
+            (error.target instanceof IDBOpenDBRequest) /* &&
+            (error.target.error instanceof DOMError)*/) {
           reject("Connection to: " + db_name + " failed: " +
                  error.target.error.message);
         } else {
@@ -11959,7 +11969,6 @@ return new Parser;
     // XXX Canceller???
     return new RSVP.Queue()
       .push(function () {
-        return new RSVP.Promise(resolver);
       });
   }
 
@@ -12026,13 +12035,17 @@ return new Parser;
     }
     return openIndexedDB(this)
       .push(function (db) {
-        var tx = openTransaction(db, ["metadata"], "readonly");
+        var tx = openTransaction(db, ["metadata"], "readonly"),
+          range_list;
+        if (options.limit !== undefined) {
+          range_list = IDBKeyRange.bound(options.limit[9], options.limit[1]);
+        }
         if (options.include_docs === true) {
           return handleCursor(tx.objectStore("metadata").index("_id")
-                              .openCursor(), pushIncludedMetadata);
+                              .openCursor(range_list), pushIncludedMetadata);
         }
         return handleCursor(tx.objectStore("metadata").index("_id")
-                            .openKeyCursor(), pushMetadata);
+                            .openKeyCursor(range_list), pushMetadata);
       })
       .push(function () {
         return result_list;
@@ -12287,7 +12300,7 @@ return new Parser;
   };
 
   jIO.addStorage("indexeddb", IndexedDBStorage);
-}(indexedDB, jIO, RSVP, Blob, Math, IDBKeyRange, IDBOpenDBRequest, DOMError));
+}(indexedDB, jIO, RSVP, Blob, Math, IDBKeyRange, IDBOpenDBRequest/*, DOMError */));
 ;/*
  * Copyright 2015, Nexedi SA
  * Released under the LGPL license.
