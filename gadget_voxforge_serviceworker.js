@@ -253,6 +253,26 @@
     //  event.respondWith(fetch(event.request));
     }
   }
+  
+  function bounceMessage(event, method, param) {
+    
+    // event.ports[0] corresponds to the MessagePort that was transferred 
+    // as part of the controlled page's call to controller.postMessage(). 
+    // Therefore, event.ports[0].postMessage() will trigger the onmessage
+    // handler from the controlled page. It's up to you how to structure 
+    // the messages that you send back; this is just one example.
+    
+    return new RSVP.Queue()
+      .push(function () {
+        return STORAGE[method].apply(self, param);  
+      })
+      .push(function (result) {
+        return event.port[0].postMessage({"error": null, "data": result});
+      })
+      .push(undefined, function (error) {
+        return event.port[0].postMessage({"error": error});
+      });
+  }
 
   // storage communication
   function messageHandler(event) {
@@ -263,48 +283,25 @@
         
         // data.param should include apply-ed arguments, the sub_storage
         // has to cope with whatever is being passed.
-        
-        // event.ports[0] corresponds to the MessagePort that was transferred 
-        // as part of the controlled page's call to controller.postMessage(). 
-        // Therefore, event.ports[0].postMessage() will trigger the onmessage
-        // handler from the controlled page. It's up to you how to structure 
-        // the messages that you send back; this is just one example.
+        // Note, data.param will be an apply [array]
 
-        return event.port[0].postMessage(
-          STORAGE.post.apply(self, data.param)
-        );
+        return bounceMessage(event, "post", data.param);
       case 'get':
-        return event.port[0].postMessage(
-          STORAGE.get.apply(self, data.param)
-        );
+        return bounceMessage(event, "get", data.param);
       case 'put':
-        return event.port[0].postMessage(
-          STORAGE.put.apply(self, data.param)
-        );
+        return bounceMessage(event, "put", data.param);
       case 'remove':
-        return event.port[0].postMessage(
-          STORAGE.remove.apply(self, data.param)
-        );
+        return bounceMessage(event, "remove", data.param);
       case 'allDocs':
-        return event.port[0].postMessage(
-          STORAGE.allDocs.apply(self, data.param)
-        );
+        return bounceMessage(event, "allDocs", data.param);           
       case 'allAttachments':
-        return event.port[0].postMessage(
-          STORAGE.allAttachments.apply(self, data.param)
-        );
+        return bounceMessage(event, "allAttachments", data.param);
       case 'removeAttachment':
-        return event.port[0].postMessage(
-          STORAGE.removeAttachment.apply(self, data.param)
-        );
+        return bounceMessage(event, "removeAttachment", data.param);
       case 'putAttachment':
-        return event.port[0].postMessage(
-          STORAGE.putAttachment.apply(self, data.param)
-        );
+        return bounceMessage(event, "putAttachment". data.param);
       case 'getAttachment':
-        return event.port[0].postMessage(
-          STORAGE.getAttachment.apply(self, data.param)
-        );
+        return bounceMessage(event, "getAttachment", data.param);
       default:
         throw 'Unknown command: ' + event.data.command;
     }
