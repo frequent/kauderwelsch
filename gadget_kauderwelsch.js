@@ -11,16 +11,18 @@
     "sub_storage": {
       "type": "parallel",
       "storage_list": [{
-        "type": "cache",
-        "version": 1
-        }, {
         "type": "index",
-        "processor": "gadget_voxforge_worker_processor.js",
-        "sub_storage": {
+        "index_generator": "gadget_voxforge_worker_processor.js",
+        "index_storage": {
           "type": "indexeddb",
           "database": "lexicon"
+        },
+        "sub_storage": {
+          "type": "cache",
+          "version": 1
+          }
         }
-      }]
+      ]
     }
   };
 
