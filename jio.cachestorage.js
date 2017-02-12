@@ -2,10 +2,41 @@
  * JIO Cache Storage Type = "Cache".
  * stores objects (blobs) using their url in caches (documents)
  */
+
 /*jslint indent: 2 */
-/*jIO, RSVP, Blob, request, response*/
-(function (jIO, RSVP, Blob, request, response) {
+/*jIO, RSVP, Blob, Request, Response*/
+(function (jIO, RSVP, Blob, Request, Response) {
   "use strict";
+
+  /*
+  // DEBUG
+  // list all caches and content of first
+  caches.keys()
+  .then(function(key_list) {
+    console.log(key_list);
+    return caches.open(key_list[0]);
+  })
+  .then(function(cache) {
+    return cache.keys();
+  })
+  .then(function(request_list) {
+    console.log(request_list);
+  });
+
+  // clear last cache
+  caches.keys()
+  .then(function(key_list) {
+    console.log(key_list);
+    return caches.open(key_list[0]);
+  })
+  .then(function(cache) {
+    return cache.keys();
+  })
+  .then(function(request_list) {
+    console.log(request_list); 
+    return cache.delete(request_list[0]);
+  });
+  */
 
   // no need to validate attachment name, because cache will throw non-urls
   function restrictDocumentId(id) {
@@ -13,6 +44,7 @@
       throw new jIO.util.jIOError("id should be a project name, not a path)",
                                   400);
     }
+    return id;
   }
 
   /**
@@ -25,6 +57,9 @@
     if (!spec.version) {
       throw new jIO.util.jIOError("CacheStorage requires version.", 503);
     }
+    this._getCacheName = function (id) {
+      return id + "-v" + spec.version;
+    };
   }
 
   // no post
@@ -35,6 +70,7 @@
 
   // create new cache by opening it. this will only run once per cache/folder
   CacheStorage.prototype.put = function (id, content) {
+    var cache_name = this._getCacheName(restrictDocumentId(id));
     if (content) {
       throw new jIO.util.jIOError(
         "Storage 'put' creates a folder/cache. Use putAttachment to add content",
@@ -42,68 +78,71 @@
       );
     }                            
     return new RSVP.Promise(function (resolve, reject) {
-      restrictDocumentId(id);
-      
       // XXX keep reserved as internal cache?
       if (id === "self") {
-        return {"error": {'status': 406, 'message': "Reserved cache name."}};
+        throw new jIO.util.jIOError("Reserved cache name " + id, 406);
       }
 
       // XXX not accessible from here - how to maintain/update caches
       // CURRENT_CACHE_DICT[id] = current_cache;
       return new RSVP.Queue()
         .push(function () {
-          return caches.open(id + "-v" + spec.version);    
+          return caches.open(cache_name);    
         })
         .push(function () {
-          return {"error": null, data: id};
+          return resolve(id);
         })
         .push(undefined, function (error) {
-          throw {"error": {'message': error.toString()}};
+          reject(error);
         });
     });
   };
 
-  // validate cache exists  
   CacheStorage.prototype.get = function (id) {
+    var cache_name = this._getCacheName(restrictDocumentId(id));
     return new RSVP.Promise(function (resolve, reject) {
       return new RSVP.Queue()
         .push(function () {
-          restrictDocumentId(id);
           return caches.keys();
         })
         .push(function(key_list) {
-          var cache_name = id + "-v" + spec.version,
-            len,
+          var len,
             i;
           for (i = 0, len = key_list.length; i < len; i += 1) {
             if (key_list[i] === cache_name) {
-              return {"error": null};
+              return resolve();
             }
           }
-          return {"error": {"status": 404, "message": "Cache does not exist."}};
+          throw new jIO.util.jIOError("Cannot find cache  " + id, 404);
         })
         .push(undefined, function (error) {
-          throw {"error": {'message': error.toString()}};
+          reject(error);
         });
     });
   };
 
   // remove a cache
   CacheStorage.prototype.remove = function (id) {
+    var cache_name = this._getCacheName(restrictDocumentId(id));
     return new RSVP.Promise(function (resolve, reject) { 
       return new RSVP.Queue()
         .push(function () {
-          restrictDocumentId(id);
           // XXX can't access from here
           // delete CURRENT_CACHE_DICT[param.id];
-          return caches.delete(id + "-v" + spec.version);
+          return caches.delete(cache_name);
         })
-        .push(function() {
-          return {"error": null};
+        .push(function(success) {
+          // XXX not sure caches.delete returns true like cache.delete!
+          if (success) {
+            return resolve();
+          }
+          throw new jIO.util.jIOError(
+            "Cannot find attachment: " + id + " , " + name,
+            404
+          );
         })
         .push(undefined, function (error) {
-          throw {"error": {'message': error.toString()}};
+          reject(error);
         });
     });
   };
@@ -126,28 +165,27 @@
             result_list.push({"id": id, "value": {}});
           }
         }
-        return {
-          "error": null,  data: {
-            "rows": result_list,
-            "total_rows": result_list.length
-          }};
+        return resolve({
+          "rows": result_list,
+          "total_rows": result_list.length
+        });
       })
       .push(undefined, function (error) {
-        throw {"error": {'message': error.toString()}};
+        reject(error);
       });
     });
   };
   
   // return all urls stored in a cache
   CacheStorage.prototype.allAttachments = function (id, options) {
+    var cache_name = this._getCacheName(restrictDocumentId(id));
     return new RSVP.Promise(function (resolve, reject) { 
-      restrictDocumentId(id);
       // returns a list of the URLs corresponding to the Request objects
       // that serve as keys for the current cache. We assume all files
       // are kept in cache, so there will be no network requests.
       return new RSVP.Queue()
         .push(function () {
-          return caches.open(id + "-v" + spec.version);
+          return caches.open(cache_name);
         })
         .push(function(cache) {
           return cache.keys();
@@ -163,21 +201,21 @@
           for (i = 0, len = result_list.length; i < len; i += 1) {
             attachment_dict[result_list[i]] = {};
           }
-          return {"error": null, data: attachment_dict};
+          return resolve(attachment_dict);
         })
         .push(undefined, function (error) {
-          throw {"error": {'message': error.toString()}};
+          reject(error);
         });
     });
   };
 
   // delete a file from a cache
   CacheStorage.prototype.removeAttachment = function (id, name) {
+    var cache_name = this._getCacheName(restrictDocumentId(id));
     return new RSVP.Promise(function (resolve, reject) { 
       return new RSVP.Queue()
         .push(function () {
-          restrictDocumentId(id);
-          return caches.open(id + "-v" + spec.version);
+          return caches.open(cache_name);
         })
         .push(function(cache) {
           var request = new Request(name, {mode: 'no-cors'});
@@ -185,27 +223,30 @@
         })
         .push(function (success) {
           if (success) {
-            return {"error": null};
+            return resolve();
           }
-          return {"error": {'status': 404, 'message': 'Item not found in cache.'}};
+          throw new jIO.util.jIOError(
+            "Cannot find attachment: " + id + " , " + name,
+            404
+          );
         });
       })
       .push(undefined, function (error) {
-        throw {"error": {'message': error.toString()}};
+        reject(error);
       });
   };
 
   // add a file to a cache
-  CacheStorage.prototype.putAttachment = function (id, name, content) {
+  CacheStorage.prototype.putAttachment = function (id, name, blob) {
+    var cache_name = this._getCacheName(restrictDocumentId(id));
     return new RSVP.Promise(function (resolve, reject) {
       return new RSVP.Queue()
         .push(function () {
-          restrictDocumentId(id);
-          return caches.open(id + "-v" + spec.version);
+          return caches.open(cache_name);
         })
         .push(function(cache) {
           var request = new Request(name, {mode: 'no-cors'}),
-            response = new Response(content);
+            response = new Response(blob);
 
           // If name = attachment url => event.data.url is not a 
           // valid URL, new Request() will throw a TypeError which will be 
@@ -217,55 +258,44 @@
           return cache.put(request, response);
         })
         .push(function() {
-          return {"error": null};
+          return resolve();
         })
         .push(undefined, function (error) {
-          throw {"error": {'message': error.toString()}};
+          reject(error);
         });
     });
   };
   
   // get a file from cache
   CacheStorage.prototype.getAttachment = function (id, name, options) {
+    var cache_name = this._getCacheName(restrictDocumentId(id));
     return new RSVP.Promise(function (resolve, reject) {
       return new RSVP.Queue()
         .push(function () {
-          restrictDocumentId(id);
-          caches.open(id + "-v" + spec.version);
+          return caches.open(cache_name);
         })
-        .push(function(cache) {
+        .push(function (cache) {
           var mime_type;
+
           return new RSVP.Queue()
             .push(function () {
               return cache.match(name);
             })
-            .push(function(response) {
+            .push(function (response) {
               var is_range,
                 start,
-                end,
+                end, 
                 split;
+
+              if (response === undefined) {
+                return;
+              }
 
               is_range = response.headers.get('range') || options.range;
               mime_type = response.headers.get('Content-Type');
-  
-              // XXX range requests - allow multiple ranges
-              if (is_range) {
-                split = is_range.split("bytes=")[1].split("-");
-                start = split[0];
-                end = split[1];
-  
-                return new RSVP.Queue()
-                  .push(function () {
-                    return response.arrayBuffer();
-                  })
-                  .push(function (array_buffer) {
-                    var dataView = new DataView(array_buffer.slice(start, end));
-                    return new Blob([dataView], {"type": mime_type});
-                  });
 
-              // XXX improve - regular requests
-              } else {
-              
+              if (!is_range) {
+                
                 // the response body is a ReadableByteStream which cannot be
                 // passed back through postMessage apparently. This link
                 // https://jakearchibald.com/2015/thats-so-fetch/ explains
@@ -275,34 +305,52 @@
                 // currently the blob is created, read, stored as new blob
                 // and returned (to be read again)
                 // https://github.com/whatwg/streams/blob/master/docs/ReadableByteStream.md
-                return response.clone().blob();
+                
+                // XXX why am I doing this? just to add the mime-type?
+                return new RSVP.Queue()
+                  .push(function () {
+                    return response.clone().blob();
+                  })
+                  .push(function (response_as_blob) {
+                    return new RSVP.Promise(function(resolve) {
+                      var blob_reader = new FileReader();
+                      blob_reader.onload = resolve;
+                      blob_reader.readAsText(response_as_blob);
+                    });
+                  })
+                  .push(function (reader_response) {
+                    return new Blob([reader_response.target.result], {"type": mime_type});
+                  });
               }
-            })
-            .push(function (response_as_blob) {
-              return new RSVP.Promise(function(resolve) {
-                var blob_reader = new FileReader();
-                blob_reader.onload = resolve;
-                blob_reader.readAsText(response_as_blob);
-              });
-            })
-            // XXX why am I doing this? just to add the mime-type?
-            .push(function (reader_response) {
-              return new Blob([reader_response.target.result], {"type": mime_type});
+              return new RSVP.Queue()
+                .push(function () {
+                  return response.arrayBuffer();
+                })
+                .push(function (array_buffer) {
+                  var split = is_range.split("bytes=")[1].split("-"),
+                    start = split[0],
+                    end = split[1] || array_buffer.byteLength,
+                    dataView = new DataView(array_buffer.slice(start, end));
+                  return new Blob([dataView], {"type": mime_type});
+                });
             });
         })
-        .push(function (converted_response) {
-          if (converted_response) {
-            return {"error": null, data: converted_response};
+        .push(function (converted_blob) {
+          if (converted_blob) {
+            return resolve(converted_blob);
           }
-          return {"error": {'status': 404, 'message': 'Item not found in cache.'}};
+          throw new jIO.util.jIOError(
+            "Cannot find attachment: " + id + " , " + name,
+            404
+          );
         })
         .push(undefined, function (error) {
-          throw {"error": {'message': error.toString()}};
+          reject(error);
         });
-    }); 
+    });
   };
 
   jIO.addStorage('cache', CacheStorage);
 
-}(jIO, RSVP, Blob, request, response));
+}(jIO, RSVP, Blob, Request, Response));
 

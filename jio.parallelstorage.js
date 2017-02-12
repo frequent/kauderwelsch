@@ -3,10 +3,23 @@
  * keep storages in parallel, without sync/replication
  */
 /*jslint indent: 2 */
-/*global jIO, RSVP, Array*/
-(function (jIO, RSVP, Array) {
+/*global jIO, RSVP, Array, Number*/
+(function (jIO, RSVP, Array, Number) {
   "use strict";
 
+  function testInteger(candidate) {
+    if (Number.isInteger(candidate)) {
+      return candidate;
+    }
+  }
+  
+  function handleArguments(argument_list) {
+    if (testInteger(argument_list[0])) {
+      return argument_list.splice(1);
+    }
+    return argument_list;
+  }
+  
   /**
    * The JIO Parallel Storage extension
    *
@@ -15,62 +28,67 @@
    */
   function ParallelStorage (spec) {
     var i;
-
-    if (spec.storage_list !== undefined || !Array.isArray(spec.storage_list)) {
+    
+    if (spec.storage_list === undefined || !Array.isArray(spec.storage_list)) {
       throw new jIO.util.jIOError("storage_list is not an Array", 400);
     }
+
     this._storage_list = [];
+    this._getStorage = function (index) {
+      return this._storage_list[testInteger(index) || 0];
+    };
+
     for (i = 0; i < spec.storage_list.length; i += 1) {
       this._storage_list.push(jIO.createJIO(spec.storage_list[i]));
     }
   }
 
-  ParallelStorage.prototype.post = function (index, content) {
-    var storage = this._storage_list[index];
-    return storage.post.call(storage, content);
+  ParallelStorage.prototype.post = function () {
+    var storage = this._getStorage(arguments[0]);
+    return storage.post.apply(storage, handleArguments(arguments));
   };
 
-  ParallelStorage.prototype.put = function (index, id, content) {
-    var storage = this._storage_list[index];
-    return storage.put.call(storage, id, content);
+  ParallelStorage.prototype.put = function () {
+    var storage = this._getStorage(arguments[0]);
+    return storage.put.apply(storage, handleArguments(arguments));
   };
 
-  ParallelStorage.prototype.get = function (index, id) {
-    var storage = this._storage_list[index];
-    return storage.get.call(storage, id);
+  ParallelStorage.prototype.get = function () {
+    var storage = this._getStorage(arguments[0]);
+    return storage.get.apply(storage, handleArguments(arguments));
   };
 
-  ParallelStorage.prototype.remove = function (index, id) {
-    var storage = this._storage_list[index];
-    return storage.remove.call(storage, id);
+  ParallelStorage.prototype.remove = function () {
+    var storage = this._getStorage(arguments[0]);
+    return storage.remove.apply(storage, handleArguments(arguments));
   };
   
-  ParallelStorage.prototype.allDocs = function (index, options) {
-    var storage = this._storage_list[index];
-    return storage.allDocs.call(storage, options);
+  ParallelStorage.prototype.allDocs = function () {
+    var storage = this._getStorage(arguments[0]);
+    return storage.allDocs.apply(storage, handleArguments(arguments));
   };
   
-  ParallelStorage.prototype.allAttachments = function (index, id, options) {
-    var storage = this._storage_list[index];
-    return storage.allAttachments.call(storage, id, options);
+  ParallelStorage.prototype.allAttachments = function () {
+    var storage = this._getStorage(arguments[0]);
+    return storage.allAttachments.apply(storage, handleArguments(arguments));
   };
 
-  ParallelStorage.prototype.removeAttachments = function (index, id, name) {
-    var storage = this._storage_list[index];
-    return storage.removeAttachments.call(storage, id, name);
+  ParallelStorage.prototype.removeAttachment = function () {
+    var storage = this._getStorage(arguments[0]);
+    return storage.removeAttachment.apply(storage, handleArguments(arguments));
   };
 
-  ParallelStorage.prototype.putAttachments = function (index, id, name, content) {
-    var storage = this._storage_list[index];
-    return storage.putAttachments.call(storage, id, name, content);
+  ParallelStorage.prototype.putAttachment = function () {
+    var storage = this._getStorage(arguments[0]);
+    return storage.putAttachment.apply(storage, handleArguments(arguments));
   };
 
-  ParallelStorage.prototype.getAttachments = function (index, id, name, options) {
-    var storage = this._storage_list[index];
-    return storage.getAttachments.call(storage, id, name, options);
+  ParallelStorage.prototype.getAttachment = function () {
+    var storage = this._getStorage(arguments[0]);
+    return storage.getAttachment.apply(storage, handleArguments(arguments));
   };
 
   jIO.addStorage('parallel', ParallelStorage);
 
-}(jIO, RSVP, Array));
+}(jIO, RSVP, Array, Number));
 
