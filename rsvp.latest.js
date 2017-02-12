@@ -1022,5 +1022,5 @@ define("rsvp",
     __exports__.resolve = resolve;
     __exports__.reject = reject;
   });
-window.RSVP = requireModule("rsvp");
-})(window);
+self.RSVP = requireModule("rsvp");
+})(self);
