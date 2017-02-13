@@ -26,9 +26,9 @@
       var messageChannel = new MessageChannel();
       messageChannel.port1.onmessage = function (event) {
         if (event.data.error) {
-          reject(event.data.error);
+          return reject(event.data.error);
         } else {
-          resolve(event.data.data);
+          return resolve(event.data.data);
         }
       };
 
