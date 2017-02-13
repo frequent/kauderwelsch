@@ -104,8 +104,11 @@
     // and it is not possible to determine whether an opaque response 
     // represents a success or failure
     // (https://github.com/whatwg/fetch/issues/14).
-    request = new Request(url, {mode: 'no-cors'});
-    
+    request = new Request(url, {
+      "mode": 'no-cors',
+      "Content-Type": "text/plain"
+    });
+
     // XXX differentiate handler based on desired content-type? 
     // (ArrayBuffer, BinaryString, DataUrl, String)
     return new RSVP.Queue()
@@ -117,7 +120,8 @@
           throw new Error('request for ' + prefetch_url +
             ' failed with status ' + response.statusText);
         }
-        return response;
+
+        return response.blob();
       });
   }
   
@@ -137,14 +141,12 @@
                 });
               })
               .push(undefined, function (error) {
-                console.log(error);
                 if (error.status_code === 404) {
                   return new RSVP.Queue()
                     .push(function () {
                       return fetchFile(prefetch_url);
                     })
                     .push(function (response) {
-                      console.log(response);
                       return STORAGE.putAttachment("prefetch", prefetch_url, response);  
                     });
                 }
@@ -290,34 +292,36 @@
   
     return event.waitUntil(
       new RSVP.Queue()
-        .push(function() {
-          caches.keys();
+        .push(function () {
+          return caches.keys();
         })
-        .push(function(cache_name_list) {
+        .push(function (cache_name_list) {
           return RSVP.all(
             cache_name_list.map(function(cache_name) {
-              version = cache_name.split("-v")[1];
-              
+              var version = cache_name.split("-v")[1];
+                
               // removes caches which are out of version
               if (!(version && parseInt(version, 10) === CURRENT_CACHE_VERSION)) {
                 console.log('Deleting out of date cache:' + cache_name);
                 return caches.delete(cache_name);
               }
-              
+                
               // removes caches which are not on the list of expected names 
               if (expected_cache_name_list.indexOf(cache_name) === -1) {
                 console.log('Deleting non-listed cache:' + cache_name);
                 return caches.delete(cache_name);
               }
-            }));
-        })
-        .push(function () {
-          console.log("'activate': Claiming clients for version");
-          if (self.param_dict.hasOwnProperty('clients_claim') !== false) {
-            return self.clients.claim();
-          }
-        })
-      );
+            })
+          );
+      })
+      .push(function () {
+        console.log("'activate': Claiming clients for version");
+        if (self.param_dict.hasOwnProperty('clients_claim') !== false) {
+          return self.clients.claim();
+        }
+      })
+    )
+
   }
 
   // here we go

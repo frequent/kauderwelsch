@@ -8206,7 +8206,7 @@ return new Parser;
         var ceilHeapSize = function (v) {
             // The asm.js spec says:
             // The heap object's byteLength must be either
-            // 2^n for n in [12, 24) or 2^24 * n for n ≥ 1.
+            // 2^n for n in [12, 24) or 2^24 * n for n â¥ 1.
             // Also, byteLengths smaller than 2^16 are deprecated.
             var p;
             // If v is smaller than 2^16, the smallest possible solution
@@ -11969,6 +11969,7 @@ return new Parser;
     // XXX Canceller???
     return new RSVP.Queue()
       .push(function () {
+        return new RSVP.Promise(resolver);
       });
   }
 

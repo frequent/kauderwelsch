@@ -23,8 +23,7 @@
   };
   
   PROCESSOR.process = function (name, inbound_blob) {
-    
-    function compressAndIndexFile() {
+    function compressAndIndexFile(blob) {
       var file_reader = new FileReader(),
         chunk_size = 1024,
         offset = 0,
@@ -61,17 +60,17 @@
           offset += chunk_size;
           //if (offset >= inbound_blob.size) {
           if (offset >= 16385) {
-            resolve(PROCESSOR.prettify(name, boundary_dict));
+            return resolve({"data": PROCESSOR.prettify(name, boundary_dict)});
           }
           return loopOverBlob(offset);
         };
         file_reader.onerror = function (my_event) {
-          reject(my_event);
+          return reject(my_event);
         };
-        
+
         function loopOverBlob(my_offset) {
           return file_reader.readAsText(
-            inbound_blob.slice(my_offset, my_offset += chunk_size)
+            blob.slice(my_offset, my_offset += chunk_size)
           );
         }
         return loopOverBlob(offset);

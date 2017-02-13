@@ -53,11 +53,11 @@
 
     if (typeof importScripts === 'function') {
       importScripts(spec.index_generator);
-      spec._processor = self.processor;
-      spec._handler = spec._processor.process;
+      this._processor = self.processor;
+      this._handler = this._processor.process;
     } else {
-      spec._processor = new Worker(spec.index_generator);
-      spec._handler = sendMessage;
+      this._processor = new Worker(spec.index_generator);
+      this._handler = sendMessage;
     }
 
     context._index_storage = jIO.createJIO(spec.index_storage);
@@ -70,17 +70,17 @@
 
   IndexStorage.prototype.put = function (id, content) {
     var storage = this._sub_storage;
-    return storage.put.call(storage, id, content);
+    return storage.put.apply(storage, [id, content]);
   };
 
   IndexStorage.prototype.get = function (id) {
     var storage = this._sub_storage;
-    return storage.get.call(storage, id);
+    return storage.get.apply(storage, [id]);
   };
 
   IndexStorage.prototype.remove = function (id) {
     var storage = this._sub_storage;
-    return storage.remove.call(storage, id);
+    return storage.remove.apply(storage, [id]);
   };
 
   // XXX this is not optimal, because indexing multiple files will have all
@@ -89,19 +89,19 @@
   IndexStorage.prototype.allDocs = function (options) {
     var opts = options || {},
       storage = this._sub_storage,
-      index = this._index_storage;
+      index_storage = this._index_storage;
     
     // index is dumb = we expect the processor setting correct orefix and limit
     // also containing correct prefix along with ids to lookup
     if (opts.limit !== undefined) {
-      return index.allDocs.call(index, opts);
+      return index_storage.allDocs.apply(index, [opts]);
     }
-    return storage.allDocs.call(storage, opts);
+    return storage.allDocs.apply(storage, [opts]);
   };
   
   IndexStorage.prototype.allAttachments = function (id, options) {
     var storage = this._sub_storage;
-    return storage.allAttachments.call(storage, id, options);
+    return storage.allAttachments.apply(storage, [id, options]);
   };
 
   // fetching a large file goes against indexing it and serving ranges
@@ -109,20 +109,20 @@
   // request the ranges returned
   IndexStorage.prototype.getAttachment = function (id, name, options) {
     var storage = this._sub_storage;
-    return storage.getAttachment.call(storage, id, name, options);
+    return storage.getAttachment.apply(storage, [id, name, options]);
   };
 
   // XXX not so nice
   IndexStorage.prototype.removeAttachment = function (id, name) {
     var storage = this._sub_storage,
-      index = this._index_storage;
+      index_storage = this._index_storage;
     return new RSVP.Queue()
       .push(function () {
 
         // XXX add prefix support https://gist.github.com/inexorabletash/5462871
         RSVP.all([
-          index.allDocs(),
-          storage.removeAttachment.apply(storage, id, name)
+          index_storage.allDocs(),
+          storage.removeAttachment.apply(storage, [id, name])
         ]);
       })
       .push(function (result_list) {
@@ -134,7 +134,7 @@
 
           // XXX would be better to filter by id, not name
           if (key.indexOf(name) > -1) {
-            garbage_list.push(index.remove(key));
+            garbage_list.push(index_storage.remove.apply(index_storage, [key]));
           }
         }
         return RSVP.all(garbage_list);
@@ -145,24 +145,31 @@
   IndexStorage.prototype.putAttachment = function (id, name, blob) {
     var handler = this._handler,
       storage = this._sub_storage,
-      index = this._index_storage;
-
-    return new RSPV.Queue()
-    .push(function () {
-      return RSVP.all([
-        handler(name, blob),
-        storage.put.apply(id, name, blob)
-      ]);
-    })
-    .push(function (result_list) {
-      var index_entry_list = [], 
-        data = result_list[0].data,
-        i;
-      for (i = 0; i < data.total_rows; i += 1) {
-        index_entry_list.push(index.put.apply(index, data.rows[i]));
-      }
-      return RSVP.all(index_entry_list);
-    });
+      index_storage = this._index_storage;
+    return new RSVP.Queue()
+      .push(function () {
+        return handler(name, blob);
+      })
+      .push(function (result) {
+        var index_entry_list = [], 
+          data = result.data,
+          row,
+          i;
+        for (i = 0; i < data.total_rows; i += 1) {
+          row = data.rows[i];
+          index_entry_list.push(
+            index_storage.put.apply(index_storage, [row[0], {"block": row[1]}])
+          );
+        }
+        return RSVP.all(index_entry_list);
+      })
+      .push(function () {
+        return storage.putAttachment.apply(storage, [id, name, blob]);
+      })
+      .push(undefined, function (error) {
+        console.log(error);
+        throw error;
+      });
   };
 
   jIO.addStorage('index', IndexStorage);
