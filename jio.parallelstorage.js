@@ -87,8 +87,17 @@
     var storage = this._getStorage(arguments[0]);
     return storage.getAttachment.apply(storage, handleArguments(arguments));
   };
+  
+  ParallelStorage.prototype.hasCapacity = function () {
+    var storage = this._getStorage(arguments[0]);
+    return storage.hasCapacity.apply(storage, handleArguments(arguments));
+  };
+  
+  ParallelStorage.prototype.buildQuery = function () {
+    var storage = this._getStorage(arguments[0]);
+    return storage.buildQuery.apply(storage, handleArguments(arguments));
+  };
 
   jIO.addStorage('parallel', ParallelStorage);
 
 }(jIO, RSVP, Array, Number));
-

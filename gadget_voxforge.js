@@ -46,67 +46,67 @@
     .allowPublicAcquisition("jio_create", function (param_list) {
       return this.getDeclaredGadget("worker")
         .push(function (my_declared_gadget) {
-          return my_declared_gadget.jio_create.apply(null, param_list);
+          return my_declared_gadget.jio_create.apply(my_declared_gadget, param_list);
         });
     })
     .allowPublicAcquisition("jio_allDocs", function (param_list) {
       return this.getDeclaredGadget("worker")
         .push(function (my_declared_gadget) {
-          return my_declared_gadget.jio_allDocs.apply(null, param_list);
+          return my_declared_gadget.jio_allDocs.apply(my_declared_gadget, param_list);
         });
     })
     .allowPublicAcquisition("jio_remove", function (param_list) {
       return this.getDeclaredGadget("worker")
         .push(function (my_declared_gadget) {
-          return my_declared_gadget.jio_remove.apply(null, param_list);
+          return my_declared_gadget.jio_remove.apply(my_declared_gadget, param_list);
         });
     })
     .allowPublicAcquisition("jio_post", function (param_list) {
       return this.getDeclaredGadget("worker")
         .push(function (my_declared_gadget) {
-          return my_declared_gadget.jio_post.apply(null, param_list);
+          return my_declared_gadget.jio_post.apply(my_declared_gadget, param_list);
         });
     })
     .allowPublicAcquisition("jio_put", function (param_list) {
       return this.getDeclaredGadget("worker")
         .push(function (my_declared_gadget) {
-          return my_declared_gadget.jio_put.apply(null, param_list);
+          return my_declared_gadget.jio_put.apply(nulmy_declared_gadgetl, param_list);
         });
     })
     .allowPublicAcquisition("jio_get", function (param_list) {
       return this.getDeclaredGadget("worker")
         .push(function (my_declared_gadget) {
-          return my_declared_gadget.jio_get.apply(null, param_list);
+          return my_declared_gadget.jio_get.apply(my_declared_gadget, param_list);
         });
     })
     .allowPublicAcquisition("jio_allAttachments", function (param_list) {
       return this.getDeclaredGadget("worker")
         .push(function (my_declared_gadget) {
-          return my_declared_gadget.jio_allAttachments.apply(null, param_list);
+          return my_declared_gadget.jio_allAttachments.apply(my_declared_gadget, param_list);
         });
     })
     .allowPublicAcquisition("jio_getAttachment", function (param_list) {
       return this.getDeclaredGadget("worker")
         .push(function (my_declared_gadget) {
-          return my_declared_gadget.jio_getAttachment.apply(null, param_list);
+          return my_declared_gadget.jio_getAttachment.apply(my_declared_gadget, param_list);
         });
     })
     .allowPublicAcquisition("jio_putAttachment", function (param_list) {
       return this.getDeclaredGadget("worker")
         .push(function (my_declared_gadget) {
-          return my_declared_gadget.jio_putAttachment(null, param_list);
+          return my_declared_gadget.jio_putAttachment(my_declared_gadget, param_list);
         });
     })
     .allowPublicAcquisition("jio_removeAttachment", function (param_list) {
       return this.getDeclaredGadget("worker")
         .push(function (my_declared_gadget) {
-          return my_declared_gadget.jio_removeAttachment.apply(null, param_list);
+          return my_declared_gadget.jio_removeAttachment.apply(my_declared_gadget, param_list);
         });
     })
     .allowPublicAcquisition("jio_repair", function (param_list) {
       return this.getDeclaredGadget("worker")
         .push(function (my_declared_gadget) {
-          return my_declared_gadget.jio_repair.apply(null, param_list);
+          return my_declared_gadget.jio_repair.apply(my_declared_gadget, param_list);
         });
     });
     
@@ -115,4 +115,3 @@
     /////////////////////////////
     
 }(window, rJS, RSVP));
-

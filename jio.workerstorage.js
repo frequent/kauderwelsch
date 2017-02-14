@@ -37,20 +37,23 @@
       // use the transferred port to reply via postMessage(), which will in turn
       // trigger the onmessage handler on messageChannel.port1.
       // See https://html.spec.whatwg.org/multipage/workers.html
+      // XXX try catch here to throw for impatient users
       return navigator.serviceWorker.controller
         .postMessage(message, [messageChannel.port2]);
     });
   }
   
-  function installServiceWorker(spec) {
+  function installServiceWorker(my_context) {
     return new RSVP.Queue()
       .push(function () {
-        return spec.sw.getRegistration();
+        return my_context.sw.getRegistration();
       })
       .push(function (registered_worker) {
         return new RSVP.Promise(function (resolve) {
           if (!registered_worker) {
-            return resolve(spec.sw.register(spec.url, {"scope": spec.scope}));   
+            return resolve(my_context.sw.register(my_context.url, {
+              "scope": my_context.scope
+            }));   
           }
           // XXX What if this isn't mine?
           return resolve(registered_worker);
@@ -74,12 +77,12 @@
         // which any defined resources are pre-fetched) to continue.
         registration.installing.addEventListener('statechange', function(e) {
           if (e.target.state == 'installed') {
-            resolve(registration);
+            return resolve(registration);
           
           // if activate/install fail or this worker is replaced by another
           // https://bitsofco.de/the-service-worker-lifecycle/
           } else if (e.target.state == 'redundant') {
-            reject(e);
+            return reject(e);
           }
         });
       } else {
@@ -88,7 +91,7 @@
         // installation must have beencompleted during a previous visit to this
         // page, and the any resources will already have benn pre-fetched So
         // we can proceed right away.
-        resolve(registration);
+        return resolve(registration);
       }
     });
   }
@@ -96,10 +99,39 @@
   function claimScope(registration) {
     return new RSVP.Promise(function (resolve, reject) {
       if (registration.active && registration.active.state === 'activated') {
-        resolve();
+        return resolve();
       } else {
-        reject(new Error("Please refresh to initialize serviceworker."));
+        return reject(new Error("Please refresh to initialize serviceworker."));
       }
+    });
+  }
+  
+  function initializeServiceWorker(my_context) {
+    return new RSVP.Queue()
+      .push(function () {
+        // XXX PromiseEventListener(navigator.serviceWorker, "controllerchange", false, console)
+        return installServiceWorker(my_context);
+      })
+      .push(function (registration) {
+        return waitForInstallation(registration);
+      })
+      .push(function (installation) {
+        return claimScope(installation);
+      })
+      .push(undefined, function (error) {
+        console.log(error);
+        throw error;
+      });
+  }
+  
+  function initializeWorker(spec) {
+    return new RSVP.Queue()
+    .push(function () {
+      return new Worker(spec.url);
+    })
+    .push(undefined, function (error) {
+      console.log(error);
+      throw error;
     });
   }
 
@@ -110,6 +142,8 @@
    * @constructor
    */
   function WorkerStorage (spec) {
+    var context = this;
+
     if (spec.scope && "serviceWorker" in navigator === false) {
       throw new jIO.util.jIOError("Serviceworker not available.", 503);
     }
@@ -122,40 +156,17 @@
     if (!spec.url) {
       throw new jIO.util.jIOError("Worker storage requires a (service)worker url.", 400);
     }
-    
+
     // pass configuration to serviceworker via url
-    spec.url = spec.url += "?" + serializeUrlList(spec.prefetch_url_list) + "&" +
+    this.url = spec.url += "?" + serializeUrlList(spec.prefetch_url_list) + "&" +
       "sub_storage=" + encodeURIComponent(JSON.stringify(spec.sub_storage));
 
+    // intialize serviceworker or worker
     if (spec.scope) {
-      spec.sw = navigator.serviceWorker;
-      return new RSVP.Queue()
-        .push(function () {
-          // XXX PromiseEventListener(navigator.serviceWorker, "controllerchange", false, console)
-          return installServiceWorker(spec);
-        })
-        .push(function (registration) {
-          return waitForInstallation(registration);
-        })
-        .push(function (installation) {
-          return claimScope(installation);
-        })
-        .push(undefined, function (error) {
-          console.log("BAM")
-          console.log(error);
-          throw error;
-        });
-    }
-    
-    // Worker initialization
-    if (!spec.scope) {
-      return new RSVP.Queue()
-        .push(function () {
-          return new Worker(spec.url);
-        })
-        .push(function (worker) {
-          // what happens here?
-        });
+      this.sw = navigator.serviceWorker;
+      initializeServiceWorker(this);
+    } else {
+      initializeWorker(this);
     }
   }
 
@@ -198,27 +209,13 @@
   };
   
   WorkerStorage.prototype.hasCapacity = function (name) {
-    return (name === "list");
-  };
-  
-  WorkerStorage.prototype.allDocs = function () {
-    var context = this;
-    return new RSVP.Queue()
-      .push(function () {
-        if (context.hasCapacity("list")) {
-          return context.buildQuery(options);
-        }
-      })
-      .push(function (result) {
-        return result;
-      });
+    return ((name === "list") || (name === "query") || (name === "limit"));
   };
 
-  WorkerStorage.prototype.buildQuery = function () {
-    return sendMessage({"command": "allDocs", "param": arguments});
+  WorkerStorage.prototype.buildQuery = function (options) {
+    return sendMessage({"command": "allDocs", "param": options});
   };
 
   jIO.addStorage('worker', WorkerStorage);
 
 }(self, jIO, RSVP, Blob, navigator));
-

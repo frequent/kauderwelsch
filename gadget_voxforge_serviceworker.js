@@ -233,7 +233,6 @@
   }
   
   function bounceMessage(event, method, param) {
-    
     // event.ports[0] corresponds to the MessagePort that was transferred 
     // as part of the controlled page's call to controller.postMessage(). 
     // Therefore, event.ports[0].postMessage() will trigger the onmessage
@@ -242,18 +241,20 @@
     
     return new RSVP.Queue()
       .push(function () {
-        return STORAGE[method].apply(self, param);  
+        return STORAGE[method](param);  
       })
       .push(function (result) {
         return event.port[0].postMessage({"error": null, "data": result});
       })
       .push(undefined, function (error) {
+        console.log(error)
         return event.port[0].postMessage({"error": error});
       });
   }
 
   // storage communication
   function messageHandler(event) {
+    console.log(event)
     var data = event.data;
     switch (data.command) {
       case 'post':
@@ -341,7 +342,6 @@
     })
     .push(function (my_jio_storage) {
       STORAGE = my_jio_storage;
-
       return RSVP.all([
         //  workerLoopEventListener(self, "fetch", fetchHandler),
         workerLoopEventListener(self, "install", installHandler),
@@ -351,4 +351,3 @@
     });
 
 }(self, fetch, Request, Response, console, location, JSON));
-

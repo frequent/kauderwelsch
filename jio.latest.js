@@ -7865,6 +7865,7 @@ return new Parser;
   };
 
   JioProxyStorage.prototype.hasCapacity = function (name) {
+    console.log(this.__storage)
     var storage_method = this.__storage.hasCapacity,
       capacity_method = this.__storage[name];
     if (capacity_method !== undefined) {
@@ -7881,6 +7882,9 @@ return new Parser;
   };
 
   JioProxyStorage.prototype.allDocs = function (options) {
+    console.log("HELLO")
+    console.log(this)
+    console.log(options)
     var context = this;
     if (options === undefined) {
       options = {};
@@ -8206,7 +8210,7 @@ return new Parser;
         var ceilHeapSize = function (v) {
             // The asm.js spec says:
             // The heap object's byteLength must be either
-            // 2^n for n in [12, 24) or 2^24 * n for n â¥ 1.
+            // 2^n for n in [12, 24) or 2^24 * n for n ≥ 1.
             // Also, byteLengths smaller than 2^16 are deprecated.
             var p;
             // If v is smaller than 2^16, the smallest possible solution

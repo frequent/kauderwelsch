@@ -33,7 +33,6 @@
   var CANCEL_ANIMATION_FRAME = window.cancelAnimationFrame || 
     window.webkitCancelAnimationFrame || window.mozCancelAnimationFrame;
 
-  /*
   /////////////////////////////
   // some methods
   /////////////////////////////
@@ -63,7 +62,6 @@
     ANALYSER_FRAME_ID = requestAnimationFrame( updateAnalyser );
   }
 
-  */
   rJS(window)
 
     /////////////////////////////
@@ -85,7 +83,7 @@
     .declareMethod('render', function (my_option_dict) {
       var gadget = this,
         props = gadget.property_dict;
-      console.log("VISUALISER RENDER")
+
       if (!AUDIO_CONTEXT) {
         throw new TypeError("Browser does not support AudioContext");
       }
@@ -97,15 +95,14 @@
       }
 
       // need to wait with defer
-      //props.canvas_node = gadget.element.querySelector(".kw-analyser");
-      //props.context = new AUDIO_CONTEXT();
+      props.canvas_node = gadget.element.querySelector(".kw-analyser");
+      props.context = new AUDIO_CONTEXT();
 
-      //if (props.deferred) {
-      //  return props.deferred.resolve();
-      //}
+      if (props.deferred) {
+        return props.deferred.resolve();
+      }
     })
-    
-    /*
+
     .declareMethod("initializeAnalyser", function () {
       var gadget = this,
         props = gadget.property_dict;
@@ -173,7 +170,5 @@
           throw my_error;
         });
     });
-  */
     
 }(window, rJS, RSVP));
-
