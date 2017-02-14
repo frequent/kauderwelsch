@@ -10042,7 +10042,7 @@ return new Parser;
   }
 
   IndexedDBStorage.prototype.hasCapacity = function (name) {
-    return ((name === "list") || (name === "include"));
+    return ((name === "list") || (name === "include") || (name === "limit"));
   };
 
   function buildKeyPath(key_list) {
@@ -10185,13 +10185,17 @@ return new Parser;
     }
     return openIndexedDB(this)
       .push(function (db) {
-        var tx = openTransaction(db, ["metadata"], "readonly");
+        var tx = openTransaction(db, ["metadata"], "readonly"),
+          range_list;
+        if (options.limit !== undefined) {
+          range_list = IDBKeyRange.bound(options.limit[9], options.limit[1]);
+        }
         if (options.include_docs === true) {
           return handleCursor(tx.objectStore("metadata").index("_id")
-                              .openCursor(), pushIncludedMetadata);
+                              .openCursor(range_list), pushIncludedMetadata);
         }
         return handleCursor(tx.objectStore("metadata").index("_id")
-                            .openKeyCursor(), pushMetadata);
+                            .openKeyCursor(range_list), pushMetadata);
       })
       .push(function () {
         return result_list;

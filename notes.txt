@@ -3,6 +3,7 @@
 // this polyfill provides Cache.add(), Cache.addAll(), and CacheStorage.match(),
 // should not be needed for Chromium > 47 And Firefox > 39
 // importScripts('./serviceworker-cache-polyfill.js');
+// state => https://bitsofco.de/the-service-worker-lifecycle/
 // CONFLICTING CONTROLLERS/NO CONTROLLER
 // if using same scope (for example ./) => https://github.com/w3c/ServiceWorker/issues/921
 // hijack using claim() which triggers oncontrollerchange on other serviceworkers
@@ -84,6 +85,8 @@ https://www.html5rocks.com/en/tutorials/file/dndfiles/
 https://www.html5rocks.com/en/tutorials/file/filesystem-sync/
 http://stackoverflow.com/questions/23331546/how-to-use-javascript-to-read-local-text-file-and-read-line-by-line
 https://www.codeproject.com/Articles/744986/How-to-do-some-magic-with-indexedDB
+https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API/Using_IndexedDB
+
 
 https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API/Using_IndexedDB
 https://github.com/mdn/to-do-notifications/blob/gh-pages/scripts/todo.js
@@ -99,3 +102,6 @@ http://www.szynalski.com/tone-generator/
 
 // array buffer
 http://www.javascripture.com/ArrayBuffer
+
+// stream all content
+https://jakearchibald.com/2016/streams-ftw/

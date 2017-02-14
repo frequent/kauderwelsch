@@ -684,4 +684,3 @@ self.addEventListener('message', function (event) {
       throw 'Unknown command: ' + event.data.command;
   }
 });  
-

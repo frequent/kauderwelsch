@@ -54,7 +54,10 @@
    * @class ServiceWorkerStorage
    * @constructor
    */
-  function ServiceWorkerStorage () {}
+  function ServiceWorkerStorage (option_dict) {
+    console.log("SW Storage")
+    console.log(option_dict)
+  }
 
   ServiceWorkerStorage.prototype.post = function () {
     throw new jIO.util.jIOError("Storage requires 'put' to create new cache",
@@ -157,7 +160,7 @@
     // an ajax request, which the serviceworker would catch via fetch listener!
     // for a filesystem equivalent however, we don't assume fetching resources
     // from the network, so all methods will go through sendMessage
-    
+
     return new RSVP.Queue()
       .push(function () {
         return validateConnection();
@@ -245,4 +248,3 @@
   jIO.addStorage('serviceworker', ServiceWorkerStorage);
 
 }(jIO, RSVP, Blob, navigator));
-

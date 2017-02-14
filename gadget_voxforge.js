@@ -42,11 +42,8 @@
     // declared methods
     /////////////////////////////
     .declareMethod('render', function (my_option_dict) {
-      var gadget = this,
-        props = gadget.property_dict;
+      var gadget = this;
 
-      // initialize the serviceworker and create the jIO serviceworker storage
-      // XXX the worker should actually be a mapping storage
       return new RSVP.Queue()
         .push(function () {
           return RSVP.all([
@@ -89,9 +86,9 @@
 
     .declareMethod('routeStorageRequest', function (my_method, my_param_list) {
       var gadget = this,
-        dict = gadget.property_dict,
-        active_storage_label = dict.storage_dict.active,
-        storage = dict.storage_dict[active_storage_label];
+        props = gadget.property_dict,
+        active_storage_label = props.storage_dict.active,
+        storage = props.storage_dict[active_storage_label];
       return storage[my_method].apply(storage, [].concat(my_param_list));
     })
 
@@ -134,4 +131,3 @@
     });
     
 }(window, rJS, RSVP));
-

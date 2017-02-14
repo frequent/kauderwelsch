@@ -93,7 +93,7 @@
           return resolve(id);
         })
         .push(undefined, function (error) {
-          reject(error);
+          return reject(error);
         });
     });
   };
@@ -116,7 +116,7 @@
           throw new jIO.util.jIOError("Cannot find cache  " + id, 404);
         })
         .push(undefined, function (error) {
-          reject(error);
+          return reject(error);
         });
     });
   };
@@ -142,7 +142,7 @@
           );
         })
         .push(undefined, function (error) {
-          reject(error);
+          return reject(error);
         });
     });
   };
@@ -171,7 +171,7 @@
         });
       })
       .push(undefined, function (error) {
-        reject(error);
+        return reject(error);
       });
     });
   };
@@ -204,7 +204,7 @@
           return resolve(attachment_dict);
         })
         .push(undefined, function (error) {
-          reject(error);
+          return reject(error);
         });
     });
   };
@@ -232,7 +232,7 @@
         });
       })
       .push(undefined, function (error) {
-        reject(error);
+        return reject(error);
       });
   };
 
@@ -261,7 +261,7 @@
           return resolve();
         })
         .push(undefined, function (error) {
-          reject(error);
+          return reject(error);
         });
     });
   };
@@ -345,7 +345,7 @@
           );
         })
         .push(undefined, function (error) {
-          reject(error);
+          return reject(error);
         });
     });
   };
@@ -353,4 +353,3 @@
   jIO.addStorage('cache', CacheStorage);
 
 }(jIO, RSVP, Blob, Request, Response));
-

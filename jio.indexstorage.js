@@ -14,9 +14,9 @@
     return new RSVP.Promise(function (resolve, reject) {
       spec._processor.onmessage = function (event) {
         if (event.data.error) {
-          reject(event.data.error);
+          return reject(event.data.error);
         } else {
-          resolve(event.data.data);
+          return resolve(event.data.data);
         }
       };
       return spec._processor.postMessage(message);
@@ -103,6 +103,16 @@
     var storage = this._sub_storage;
     return storage.allAttachments.apply(storage, [id, options]);
   };
+  
+  IndexStorage.prototype.hasCapacity = function (name) {
+    // XXX hm, differentiate between index_storage and substorage?
+    return ((name === "list") || (name === "query") || (name === "limit"));
+  };
+  
+  IndexStorage.prototype.buildQuery = function (options) {
+    var storage = this._sub_storage;
+    return storage.buildQuery.apply(storage, options);
+  };
 
   // fetching a large file goes against indexing it and serving ranges
   // the idea is to call allDocs with limit [indexFrom, indexTo] and then only
@@ -175,4 +185,3 @@
   jIO.addStorage('index', IndexStorage);
 
 }(self, jIO, RSVP, Array));
-

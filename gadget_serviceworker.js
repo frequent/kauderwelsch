@@ -56,9 +56,12 @@
       .push(function (is_registered_worker) {
         var url = my_option_dict.serviceworker_url || 'serviceworker.js';
 
-        // XXX pass more ... sexy
+        // XXX pass more ... sexy and encodeURIComp
         if (my_option_dict.prefetch_url_list) {
           url += PRE + my_option_dict.prefetch_url_list;
+        }
+        if (my_option_dict.worker) {
+          url += "&worker=" + my_option_dict.worker;
         }
 
         // XXX What if this isn't mine?
@@ -149,4 +152,3 @@
     });
 
 }(window, rJS, navigator));
-

@@ -4,10 +4,8 @@
   "use strict";
 
   // Stream Recording inspired by:
-  // Copyright Â© 2013 Matt Diamond - License (MIT)
+  // Copyright © 2013 Matt Diamond - License (MIT)
   // https://github.com/mattdiamond/Recorderjs
-
-  // XXX test for worker?
 
   var WORKER_PATH = 'gadget_recorder_worker_router.js';
 
@@ -39,12 +37,12 @@
   // some methods 
   /////////////////////////////
   function initializeDownload(blob, filename) {
-      var link = document.createElement("a");
-      link.href = (window.URL || window.webkitURL).createObjectURL(blob);
-      link.download = filename || 'output.wav';
-      link.textContent = "Download Meno";
-      return link;
-    }
+    var link = document.createElement("a");
+    link.href = (window.URL || window.webkitURL).createObjectURL(blob);
+    link.download = filename || 'output.wav';
+    link.textContent = "Download Meno";
+    return link;
+}
 
   function drawBuffer(width, height, context, data) {
     var step = Math.ceil( data.length / width ),
@@ -85,33 +83,6 @@
     template.split("%s").map(setHtmlContent(html_content));
     return html_content.join("");
   }
-  
-  /*
-  // called from listener, use later
-  function saveAudio() {
-    ?> recorder.exportWAV(doneEncoding);
-    // could get mono instead by saying
-    // audioRecorder.exportMonoWAV( doneEncoding );
-  }
-
-  // called from listener after ... encoding
-  function doneEncoding( blob ) {
-    Recorder.setupDownload( blob, "myRecording" + ((recIndex<10)?"0":"") + recIndex + ".wav" );
-    recIndex++;
-  }
-
-  // orocess to mono during recording
-  function convertToMono(input) {
-    var gadget = this;
-      splitter = gadget.audio.context.createChannelSplitter(2);
-      merger = gadget.audio.context.createChannelMerger(2);
-
-      input.connect(splitter);
-      splitter.connect(merger, 0, 0);
-      splitter.connect(merger, 0, 1);
-      return merger;
-  }
-  */
 
   // Custom loopEventListener
   function customLoopEventListener(my_target, my_type, my_callback) {
@@ -168,34 +139,15 @@
       output_array.push(input_array);
     }
     return output_array;
-      
-    
-    /*
-    return my_input_list.reduce(function(current, value) {
-      var single = value.charAt(0),
-        double = value.charAt(1),
-        follow_up = String.fromCharCode(double.charCodeAt(0) + 1),
-        output_array = [];
-      console.log(single)
-      console.log(double)
-      console.log(follow_up)
-      output_array.push(single + double);
-      output_array.push(single + follow_up);
-      return current.push(output_array);
-    }, []);
-    */
   }
 
   function setPointer(my_index, my_pointer) {
     if (my_index.hasOwnProperty(my_pointer)) {
       return my_index[my_pointer];
     }
-    console.log(my_pointer)
     if (my_pointer[1] === "Z") {
       throw new Error("Better stop looping before reaching infinity, non?")
     }
-    console.log(my_pointer)
-    console.log("did not find: " + my_pointer + " going to " + my_pointer[0] + String.fromCharCode(my_pointer.charCodeAt(1) + 1))
     return setPointer(my_index, my_pointer[0] + String.fromCharCode(my_pointer.charCodeAt(1) + 1))
   }
 
@@ -205,23 +157,19 @@
       i,
       start_pointer,
       end_pointer;
-    console.log(my_pointer_list)
-    console.log(my_index)
-    
     for (i = 0; i < len; i += 1) {
-      start_pointer = setPointer(my_index, my_pointer_list[i][0]) 
+      start_pointer = setPointer(my_index, my_pointer_list[i][0]);
       end_pointer = setPointer(my_index, my_pointer_list[i][1]);
       output_list.push(start_pointer + "-" + end_pointer);
     }
-    console.log("DONE POINTER")
-    console.log(output_list)
     return output_list.join(",");
   }
 
   // check dictionary whether words to be spoken are in it, throw if not
   // XXX this is a worker task, no?
   function validateAgainstDict(my_gadget, my_input_value) {
-    console.log("starting with ", my_input_value)
+    
+    // this is an indexedDB task
     return new RSVP.Queue()
       .push(function () {
         return my_gadget.jio_getAttachment("dictionary", "index.VoxForgeDict.txt", {
@@ -238,28 +186,24 @@
         return getBoundaryList(getCharacterPointers(my_input_value.split(",")), pointer_dict)
       })
       .push(function (boundary_list) {
-        console.log("setting range to ", boundary_list)
-          return my_gadget.jio_getAttachment("dictionary", "VoxForgeDict.txt", {
-            "range": "bytes=" + boundary_list,
-            "format": "text"
-          });
-        })
-        .push(function (my_dictionary_content) {
-          console.log(my_dictionary_content);
-          console.log("YEAH")
-          // look through this for the text from my_invput_value, return or missing words.
-
-        })
-        .push(undefined, function (my_error_list) {
-          console.log("NOPE")
-          console.log(my_error_list)
-          throw my_error_list
-          // words could not be found, throw the words, so user can update
+        return my_gadget.jio_getAttachment("dictionary", "VoxForgeDict.txt", {
+          "range": "bytes=" + boundary_list,
+          "format": "text"
         });
+      })
+      .push(function (my_dictionary_content) {
+        console.log(my_dictionary_content);
+        // look through this for the text from my_invput_value, return or missing words.
+      })
+      .push(undefined, function (my_error_list) {
+        console.log("NOPE")
+        console.log(my_error_list)
+        throw my_error_list
+      });
   }
 
 
-  function handleCallback(my_event) {
+  function handleCallback(my_gadget, my_event) {
     if (my_event.data.error) {
       throw my_event.data.error;
     }
@@ -269,13 +213,24 @@
       case "exportMonoWAV":
         return my_event.data.result;
       case "clear":
-        //console.log("cleared");
         break;
       case "getBuffers":
         return my_event.data.result;
       case "init":
-        //console.log("started");
         break;
+      case "getLexicon":
+        console.log("HAHA")
+        return new RSVP.Queue()
+          .push(function () {
+            return my_gadget.getLexicon({});
+          })
+          .push(function (my_data) {
+            console.log("got lexicon")
+            console.log(my_data)
+            return my_gadget.sendMessage({"command": my_event.data.callback, "option_dict": {
+              "data": my_data
+            }});
+          });
     }
   }
 
@@ -302,8 +257,8 @@
     // acquired methods
     /////////////////////////////
     .declareAcquiredMethod('setActiveStorage', 'setActiveStorage')
-    .declareAcquiredMethod('jio_create', 'jio_create')
     .declareAcquiredMethod('jio_getAttachment', 'jio_getAttachment')
+    .declareAcquiredMethod('jio_allDocs', 'jio_allDocs')
 
     /////////////////////////////
     // declared methods
@@ -331,12 +286,6 @@
           }
         })
         .push(function () {
-          return gadget.setActiveStorage("serviceworker");
-        })
-        .push(function () {
-          return gadget.jio_create({"type": "serviceworker"});
-        })
-        .push(function () {
           return gadget.sendMessage({"command": 'init', "option_dict": {
             "sample_rate": props.context.sampleRate
           }});
@@ -344,6 +293,25 @@
         .push(function () {
           props.source.connect(props.node);
           props.node.connect(props.context.destination);
+        });
+    })
+
+    .declareMethod("getLexicon", function (my_option_dict) {
+      var gadget = this;
+      console.log("HOJ")
+      return new RSVP.Queue()
+        .push(function () {
+          return gadget.setActiveStorage("indexeddb");
+        })
+        .push(function () {
+          return gadget.jio_allDocs({
+            "include_docs": true, 
+            "limit": my_option_dict.limit
+          });
+        })
+        .push(function (my_result) {
+          console.log(my_result)
+          return my_result;
         });
     })
     
@@ -355,9 +323,9 @@
       return new RSVP.Promise(function (resolve, reject, notify) {
         props.router.onmessage = function (my_event) {
           if (my_event.data.error) {
-              reject(handleCallback(my_event));
+              reject(handleCallback(gadget, my_event));
             } else {
-              resolve(handleCallback(my_event));
+              resolve(handleCallback(gadget, my_event));
             }
           };
           return props.router.postMessage(my_message);
@@ -420,7 +388,7 @@
 
     .declareMethod("notify_record", function () {
       var gadget = this;
-      
+
       // recording should be triggered by onaudioprocess
       // first clear buffers, then allow recording
       return new RSVP.Queue()
@@ -434,7 +402,7 @@
     
     .declareMethod("notify_clear", function () {
       var gadget = this;
-      return gadget.sendMessage({command:'clear'});
+      return gadget.sendMessage({"command":'clear'});
     })
 
     .declareMethod("getBuffers", function () {
@@ -485,6 +453,7 @@
           return customLoopEventListener(props.node, "audioprocess", record);
         });
     })
+
     .declareService(function () {
       var gadget = this,
         props = gadget.property_dict,
@@ -502,12 +471,15 @@
               return gadget.notify_stop();
             } else {
               console.log("check if we can record")
+              
               // validate and record
               return new RSVP.Queue()
                 .push(function () {
-                  var text_input = form.querySelector("input[type='text']");
-                  console.log(text_input.value)
-                  return validateAgainstDict(gadget, text_input.value);
+                  return gadget.sendMessage({"command": 'validate', "option_dict": {
+                     "input": form.querySelector("input[type='text']").value
+                  }});
+                  //var text_input = form.querySelector("input[type='text']");
+                  //return validateAgainstDict(gadget, text_input.value);
                 })
                 .push(function (my_is_validated_entry) {
                   if (my_is_validated_entry) {
@@ -526,4 +498,3 @@
     });
     
 }(window, document, rJS, RSVP, loopEventListener, jIO));
-

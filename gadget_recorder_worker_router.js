@@ -5,7 +5,8 @@
 
   importScripts(
     'gadget_recorder_worker_resampler.js',
-    'gadget_recorder_worker_recorder.js'
+    'gadget_recorder_worker_recorder.js',
+    'gadget_recorder_worker_dictator.js'
   );
 
   worker_instance.onmessage = function(my_event){
@@ -23,11 +24,18 @@
         return sendMessage("getBuffers", recorder.getBuffers());
       case 'clear':
         return sendMessage("clear", recorder.clear());
+      
+      case 'validateWithData':
+        return dictator.validateWithData(opts.data);
+      case 'validate':
+        opts.callback_handler = fetchData;
+        console.log("validating")
+        console.log(opts)
+        return sendMessage("getPointers", dictator.getPointers(opts));
     }
   };
-  
-  
-  // utility methods
+
+  // XXX promisify?
   function sendMessage(my_command, my_reply) {
     worker_instance.postMessage({
       "command":  my_command,
@@ -36,7 +44,15 @@
     });
   }
 
-  // error handling
-  // worker_instance.close();
+  function fetchData(my_command, my_callback_command) {
+    worker_instance.postMessage({
+      "command": my_command,
+      "status": 202,
+      "callback": my_callback_command
+    })  
+  }
+  
+  // XXX error handling
+  // XXX worker_instance.close();
   
 }(self));
