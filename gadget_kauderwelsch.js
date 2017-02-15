@@ -1,43 +1,65 @@
-/*jslint nomen: true, indent: 2, maxerr: 3 */
+/*jslint indent: 2 */
 /*global window, rJS, RSVP */
 (function (window, rJS, RSVP) {
   "use strict";
+
+  var CONFIGURATION = {
+    "type": "worker",
+    "scope": "./",
+    "url": "gadget_voxforge_serviceworker.js",
+    "prefetch_url_list": ["sample.txt"],
+    "sub_storage": {
+      "type": "parallel",
+      "storage_list": [{
+        "type": "index",
+        "index_generator": "gadget_voxforge_worker_processor.js",
+        "index_storage": {
+          "type": "indexeddb",
+          "database": "lexicon"
+        },
+        "sub_storage": {
+          "type": "cache",
+          "version": 1
+          }
+        }
+      ]
+    }
+  };
+
+  /////////////////////////////
+  // some methods
+  /////////////////////////////
 
   rJS(window)
 
     /////////////////////////////
     // ready
     /////////////////////////////
-    .ready(function (my_gadget) {
-      my_gadget.property_dict = {};
-
-      return new RSVP.Queue()
-        .push(function () {
-          return my_gadget.getElement();
+    .ready(function () {
+      return this.getDeclaredGadget("voxforge")
+        .push(function (my_voxforge_gadget) {
+          return my_voxforge_gadget.render(CONFIGURATION);
         })
-        .push(function (my_element) {
-          my_gadget.property_dict.element = my_element;
+        .push(null, function (my_error) {
+          console.log(my_error);
+          throw my_error;
         });
-    })
+    });
 
     /////////////////////////////
     // acquired methods
+    /////////////////////////////
+    
+    /////////////////////////////
+    // published methods
     /////////////////////////////
 
     /////////////////////////////
     // declared methods
     /////////////////////////////
-    .declareMethod('render', function (my_option_dict) {
-      var gadget = this;
 
-      return new RSVP.Queue()
-        .push(function () {
-          return gadget.getDeclaredGadget("voxforge");
-        })
-        .push(function (my_voxforge_gadget) {
-          return my_voxforge_gadget.render(my_option_dict);
-        });
-    });
+    /////////////////////////////
+    // declared service
+    /////////////////////////////
 
-        
 }(window, rJS, RSVP));

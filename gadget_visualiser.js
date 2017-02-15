@@ -1,5 +1,5 @@
 /*jslint nomen: true, indent: 2, maxerr: 3 */
-/*global window, rJS, RSVP, loopEventListener */
+/*global window, rJS, RSVP */
 (function (window, rJS, RSVP) {
   "use strict";
 
@@ -62,24 +62,15 @@
     ANALYSER_FRAME_ID = requestAnimationFrame( updateAnalyser );
   }
 
-
   rJS(window)
 
     /////////////////////////////
     // ready
     /////////////////////////////
-    .ready(function (my_gadget) {
-      my_gadget.property_dict = {
+    .ready(function () {
+      this.property_dict = {
         "deferred": new RSVP.defer()
       };
-
-      return new RSVP.Queue()
-        .push(function () {
-          return my_gadget.getElement();
-        })
-        .push(function (my_element) {
-          my_gadget.property_dict.element = my_element;
-        });
     })
 
     /////////////////////////////
@@ -103,14 +94,15 @@
         throw new TypeError("Browser does not support AnimationFrame");
       }
 
-      props.canvas_node = props.element.querySelector(".kw-analyser");
+      // need to wait with defer
+      props.canvas_node = gadget.element.querySelector(".kw-analyser");
       props.context = new AUDIO_CONTEXT();
 
       if (props.deferred) {
         return props.deferred.resolve();
       }
     })
-    
+
     .declareMethod("initializeAnalyser", function () {
       var gadget = this,
         props = gadget.property_dict;

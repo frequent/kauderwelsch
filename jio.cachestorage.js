@@ -147,8 +147,26 @@
     });
   };
 
+  CacheStorage.prototype.hasCapacity = function (name) {
+    // XXX hm, differentiate between index_storage and substorage?
+    return (name === "list");
+  };
+
   // return list of caches ~ folders
   CacheStorage.prototype.allDocs = function (options) {
+    var context = this;
+    return new RSVP.Promise(function (resolve, reject) {
+      return new RSVP.Queue()
+        .push(function () {
+          return context.buildQuery.apply(this, options);
+        })
+        .push(undefined, function (error) {
+          return reject(error);
+        });
+    });
+  };
+    
+  CacheStorage.prototype.buildQuery = function (options) {
     return new RSVP.Promise(function (resolve, reject) { 
       return new RSVP.Queue()
         .push(function () {
@@ -165,15 +183,12 @@
             result_list.push({"id": id, "value": {}});
           }
         }
-        return resolve({
-          "rows": result_list,
-          "total_rows": result_list.length
-        });
+        return resolve(result_list);
       })
       .push(undefined, function (error) {
         return reject(error);
       });
-    });
+    });  
   };
   
   // return all urls stored in a cache

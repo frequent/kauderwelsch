@@ -1,5 +1,5 @@
-/*jslint nomen: true, indent: 2, maxerr: 3 */
-/*global window, rJS, RSVP, loopEventListener */
+/*jslint indent: 2 */
+/*global window, rJS, RSVP */
 (function (window, rJS, RSVP) {
   "use strict";
 
@@ -12,28 +12,11 @@
     /////////////////////////////
     // ready
     /////////////////////////////
-    .ready(function (my_gadget) {
-      my_gadget.property_dict = {"storage_dict": {"active": null}};
 
-      return new RSVP.Queue()
-        .push(function () {
-          return my_gadget.getDeclaredGadget("jio_gadget_serviceworker");
-        })
-        .push(function (my_declared_gadget) {
-          return my_declared_gadget.render({"label": "storage-serviceworker"});
-        })
-        .push(function (my_rendered_gadget) {
-          my_gadget.property_dict.storage_dict.serviceworker = my_rendered_gadget;
-          return my_gadget.getDeclaredGadget("jio_gadget_indexeddb");
-        })
-        .push(function (my_declared_gadget) {
-          return my_declared_gadget.render({"label": "storage-indexeddb"});
-        })
-        .push(function (my_rendered_gadget) {
-          my_gadget.property_dict.storage_dict.indexeddb = my_rendered_gadget;
-        });
-    })
-
+    /////////////////////////////
+    // published methods
+    /////////////////////////////
+    
     /////////////////////////////
     // acquired methods
     /////////////////////////////
@@ -43,91 +26,92 @@
     /////////////////////////////
     .declareMethod('render', function (my_option_dict) {
       var gadget = this;
-
+      
       return new RSVP.Queue()
         .push(function () {
           return RSVP.all([
-            gadget.getDeclaredGadget("serviceworker"),
+            gadget.getDeclaredGadget("worker"),
             gadget.getDeclaredGadget("visualiser")
           ]);
         })
         .push(function (my_gadget_list) {
           return RSVP.all([
-            my_gadget_list[0].render({
-              "serviceworker_url": 'gadget_voxforge_serviceworker.js',
-              "scope": "./",
-              "prefetch_url_list": ['VoxForgeDict.txt'],
-              "worker": "gadget_voxforge_worker_mapping.js"
-            }),
+            my_gadget_list[0].render(my_option_dict),
             my_gadget_list[1].render()
           ]);
-        })
-        .push(function () {
-          return gadget.setActiveStorage(["indexeddb"]);
-        })
-        .push(function () {
-          // this should have mapping storage on top
-          return gadget.routeStorageRequest("createJIO", {"type": "indexeddb",
-            "database": "lexicon"
-          });
-        })
-        .push(function () {
-          return gadget.setActiveStorage(["serviceworker"]);
-        })
-        .push(function () {
-          return gadget.routeStorageRequest("createJIO", {"type": "serviceworker"});
         });
     })
-    
-    .declareMethod('setActiveStorage', function (my_type) {
-      this.property_dict.storage_dict.active = my_type[0];
-      return this;
-    })
 
-    .declareMethod('routeStorageRequest', function (my_method, my_param_list) {
-      var gadget = this,
-        props = gadget.property_dict,
-        active_storage_label = props.storage_dict.active,
-        storage = props.storage_dict[active_storage_label];
-      return storage[my_method].apply(storage, [].concat(my_param_list));
-    })
-
-    // jIO bridge
-    .allowPublicAcquisition("setActiveStorage", function (param_list) {
-      return this.setActiveStorage(param_list);
-    })
+    // jIO bridge for recorder and its sub gadgets
     .allowPublicAcquisition("jio_create", function (param_list) {
-      return this.routeStorageRequest("createJIO", param_list);
+      return this.getDeclaredGadget("worker")
+        .push(function (my_declared_gadget) {
+          return my_declared_gadget.jio_create.apply(my_declared_gadget, param_list);
+        });
     })
     .allowPublicAcquisition("jio_allDocs", function (param_list) {
-      return this.routeStorageRequest("allDocs", param_list);
+      return this.getDeclaredGadget("worker")
+        .push(function (my_declared_gadget) {
+          return my_declared_gadget.jio_allDocs.apply(my_declared_gadget, param_list);
+        });
     })
     .allowPublicAcquisition("jio_remove", function (param_list) {
-      return this.routeStorageRequest("remove", param_list);
+      return this.getDeclaredGadget("worker")
+        .push(function (my_declared_gadget) {
+          return my_declared_gadget.jio_remove.apply(my_declared_gadget, param_list);
+        });
     })
     .allowPublicAcquisition("jio_post", function (param_list) {
-      return this.routeStorageRequest("post", param_list);
+      return this.getDeclaredGadget("worker")
+        .push(function (my_declared_gadget) {
+          return my_declared_gadget.jio_post.apply(my_declared_gadget, param_list);
+        });
     })
     .allowPublicAcquisition("jio_put", function (param_list) {
-      return this.routeStorageRequest("put", param_list);
+      return this.getDeclaredGadget("worker")
+        .push(function (my_declared_gadget) {
+          return my_declared_gadget.jio_put.apply(nulmy_declared_gadgetl, param_list);
+        });
     })
     .allowPublicAcquisition("jio_get", function (param_list) {
-      return this.routeStorageRequest("get", param_list);
+      return this.getDeclaredGadget("worker")
+        .push(function (my_declared_gadget) {
+          return my_declared_gadget.jio_get.apply(my_declared_gadget, param_list);
+        });
     })
     .allowPublicAcquisition("jio_allAttachments", function (param_list) {
-      return this.routeStorageRequest("allAttachments", param_list);
+      return this.getDeclaredGadget("worker")
+        .push(function (my_declared_gadget) {
+          return my_declared_gadget.jio_allAttachments.apply(my_declared_gadget, param_list);
+        });
     })
     .allowPublicAcquisition("jio_getAttachment", function (param_list) {
-      return this.routeStorageRequest("getAttachment", param_list);
+      return this.getDeclaredGadget("worker")
+        .push(function (my_declared_gadget) {
+          return my_declared_gadget.jio_getAttachment.apply(my_declared_gadget, param_list);
+        });
     })
     .allowPublicAcquisition("jio_putAttachment", function (param_list) {
-      return this.routeStorageRequest("putAttachment", param_list);
+      return this.getDeclaredGadget("worker")
+        .push(function (my_declared_gadget) {
+          return my_declared_gadget.jio_putAttachment(my_declared_gadget, param_list);
+        });
     })
     .allowPublicAcquisition("jio_removeAttachment", function (param_list) {
-      return this.routeStorageRequest("removeAttachment", param_list);
+      return this.getDeclaredGadget("worker")
+        .push(function (my_declared_gadget) {
+          return my_declared_gadget.jio_removeAttachment.apply(my_declared_gadget, param_list);
+        });
     })
     .allowPublicAcquisition("jio_repair", function (param_list) {
-      return this.routeStorageRequest("repair", param_list);
+      return this.getDeclaredGadget("worker")
+        .push(function (my_declared_gadget) {
+          return my_declared_gadget.jio_repair.apply(my_declared_gadget, param_list);
+        });
     });
+    
+    /////////////////////////////
+    // declared services
+    /////////////////////////////
     
 }(window, rJS, RSVP));

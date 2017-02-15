@@ -83,19 +83,8 @@
     return storage.remove.apply(storage, [id]);
   };
 
-  // XXX this is not optimal, because indexing multiple files will have all
-  // indices be mixed up in the [metadata] store. Would be better if multiple
-  // stores were possible ~ roll a different inedxeddb storage than the default
   IndexStorage.prototype.allDocs = function (options) {
-    var opts = options || {},
-      storage = this._sub_storage,
-      index_storage = this._index_storage;
-    
-    // index is dumb = we expect the processor setting correct orefix and limit
-    // also containing correct prefix along with ids to lookup
-    if (opts.limit !== undefined) {
-      return index_storage.allDocs.apply(index, [opts]);
-    }
+    var storage = this._sub_storage;
     return storage.allDocs.apply(storage, [opts]);
   };
   
@@ -106,12 +95,28 @@
   
   IndexStorage.prototype.hasCapacity = function (name) {
     // XXX hm, differentiate between index_storage and substorage?
-    return ((name === "list") || (name === "query") || (name === "limit"));
+    return (
+      (name === "list") ||
+      (name === "query") ||
+      (name === "limit") ||
+      (name === "include")
+    );
   };
   
+  // XXX this is not optimal, because indexing multiple files will have all
+  // indices be mixed up in the [metadata] store. Would be better if multiple
+  // stores were possible ~ roll a different inedxeddb storage than the default
   IndexStorage.prototype.buildQuery = function (options) {
-    var storage = this._sub_storage;
-    return storage.buildQuery.apply(storage, options);
+    var opts = options || {},
+      storage = this._sub_storage,
+      index_storage = this._index_storage;
+
+    // index is dumb = we expect the processor setting correct orefix and limit
+    // also containing correct prefix along with ids to lookup
+    if (opts.limit !== undefined) {
+      return index_storage.buildQuery.apply(index_storage, [opts]);
+    }
+    return storage.buildQuery.apply(storage, [opts]);
   };
 
   // fetching a large file goes against indexing it and serving ranges
