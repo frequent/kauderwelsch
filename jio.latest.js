@@ -7865,7 +7865,6 @@ return new Parser;
   };
 
   JioProxyStorage.prototype.hasCapacity = function (name) {
-    console.log(this.__storage)
     var storage_method = this.__storage.hasCapacity,
       capacity_method = this.__storage[name];
     if (capacity_method !== undefined) {
@@ -7882,9 +7881,6 @@ return new Parser;
   };
 
   JioProxyStorage.prototype.allDocs = function (options) {
-    console.log("HELLO")
-    console.log(this)
-    console.log(options)
     var context = this;
     if (options === undefined) {
       options = {};
@@ -11890,7 +11886,7 @@ return new Parser;
   }
 
   IndexedDBStorage.prototype.hasCapacity = function (name) {
-    return ((name === "list") || (name === "include"));
+    return ((name === "list") || (name === "include") || (name === "limit"));
   };
 
   function buildKeyPath(key_list) {
@@ -12043,7 +12039,7 @@ return new Parser;
         var tx = openTransaction(db, ["metadata"], "readonly"),
           range_list;
         if (options.limit !== undefined) {
-          range_list = IDBKeyRange.bound(options.limit[9], options.limit[1]);
+          range_list = IDBKeyRange.bound(options.limit[0], options.limit[1]);
         }
         if (options.include_docs === true) {
           return handleCursor(tx.objectStore("metadata").index("_id")

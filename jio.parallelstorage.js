@@ -62,12 +62,7 @@
     var storage = this._getStorage(arguments[0]);
     return storage.remove.apply(storage, handleArguments(arguments));
   };
-  
-  ParallelStorage.prototype.allDocs = function () {
-    var storage = this._getStorage(arguments[0]);
-    return storage.allDocs.apply(storage, handleArguments(arguments));
-  };
-  
+
   ParallelStorage.prototype.allAttachments = function () {
     var storage = this._getStorage(arguments[0]);
     return storage.allAttachments.apply(storage, handleArguments(arguments));
@@ -92,7 +87,12 @@
     var storage = this._getStorage(arguments[0]);
     return storage.hasCapacity.apply(storage, handleArguments(arguments));
   };
-  
+
+  ParallelStorage.prototype.allDocs = function () {
+    var storage = this._getStorage(arguments[0]);
+    return storage.allDocs.apply(storage, handleArguments(arguments));
+  };
+
   ParallelStorage.prototype.buildQuery = function () {
     var storage = this._getStorage(arguments[0]);
     return storage.buildQuery.apply(storage, handleArguments(arguments));

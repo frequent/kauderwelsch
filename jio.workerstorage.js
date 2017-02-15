@@ -170,50 +170,55 @@
     }
   }
 
-  WorkerStorage.prototype.post = function () {
-    return sendMessage({"command": "post", "param": arguments});
+  WorkerStorage.prototype.post = function (doc) {
+    return sendMessage({"command": "post", "param": [doc]});
   };
 
-  WorkerStorage.prototype.get = function () {
-    return sendMessage({"command": "get", "param": arguments});
+  WorkerStorage.prototype.get = function (id) {
+    return sendMessage({"command": "get", "param": [id]});
   };
 
-  WorkerStorage.prototype.put = function () {
-    return sendMessage({"command": "put", "param": arguments});
+  WorkerStorage.prototype.put = function (id, doc) {
+    return sendMessage({"command": "put", "param": [id, doc]});
   };
 
-  WorkerStorage.prototype.remove = function () {
-    return sendMessage({"command": "remove", "param": arguments});
+  WorkerStorage.prototype.remove = function (id) {
+    return sendMessage({"command": "remove", "param": [id]});
   };
 
-  WorkerStorage.prototype.removeAttachment = function () {
-    return sendMessage({"command": "removeAttachment", "param": arguments});
+  WorkerStorage.prototype.removeAttachment = function (id, name) {
+    return sendMessage({"command": "removeAttachment", "param": [id, name]});
   };
 
-  WorkerStorage.prototype.getAttachment = function () {
+  WorkerStorage.prototype.getAttachment = function (id, name, options) {
 
     // NOTE: alternatively inside serviceworker, one could also do get via
     // ajax request which the serviceworker would intercept using the fetch
     //listener. For a pure storage however, we don't assume fetching resources
     // from the network, so all methods will go through sendMessage
-
-    return sendMessage({"command": "getAttachment", "param": arguments});
+    return sendMessage({"command": "getAttachment", "param": [id, name, options]});
   };
 
-  WorkerStorage.prototype.putAttachment = function () {
-    return sendMessage({"command": "putAttachment", "param": arguments});
+  WorkerStorage.prototype.putAttachment = function (id, name) {
+    return sendMessage({"command": "putAttachment", "param": [id, name]});
   };
   
-  WorkerStorage.prototype.allAttachment = function () {
-    return sendMessage({"command": "allAttachment", "param": arguments});
+  WorkerStorage.prototype.allAttachment = function (options) {
+    return sendMessage({"command": "allAttachment", "param": [options]});
   };
   
   WorkerStorage.prototype.hasCapacity = function (name) {
-    return ((name === "list") || (name === "query") || (name === "limit"));
+    return ((name === "list") || (name === "query") ||
+      (name === "limit") || (name === "include")
+    );
   };
 
+  WorkerStorage.prototype.allDocs = function (options) {
+    return sendMessage({"command": "allDocs", "param": [options]});
+  };
+  
   WorkerStorage.prototype.buildQuery = function (options) {
-    return sendMessage({"command": "allDocs", "param": options});
+    return sendMessage({"command": "buildQuery", "param": [options]});
   };
 
   jIO.addStorage('worker', WorkerStorage);

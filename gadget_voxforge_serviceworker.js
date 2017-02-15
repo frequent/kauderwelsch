@@ -241,14 +241,16 @@
     
     return new RSVP.Queue()
       .push(function () {
-        return STORAGE[method](param);  
+        console.log(param)
+        console.log(STORAGE)
+        console.log(method)
+        return STORAGE[method].apply(STORAGE, param);  
       })
       .push(function (result) {
-        return event.port[0].postMessage({"error": null, "data": result});
+        return event.ports[0].postMessage({"error": null, "data": result});
       })
       .push(undefined, function (error) {
-        console.log(error)
-        return event.port[0].postMessage({"error": error});
+        return event.ports[0].postMessage({"error": error});
       });
   }
 
@@ -272,6 +274,8 @@
         return bounceMessage(event, "remove", data.param);
       case 'allDocs':
         return bounceMessage(event, "allDocs", data.param);           
+      case 'buildQuery':
+        return bounceMessage(event, "buildQuery", data.param);
       case 'allAttachments':
         return bounceMessage(event, "allAttachments", data.param);
       case 'removeAttachment':

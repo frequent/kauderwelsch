@@ -8,6 +8,7 @@
   // https://github.com/mattdiamond/Recorderjs
 
   var WORKER_PATH = 'gadget_recorder_worker_router.js';
+  var FILE_PREFIX = "sample.txt";
 
   /////////////////////////////
   // templates
@@ -132,27 +133,32 @@
       input_value = my_input_list[i];
       single = input_value.charAt(0);
       double = input_value.charAt(1);
-      // XXX hm
+      // XXX hm. How do I go to the next if this is not on the index?
       follow_up = String.fromCharCode(double.charCodeAt(0) + 1);
-      input_array.push(single + double);
-      input_array.push(single + follow_up);
+      input_array.push(FILE_PREFIX + ":" + single + double);
+      input_array.push(FILE_PREFIX + ":" + single + follow_up);
       output_array.push(input_array);
     }
-    return output_array;
+    // XXX checking multiple words: start fixing here
+    return output_array[0];
+  }
+  
+  function convertRange(my_range) {
+    console.log(my_range)
+    var rows = my_range.data.rows;
+    return rows[0].doc.block + "-" + rows[1].doc.block;
   }
 
   function validateAgainstDict(my_gadget, my_input) {
     return new RSVP.Queue()
       .push(function () {
-        return my_gadget.jio_allDocs({"limit": getLimit(my_input.split(","))});
+        return my_gadget.jio_allDocs({"include_docs": true, "limit": getLimit(my_input.split(","))});
       })
       .push(function (my_range) {
-        console.log(my_range)
-        throw "YEAH"
-        //return my_gadget.jio_getAttachment("prefetch", "sample.txt", {
-        //  format: "text",
-        //  "range": "bytes=" + my_range
-        //}); 
+        return my_gadget.jio_getAttachment("prefetch", FILE_PREFIX, {
+          "format": "text",
+          "range": "bytes=" + convertRange(my_range)
+        }); 
       })
       .push(function (my_range_text) {
         console.log(my_range_text)
@@ -180,19 +186,6 @@
         return my_event.data.result;
       case "init":
         break;
-      case "getLexicon":
-        console.log("HAHA")
-        return new RSVP.Queue()
-          .push(function () {
-            return my_gadget.getLexicon({});
-          })
-          .push(function (my_data) {
-            console.log("got lexicon")
-            console.log(my_data)
-            return my_gadget.sendMessage({"command": my_event.data.callback, "option_dict": {
-              "data": my_data
-            }});
-          });
     }
   }
 
@@ -255,24 +248,6 @@
         .push(function () {
           props.source.connect(props.node);
           props.node.connect(props.context.destination);
-        });
-    })
-
-    .declareMethod("getLexicon", function (my_option_dict) {
-      var gadget = this;
-      return new RSVP.Queue()
-        .push(function () {
-          return gadget.setActiveStorage("indexeddb");
-        })
-        .push(function () {
-          return gadget.jio_allDocs({
-            "include_docs": true, 
-            "limit": my_option_dict.limit
-          });
-        })
-        .push(function (my_result) {
-          console.log(my_result)
-          return my_result;
         });
     })
     

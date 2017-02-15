@@ -5,8 +5,7 @@
 
   importScripts(
     'gadget_recorder_worker_resampler.js',
-    'gadget_recorder_worker_recorder.js',
-    'gadget_recorder_worker_dictator.js'
+    'gadget_recorder_worker_recorder.js'
   );
 
   worker_instance.onmessage = function(my_event){
@@ -36,13 +35,6 @@
     });
   }
 
-  function fetchData(my_command, my_callback_command) {
-    worker_instance.postMessage({
-      "command": my_command,
-      "status": 202,
-      "callback": my_callback_command
-    })  
-  }
   
   // XXX error handling
   // XXX worker_instance.close();
