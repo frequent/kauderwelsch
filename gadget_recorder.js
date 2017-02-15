@@ -9,6 +9,7 @@
 
   var WORKER_PATH = 'gadget_recorder_worker_router.js';
   var FILE_PREFIX = "sample.txt";
+  var LINE_BREAKS = /(.*?[\r\n])/g;
 
   /////////////////////////////
   // templates
@@ -143,8 +144,24 @@
     return output_array[0];
   }
   
+  function testChunk(my_chunk, my_input) {
+    var rows = my_chunk.split(LINE_BREAKS).filter(Boolean),
+      input_list = my_input.split(","),
+      len = rows.length,
+      i,
+      j,
+      row;
+
+    for (i = 0; i < len; i += 1) {
+      row = rows[i];
+      if (row.split(" ")[0] === input_list[0]) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   function convertRange(my_range) {
-    console.log(my_range)
     var rows = my_range.data.rows;
     return rows[0].doc.block + "-" + rows[1].doc.block;
   }
@@ -155,18 +172,23 @@
         return my_gadget.jio_allDocs({"include_docs": true, "limit": getLimit(my_input.split(","))});
       })
       .push(function (my_range) {
+        if (my_range.data.total_rows === 0) {
+          return "";
+        }
         return my_gadget.jio_getAttachment("prefetch", FILE_PREFIX, {
           "format": "text",
           "range": "bytes=" + convertRange(my_range)
         }); 
       })
       .push(function (my_range_text) {
-        console.log(my_range_text)
+        if (testChunk(my_range_text, my_input)) {
+          return true;
+        }
+        return false;
       })
       .push(undefined, function (my_error_list) {
-        console.log("NOPE")
-        console.log(my_error_list)
-        throw my_error_list
+        console.log(my_error_list);
+        throw my_error_list;
       });
   }
 
@@ -393,8 +415,15 @@
     .declareService(function () {
       var gadget = this,
         props = gadget.property_dict,
-        form = props.element.querySelector(".kw-controls form");
+        form = props.element.querySelector(".kw-controls form"),
+        status_text = form.querySelector(".kw-form-status");
 
+      console.log(status_text)
+      function status_text_handler(my_event) {
+        if (status_text.textContent !== "") {
+          status_text.textContent = "";
+        }
+      }
       function form_submit_handler(my_event) {
         return new RSVP.Queue()
           .push(function () {
@@ -414,9 +443,10 @@
                 })
                 .push(function (my_is_validated_entry) {
                   if (my_is_validated_entry) {
+                    form.querySelector("input").value = "Stop";
                     return gadget.notify_record();
                   }
-                  console.log("NOPE, broken on ", my_is_validated_entry);
+                  status_text.textContent = "Unlisted Word, pick different one.";
                   return;
                 });
             }
@@ -425,7 +455,10 @@
             return false;
           });
       }
-      return loopEventListener(form, "submit", false, form_submit_handler);
+      return RSVP.all([
+        loopEventListener(form, "submit", false, form_submit_handler),
+        //loopEventListener(status_text, "input", false, status_text_handler)
+      ]);
     });
     
 }(window, document, rJS, RSVP, loopEventListener, jIO));
