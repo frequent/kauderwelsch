@@ -105,3 +105,6 @@ http://www.javascripture.com/ArrayBuffer
 
 // stream all content
 https://jakearchibald.com/2016/streams-ftw/
+
+// audio crop (waves.js)
+http://wavesjs.github.io/examples/01-ui-what-you-can-do-with-it.html
