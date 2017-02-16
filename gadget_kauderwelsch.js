@@ -8,6 +8,7 @@
     "scope": "./",
     "url": "gadget_voxforge_serviceworker.js",
     "prefetch_url_list": ["sample.txt"],
+    "prefetch_update": true,
     "sub_storage": {
       "type": "parallel",
       "storage_list": [{
