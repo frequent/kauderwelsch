@@ -16,21 +16,24 @@
   /////////////////////////////
   var SOUND_CLIP_TEMPLATE = "<div class='kw-clip'>\
     <span class='kw-clip-progress'></span>\
-    <canvas class='kw-clip-canvas' height='50'></canvas>\
+    <canvas class='kw-clip-canvas' height='80'></canvas>\
     <div class='kw-clip-audio-controls'>\
       <audio controls></audio>\
     </div>\
     <div class='kw-clip-storage-controls'>\
-      <form name='kw-form-clip-save'>\
+      <form name='kw-form-save-controls'>\
         <input type='text' name='kw-clip-reference' value='Unnamed Clip' />\
-        <input type='checkbox' name='kw-clip-store-cache' value='Local' />\
-        <input type='checkbox' name='kw-clip-store-soundcloud' value='Soundcloud' />\
         <input type='submit' value='Save' />\
       </form>\
     </div>\
     <div class='kw-clip-delete-controls'>\
       <form name='kw-form-clip-delete'>\
         <input type='submit' value='Delete' />\
+      </form>\
+    </div>\
+    <div class='kw-clip-crop-controls'>\
+      <form name='kw-form-clip-crop'>\
+        <input type='submit' value='Crop' />\
       </form>\
     </div>\
   </div>";
@@ -68,6 +71,12 @@
         }
         context.fillRect(i, (1+min)*amp, 1, Math.max(1,(max-min)*amp*0.75));
     }
+  }
+  
+  function formHandler(my_event) {
+    console.log("SUBMIT")
+    console.log(my_event);
+    return false;
   }
 
   function parseTemplate(my_template, my_value_list) {
@@ -391,7 +400,6 @@
         if (!props.is_recording) {
           return;
         }
-
         return gadget.sendMessage({"command": "record", "option_dict": {
           "buffer": [
             my_event.inputBuffer.getChannelData(0),
@@ -415,15 +423,8 @@
     .declareService(function () {
       var gadget = this,
         props = gadget.property_dict,
-        form = props.element.querySelector(".kw-controls form"),
-        status_text = form.querySelector(".kw-form-status");
+        form = props.element.querySelector(".kw-controls form");
 
-      console.log(status_text)
-      function status_text_handler(my_event) {
-        if (status_text.textContent !== "") {
-          status_text.textContent = "";
-        }
-      }
       function form_submit_handler(my_event) {
         return new RSVP.Queue()
           .push(function () {
@@ -446,7 +447,6 @@
                     form.querySelector("input").value = "Stop";
                     return gadget.notify_record();
                   }
-                  status_text.textContent = "Unlisted Word, pick different one.";
                   return;
                 });
             }
@@ -456,9 +456,10 @@
           });
       }
       return RSVP.all([
-        loopEventListener(form, "submit", false, form_submit_handler),
-        //loopEventListener(status_text, "input", false, status_text_handler)
+        loopEventListener(form, "submit", false, form_submit_handler)
       ]);
-    });
+    })
+    
+    .onEvent("submit", formHandler, false, true);
     
 }(window, document, rJS, RSVP, loopEventListener, jIO));

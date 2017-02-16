@@ -160,6 +160,10 @@
     // pass configuration to serviceworker via url
     this.url = spec.url += "?" + serializeUrlList(spec.prefetch_url_list) + "&" +
       "sub_storage=" + encodeURIComponent(JSON.stringify(spec.sub_storage));
+    
+    if (spec.prefetch_update) {
+      this.url += "&prefetch_update=true";
+    }
 
     // intialize serviceworker or worker
     if (spec.scope) {

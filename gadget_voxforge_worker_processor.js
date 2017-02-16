@@ -13,7 +13,7 @@
     
     for (key in dict) {
       if (dict.hasOwnProperty(key)) {
-        rows.push([(name + ":" + key + ":" + dict[key]), {}]);  
+        rows.push([(name + ":" + key),  dict[key]]);  
       }
     }
     return {

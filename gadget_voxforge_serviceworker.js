@@ -9,6 +9,7 @@
   // chrome://serviceworker-internals/
   
   var PREFETCH_URL_LIST = [];
+  var PREFETCH_UPDATE = null;
   var CURRENT_CACHE_VERSION = 1;
   var CURRENT_CACHE;
   var CURRENT_CACHE_DICT = {
@@ -125,6 +126,16 @@
       });
   }
   
+  function retrieveAndPutFile(my_prefetch_url) {
+    return new RSVP.Queue()
+      .push(function () {
+        return fetchFile(my_prefetch_url);
+      })
+      .push(function (response) {
+        return STORAGE.putAttachment("prefetch", my_prefetch_url, response);  
+      });
+  }
+
   // runs while an existing worker runs or nothing controls the page (update here)
   function installHandler(event) {
     return event.waitUntil(
@@ -140,15 +151,14 @@
                   "range": "bytes=0-1"
                 });
               })
+              .push(function (answer) {
+                if (PREFETCH_UPDATE) {
+                  return retrieveAndPutFile(prefetch_url);
+                }
+              })
               .push(undefined, function (error) {
                 if (error.status_code === 404) {
-                  return new RSVP.Queue()
-                    .push(function () {
-                      return fetchFile(prefetch_url);
-                    })
-                    .push(function (response) {
-                      return STORAGE.putAttachment("prefetch", prefetch_url, response);  
-                    });
+                  return retrieveAndPutFile(prefetch_url);
                 }
                 throw error;
               });
@@ -241,9 +251,6 @@
     
     return new RSVP.Queue()
       .push(function () {
-        console.log(param)
-        console.log(STORAGE)
-        console.log(method)
         return STORAGE[method].apply(STORAGE, param);  
       })
       .push(function (result) {
@@ -256,7 +263,6 @@
 
   // storage communication
   function messageHandler(event) {
-    console.log(event)
     var data = event.data;
     switch (data.command) {
       case 'post':
@@ -341,6 +347,9 @@
       // shelve files to load on install
       if (self.param_dict.has('prefetch_url_list')) {
         PREFETCH_URL_LIST = [self.param_dict.get('prefetch_url_list')];
+      }
+      if (self.param_dict.has('prefetch_update')) {
+        PREFETCH_UPDATE = true;
       }
       return jIO.createJIO(JSON.parse(self.param_dict.get("sub_storage")));
     })
