@@ -4,7 +4,7 @@
   "use strict";
 
   // Stream Recording inspired by:
-  // Copyright © 2013 Matt Diamond - License (MIT)
+  // Copyright Â© 2013 Matt Diamond - License (MIT)
   // https://github.com/mattdiamond/Recorderjs
 
   var WORKER_PATH = 'gadget_recorder_worker_router.js';
@@ -225,18 +225,10 @@
     /////////////////////////////
     // ready
     /////////////////////////////
-    .ready(function (my_gadget) {
-      my_gadget.property_dict = {};
-
-      return new RSVP.Queue()
-        .push(function () {
-          return my_gadget.getElement();
-        })
-        .push(function (my_element) {
-          my_gadget.property_dict.element = my_element;
-          my_gadget.property_dict.clip_list = 
-            my_element.querySelector(".kw-clip-list");
-        });
+    .ready(function () {
+      this.property_dict = {
+        "clip_list": this.element.querySelector(".kw-clip-list")
+      };
     })
 
     /////////////////////////////
@@ -323,9 +315,16 @@
         })
         .push(function (my_buffer) {
           var mono_buffer = my_buffer[0],
+            placeholder = props.clip_list.querySelector("p"),
             canvas;
 
-          clip = div.firstChild,
+          clip = div.firstChild;
+          
+          if (placeholder) {
+            while (props.clip_list.firstChild) {
+              props.clip_list.removeChild(props.clip_list.firstChild);
+            }
+          }
           props.clip_list.appendChild(clip);
           canvas = clip.querySelector("canvas");
           canvas.setAttribute("width", clip.offsetWidth);
@@ -423,7 +422,7 @@
     .declareService(function () {
       var gadget = this,
         props = gadget.property_dict,
-        form = props.element.querySelector(".kw-controls form");
+        form = gadget.element.querySelector(".kw-controls form");
 
       function form_submit_handler(my_event) {
         return new RSVP.Queue()
@@ -463,3 +462,4 @@
     .onEvent("submit", formHandler, false, true);
     
 }(window, document, rJS, RSVP, loopEventListener, jIO));
+
