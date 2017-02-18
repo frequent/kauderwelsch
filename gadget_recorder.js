@@ -235,10 +235,10 @@
     if (canvas_list.length === 1) {
       clip_canvas = canvas_list[0];
       crop_canvas = document.createElement("canvas");
-      crop_canvas.className= "kw-clip-canvas-crop";
+      crop_canvas.className= "XXXXX kw-clip-canvas-crop";
       crop_canvas.width = clip_canvas.width;
       crop_canvas.height = clip_canvas.height;
-      clip_canvas.appendChild(crop_canvas);
+      clip_canvas.parentNode.insertBefore(crop_canvas, clip_canvas.nextSibling);
       return my_gadget.clipSetCrop(crop_canvas);
     } else {
       crop_canvas = canvas_list[1];
