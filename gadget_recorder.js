@@ -72,12 +72,6 @@
         context.fillRect(i, (1+min)*amp, 1, Math.max(1,(max-min)*amp*0.75));
     }
   }
-  
-  function formHandler(my_event) {
-    console.log("SUBMIT")
-    console.log(my_event);
-    return false;
-  }
 
   function parseTemplate(my_template, my_value_list) {
     var template = my_template,
@@ -201,8 +195,59 @@
       });
   }
 
+  function recordAudio(my_gadget, my_event) {
+    var props = my_gadget.property_dict,
+      form = my_event.target;
+    my_event.preventDefault();
+    
+    // stop, update memory storage and dom with new file
+    if (props.is_recording) {
+      form.querySelector("input[type='submit']").value = "Record";
+      return my_gadget.notify_stop();
+    }
+    
+    // validate and record
+    return new RSVP.Queue()
+      .push(function () {
+        var text_input = form.querySelector("input[type='text']");
+        return validateAgainstDict(my_gadget, text_input.value);
+      })
+      .push(function (my_is_validated_entry) {
+        if (my_is_validated_entry) {
+          form.querySelector("input").value = "Stop";
+          return my_gadget.notify_record();
+        }
+        return;
+      })
+      .push(function () {
+        return false;
+      });
+  }
+  
+  function cropAudio(my_gadget, my_event) {
+    var props = my_gadget.property_dict,
+      form = my_event.target,
+      canvas_list = form.parentNode.parentNode.querySelectorAll("canvas"),
+      clip_canvas,
+      crop_canvas;
 
-  function handleCallback(my_gadget, my_event) {
+    my_event.preventDefault();
+    if (canvas_list.length === 1) {
+      clip_canvas = canvas_list[0];
+      crop_canvas = document.createElement("canvas");
+      crop_canvas.className= "kw-clip-canvas-crop";
+      crop_canvas.width = clip_canvas.width;
+      crop_canvas.height = clip_canvas.height;
+      clip_canvas.appendChild(crop_canvas);
+      return my_gadget.clipSetCrop(crop_canvas);
+    } else {
+      crop_canvas = canvas_list[1];
+      crop_canvas.parentNode.removeChild(crop_canvas);
+    }
+    
+  }
+
+  function callbackHandler(my_gadget, my_event) {
     if (my_event.data.error) {
       throw my_event.data.error;
     }
@@ -274,6 +319,103 @@
         });
     })
     
+    .declareMethod("clipSetCrop", function (my_canvas) {
+      var ctx = my_canvas.getContext('2d'),
+        rect = {
+          x: my_canvas.width * 0.1,
+          y: 0,
+          w: my_canvas.width * 0.8,
+          h: my_canvas.height
+        },
+        currentHandle = false,
+        drag = false;
+      
+        function point(x, y) {
+          return {
+              x: x,
+              y: y
+          };
+        }
+    
+        function dist(p1, p2) {
+          return Math.sqrt((p2.x - p1.x) * (p2.x - p1.x) + (p2.y - p1.y) 
+            * (p2.y - p1.y));
+        }
+      
+      function getHandle(mouse) {
+        if (dist(mouse, point(rect.x, rect.y + rect.h / 2)) <= handlesSize) return 'left';
+        if (dist(mouse, point(rect.x + rect.w, rect.y + rect.h / 2)) <= handlesSize) return 'right';
+        return false;
+      }
+    
+      function mouseDownHandle() {
+        if (currentHandle) {
+          drag = true;
+        }
+        draw();
+      }
+      
+      function mouseUpHandle() {
+        drag = false;
+        currentHandle = false;
+        draw();
+      }
+      
+      function mouseMoveHandle(e) {
+        var previousHandle = currentHandle,
+          mousePos;
+    
+        if (!drag) {
+          currentHandle = getHandle(point(e.pageX - my_canvas.offsetLeft, e.pageY - my_canvas.offsetTop));
+        }
+        if (currentHandle && drag) {
+          mousePos = point(e.pageX - my_canvas.offsetLeft, e.pageY - my_canvas.offsetTop);
+          switch (currentHandle) {
+            case 'left':
+              rect.w += rect.x - mousePos.x;
+              rect.x = mousePos.x;
+              break;
+    
+            case 'right':
+              rect.w = mousePos.x - rect.x;
+              break;
+          }
+        }
+        if (drag || currentHandle != previousHandle) {
+          draw();
+        }
+      }
+      
+      function draw() {
+        var posHandle;
+        ctx.clearRect(0, 0, my_canvas.width, my_canvas.height);
+        ctx.fillStyle = 'rgba(255,0,0,0.3);}';
+        ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+        if (currentHandle) {
+          posHandle = point(0, 0);
+          switch (currentHandle) {
+            case 'left':
+                my_canvas.style.cursor= (rect.w>0?'w':'e')+'-resize';
+                break;
+            case 'right':
+                my_canvas.style.cursor= (rect.w>0?'e':'w')+'-resize';
+                break;
+            }
+        } else {
+          my_canvas.style.cursor = '';
+        }
+      }
+      draw();
+      return new RSVP.Queue()
+        .push(function () {
+          return RSVP.all([
+            customLoopEventListener(my_canvas, "mousedown", mouseDownHandle),
+            customLoopEventListener(my_canvas, "mouseup", mouseUpHandle),
+            customLoopEventListener(my_canvas, "mousemove", mouseMoveHandle),
+          ]);
+        });
+    })
+    
     .declareMethod("sendMessage", function (my_message) {
       var gadget = this,
         props = gadget.property_dict;
@@ -282,9 +424,9 @@
       return new RSVP.Promise(function (resolve, reject, notify) {
         props.router.onmessage = function (my_event) {
           if (my_event.data.error) {
-              return reject(handleCallback(gadget, my_event));
+              return reject(callbackHandler(gadget, my_event));
             } else {
-              return resolve(handleCallback(gadget, my_event));
+              return resolve(callbackHandler(gadget, my_event));
             }
           };
           return props.router.postMessage(my_message);
@@ -418,48 +560,18 @@
           return customLoopEventListener(props.node, "audioprocess", record);
         });
     })
-
-    .declareService(function () {
-      var gadget = this,
-        props = gadget.property_dict,
-        form = gadget.element.querySelector(".kw-controls form");
-
-      function form_submit_handler(my_event) {
-        return new RSVP.Queue()
-          .push(function () {
-            my_event.preventDefault();
-            if (props.is_recording) {
-              
-              // stop, update memory storage and dom with new file
-              form.querySelector("input[type='submit']").value = "Record";
-              return gadget.notify_stop();
-            } else {
-
-              // validate and record
-              return new RSVP.Queue()
-                .push(function () {
-                  var text_input = form.querySelector("input[type='text']");
-                  return validateAgainstDict(gadget, text_input.value);
-                })
-                .push(function (my_is_validated_entry) {
-                  if (my_is_validated_entry) {
-                    form.querySelector("input").value = "Stop";
-                    return gadget.notify_record();
-                  }
-                  return;
-                });
-            }
-          })
-          .push(function () {
-            return false;
-          });
-      }
-      return RSVP.all([
-        loopEventListener(form, "submit", false, form_submit_handler)
-      ]);
-    })
     
-    .onEvent("submit", formHandler, false, true);
+    .onEvent("submit", function (my_event) {
+      var gadget = this;
+      switch (my_event.target.name) {
+        case "kw-form-clip-crop":
+          return cropAudio(gadget, my_event);
+        case "kw-form-record":
+          return recordAudio(gadget, my_event);
+        default:
+          return false;
+      }
+    }, false, true);
     
 }(window, document, rJS, RSVP, loopEventListener, jIO));
 
