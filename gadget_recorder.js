@@ -321,36 +321,34 @@
     
     .declareMethod("clipSetCrop", function (my_canvas) {
       var ctx = my_canvas.getContext('2d'),
+        canvas_coordinate_list = my_canvas.getBoundingClientRect(),
+        left_offset = canvas_coordinate_list.left,
         rect = {
           x: my_canvas.width * 0.1,
           y: 0,
           w: my_canvas.width * 0.8,
           h: my_canvas.height
         },
-        currentHandle = false,
-        handlesSize = 8,
+        current_handle = false,
+        handle_size = 16,
         drag = false;
-      
-        function point(x, y) {
-          return {
-              x: x,
-              y: y
-          };
-        }
-    
-        function dist(p1, p2) {
-          return Math.sqrt((p2.x - p1.x) * (p2.x - p1.x) + (p2.y - p1.y) 
-            * (p2.y - p1.y));
-        }
+  
+      function dist(p1, p2) {
+        return Math.sqrt(p2.x - p1.x) * (p2.x - p1.x);
+      }
       
       function getHandle(mouse) {
-        if (dist(mouse, point(rect.x, rect.y + rect.h / 2)) <= handlesSize) return 'left';
-        if (dist(mouse, point(rect.x + rect.w, rect.y + rect.h / 2)) <= handlesSize) return 'right';
+        if (dist(mouse, {"x": rect.x + left_offset}) <= handle_size) {
+          return 'left';
+        }
+        if (dist(mouse, {"x": rect.x + left_offset + rect.w}) <= handle_size) {
+          return 'right';
+        }
         return false;
       }
     
-      function mouseDownHandle() {
-        if (currentHandle) {
+      function mouseDownHandle(e) {
+        if (current_handle) {
           drag = true;
         }
         draw();
@@ -358,49 +356,46 @@
       
       function mouseUpHandle() {
         drag = false;
-        currentHandle = false;
+        current_handle = false;
         draw();
       }
       
       function mouseMoveHandle(e) {
-        var previousHandle = currentHandle,
-          mousePos;
+        var previous_handle = current_handle,
+          mouse_pos;
     
         if (!drag) {
-          currentHandle = getHandle(point(e.pageX - my_canvas.offsetLeft, e.pageY - my_canvas.offsetTop));
+          current_handle = getHandle({"x": e.pageX - my_canvas.offsetLeft});
         }
-        if (currentHandle && drag) {
-          mousePos = point(e.pageX - my_canvas.offsetLeft, e.pageY - my_canvas.offsetTop);
-          switch (currentHandle) {
+        if (current_handle && drag) {
+          mouse_pos = {"x": e.pageX - left_offset};
+          switch (current_handle) {
             case 'left':
-              rect.w += rect.x - mousePos.x;
-              rect.x = mousePos.x;
+              rect.w += rect.x - mouse_pos.x;
+              rect.x = mouse_pos.x;
               break;
-    
             case 'right':
-              rect.w = mousePos.x - rect.x;
+              rect.w = mouse_pos.x - rect.x;
               break;
           }
         }
-        if (drag || currentHandle != previousHandle) {
+        if (drag || current_handle != previous_handle) {
           draw();
         }
       }
       
       function draw() {
-        var posHandle;
         ctx.clearRect(0, 0, my_canvas.width, my_canvas.height);
-        ctx.fillStyle = 'rgba(255,0,0,0.3);}';
+        ctx.fillStyle = 'rgba(229, 134, 150, 0.7)';
         ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
-        if (currentHandle) {
-          posHandle = point(0, 0);
-          switch (currentHandle) {
+        if (current_handle) {
+          switch (current_handle) {
             case 'left':
-                my_canvas.style.cursor= (rect.w>0?'w':'e')+'-resize';
-                break;
+              my_canvas.style.cursor= (rect.w > 0 ? 'w' : 'e') + '-resize';
+              break;
             case 'right':
-                my_canvas.style.cursor= (rect.w>0?'e':'w')+'-resize';
-                break;
+              my_canvas.style.cursor= (rect.w > 0 ? 'e' : 'w') + '-resize';
+              break;
             }
         } else {
           my_canvas.style.cursor = '';
