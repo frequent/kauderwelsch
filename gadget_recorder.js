@@ -328,6 +328,7 @@
           h: my_canvas.height
         },
         currentHandle = false,
+        handlesSize = 8,
         drag = false;
       
         function point(x, y) {
