@@ -1,6 +1,6 @@
 /*jslint nomen: true, indent: 2, maxerr: 3 */
-/*global window, document, rJS, RSVP, loopEventListener, jIO */
-(function (window, document, rJS, RSVP, loopEventListener, jIO) {
+/*global window, document, rJS, RSVP, jIO, loopEventListener */
+(function (window, document, rJS, RSVP, jIO, loopEventListener) {
   "use strict";
 
   // Stream Recording inspired by:
@@ -14,6 +14,7 @@
   /////////////////////////////
   // templates
   /////////////////////////////
+  
   var SOUND_CLIP_TEMPLATE = "<div class='kw-clip'>\
     <span class='kw-clip-progress'></span>\
     <canvas class='kw-clip-canvas' height='80'></canvas>\
@@ -37,7 +38,7 @@
       </form>\
     </div>\
   </div>";
-
+  
   /////////////////////////////
   // some methods 
   /////////////////////////////
@@ -48,7 +49,7 @@
     link.textContent = "Download Meno";
     return link;
   }
-
+  
   function drawBuffer(width, height, context, data) {
     var step = Math.ceil( data.length / width ),
       amp = height / 2,
@@ -72,7 +73,7 @@
         context.fillRect(i, (1+min)*amp, 1, Math.max(1,(max-min)*amp*0.75));
     }
   }
-
+  
   function parseTemplate(my_template, my_value_list) {
     var template = my_template,
       value_list = my_value_list || [],
@@ -88,7 +89,7 @@
     template.split("%s").map(setHtmlContent(html_content));
     return html_content.join("");
   }
-
+  
   // Custom loopEventListener
   function customLoopEventListener(my_target, my_type, my_callback) {
     var handle_event_callback,
@@ -123,74 +124,78 @@
     return new RSVP.Promise(itsANonResolvableTrap, canceller);
   }
 
-  function getLimit(my_input_list) {
-    var output_array = [],
-      len = my_input_list.length,
-      input_array,
-      input_value,
-      single,
-      double,
-      follow_up,
-      i;
-    for (i = 0; i < len; i ++) {
-      input_array = [];
-      input_value = my_input_list[i];
-      single = input_value.charAt(0);
-      double = input_value.charAt(1);
-      // XXX hm. How do I go to the next if this is not on the index?
-      follow_up = String.fromCharCode(double.charCodeAt(0) + 1);
-      input_array.push(FILE_PREFIX + ":" + single + double);
-      input_array.push(FILE_PREFIX + ":" + single + follow_up);
-      output_array.push(input_array);
-    }
-    // XXX checking multiple words: start fixing here
-    return output_array[0];
+  function getLimit(my_input) {
+    // as it's not possible to get lowerbound + NEXT,
+    // String.fromCharCode(double.charCodeAt(0) + 1); is not guaranteed to
+    // be in the index, we get all records on index from 
+    return [
+      FILE_PREFIX + ":" + my_input.charAt(0) + my_input.charAt(1),
+      undefined
+    ];
   }
   
   function testChunk(my_chunk, my_input) {
     var rows = my_chunk.split(LINE_BREAKS).filter(Boolean),
-      input_list = my_input.split(","),
+      input_list = my_input.split(" "),
+      output_list = [],
       len = rows.length,
+      found,
+      input,
       i,
       j,
       row;
 
-    for (i = 0; i < len; i += 1) {
-      row = rows[i];
-      if (row.split(" ")[0] === input_list[0]) {
-        return true;
+    for (j = 0; j < input_list.length; j += 1) {
+      input = input_list[j];
+      found = null;
+      for (i = 0; i < len; i += 1) {
+        if (rows[i].split(" ")[0] === input) {
+          found = true; 
+        }
+      }
+      if (found !== true) {
+        output_list.push(input);
       }
     }
-    return false;
+    return output_list;
   }
 
   function convertRange(my_range) {
-    var rows = my_range.data.rows;
-    return rows[0].doc.block + "-" + rows[1].doc.block;
+    var output_array = [],
+      i;
+    for (i = 0; i < 2 && my_range.data.total_rows >= 2; i += 1) {
+      output_array.push(my_range.data.rows[i].doc.block);
+    }
+    return output_array.join("-");
   }
 
   function validateAgainstDict(my_gadget, my_input) {
     return new RSVP.Queue()
       .push(function () {
-        return my_gadget.jio_allDocs({"include_docs": true, "limit": getLimit(my_input.split(","))});
+        return RSVP.all(
+          my_input.split(" ").map(function (word) {
+            return my_gadget.jio_allDocs({
+              "include_docs": true,
+              "limit": getLimit(word)
+            });
+          })
+        );
       })
-      .push(function (my_range) {
-        if (my_range.data.total_rows === 0) {
-          return "";
-        }
-        return my_gadget.jio_getAttachment("prefetch", FILE_PREFIX, {
-          "format": "text",
-          "range": "bytes=" + convertRange(my_range)
-        }); 
+      .push(function (my_range_list) {
+        return RSVP.all(my_range_list.map(function (current) {
+            return my_gadget.jio_getAttachment("prefetch", FILE_PREFIX, {
+              "format": "text",
+              "range": "bytes=" + convertRange(current)
+            });
+          }));
       })
-      .push(function (my_range_text) {
-        if (testChunk(my_range_text, my_input)) {
+      .push(function (my_range_text_list) {
+        if (testChunk(my_range_text_list.join(""), my_input).length === 0) {
           return true;
         }
         return false;
       })
       .push(undefined, function (my_error_list) {
-        console.log(my_error_list);
         throw my_error_list;
       });
   }
@@ -209,8 +214,10 @@
     // validate and record
     return new RSVP.Queue()
       .push(function () {
-        var text_input = form.querySelector("input[type='text']");
-        return validateAgainstDict(my_gadget, text_input.value);
+        var text_input = form.querySelector("input[type='text']"),
+          text_value = text_input.value.toUpperCase();
+        text_input.value = text_value;
+        return validateAgainstDict(my_gadget, text_value);
       })
       .push(function (my_is_validated_entry) {
         if (my_is_validated_entry) {
@@ -235,7 +242,7 @@
     if (canvas_list.length === 1) {
       clip_canvas = canvas_list[0];
       crop_canvas = document.createElement("canvas");
-      crop_canvas.className= "XXXXX kw-clip-canvas-crop";
+      crop_canvas.className= "kw-clip-canvas-crop";
       crop_canvas.width = clip_canvas.width;
       crop_canvas.height = clip_canvas.height;
       clip_canvas.parentNode.insertBefore(crop_canvas, clip_canvas.nextSibling);
@@ -246,7 +253,7 @@
     }
     
   }
-
+  
   function callbackHandler(my_gadget, my_event) {
     if (my_event.data.error) {
       throw my_event.data.error;
@@ -281,6 +288,13 @@
     /////////////////////////////
     .declareAcquiredMethod('jio_getAttachment', 'jio_getAttachment')
     .declareAcquiredMethod('jio_allDocs', 'jio_allDocs')
+    
+    /////////////////////////////
+    // published methods
+    /////////////////////////////
+    .allowPublicAcquisition('exportMonoWAV', function () {
+      return this.exportMonoWAV();
+    })
 
     /////////////////////////////
     // declared methods
@@ -428,7 +442,7 @@
           return props.router.postMessage(my_message);
         });
     })
-    
+
     .declareMethod("notify_stop", function () {
       var gadget = this,
         props = gadget.property_dict,
@@ -455,9 +469,7 @@
           var mono_buffer = my_buffer[0],
             placeholder = props.clip_list.querySelector("p"),
             canvas;
-
           clip = div.firstChild;
-          
           if (placeholder) {
             while (props.clip_list.firstChild) {
               props.clip_list.removeChild(props.clip_list.firstChild);
@@ -567,7 +579,8 @@
         default:
           return false;
       }
-    }, false, true);
+    }, false, true)
+    ;
     
-}(window, document, rJS, RSVP, loopEventListener, jIO));
+}(window, document, rJS, RSVP, jIO, loopEventListener));
 
