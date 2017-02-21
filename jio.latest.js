@@ -8206,7 +8206,7 @@ return new Parser;
         var ceilHeapSize = function (v) {
             // The asm.js spec says:
             // The heap object's byteLength must be either
-            // 2^n for n in [12, 24) or 2^24 * n for n ≥ 1.
+            // 2^n for n in [12, 24) or 2^24 * n for n â¥ 1.
             // Also, byteLengths smaller than 2^16 are deprecated.
             var p;
             // If v is smaller than 2^16, the smallest possible solution
@@ -12019,7 +12019,6 @@ return new Parser;
 
   IndexedDBStorage.prototype.buildQuery = function (options) {
     var result_list = [];
-
     function pushIncludedMetadata(cursor) {
       result_list.push({
         "id": cursor.key,
@@ -12039,7 +12038,13 @@ return new Parser;
         var tx = openTransaction(db, ["metadata"], "readonly"),
           range_list;
         if (options.limit !== undefined) {
-          range_list = IDBKeyRange.bound(options.limit[0], options.limit[1]);
+          if (options.limit[0] === undefined) {
+            range_list = IDBKeyRange.upperBound(options.limit[1]);
+          } else if (options.limit[1] === undefined) {
+            range_list = IDBKeyRange.lowerBound(options.limit[0]);
+          } else {
+            range_list = IDBKeyRange.bound(options.limit[0], options.limit[1]);
+          }
         }
         if (options.include_docs === true) {
           return handleCursor(tx.objectStore("metadata").index("_id")
