@@ -54,11 +54,33 @@ select {
   padding: .5em;
   border: 1px solid #000;
 }
+.kw-highlight {
+  position: relative;
+}
+.kw-highlight .kw-highlight-input {
+  position: absolute;
+  width: 80%;
+  padding: .5em;
+	-webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+  display: inline-block;
+  text-align: left;
+  pointer-events: none;
+  border: 1px solid transparent;
+}
+.kw-highlight .kw-highlight-input span {
+  background-color: yellow;
+}
 .kw-controls input:hover {
   background: #d2d2d2;
 }
 .kw-controls input[type="text"] {
   width: 80%;
+	-webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+  display: inline-block;
 }
 .kw-controls select {
   width: 77.4%;
@@ -120,6 +142,7 @@ select {
   top: 0;
   width: 1px;
   background: silver;
+  z-index: 10;
 }
 .kw-clip audio {
   width: 100%;

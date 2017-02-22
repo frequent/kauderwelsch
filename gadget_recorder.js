@@ -134,6 +134,7 @@
     ];
   }
   
+  // unsexy
   function testChunk(my_chunk, my_input) {
     var rows = my_chunk.split(LINE_BREAKS).filter(Boolean),
       input_list = my_input.split(" "),
@@ -150,7 +151,7 @@
       found = null;
       for (i = 0; i < len; i += 1) {
         if (rows[i].split(" ")[0] === input) {
-          found = true; 
+          found = true;
         }
       }
       if (found !== true) {
@@ -190,10 +191,7 @@
           }));
       })
       .push(function (my_range_text_list) {
-        if (testChunk(my_range_text_list.join(""), my_input).length === 0) {
-          return true;
-        }
-        return false;
+        return testChunk(my_range_text_list.join(""), my_input);
       })
       .push(undefined, function (my_error_list) {
         throw my_error_list;
@@ -202,7 +200,9 @@
 
   function recordAudio(my_gadget, my_event) {
     var props = my_gadget.property_dict,
-      form = my_event.target;
+      form = my_event.target,
+      text_input = form.querySelector("input[type='text']");
+
     my_event.preventDefault();
     
     // stop, update memory storage and dom with new file
@@ -214,17 +214,25 @@
     // validate and record
     return new RSVP.Queue()
       .push(function () {
-        var text_input = form.querySelector("input[type='text']"),
-          text_value = text_input.value.toUpperCase();
+        var text_value = text_input.value.toUpperCase();
         text_input.value = text_value;
         return validateAgainstDict(my_gadget, text_value);
       })
-      .push(function (my_is_validated_entry) {
-        if (my_is_validated_entry) {
-          form.querySelector("input").value = "Stop";
+      .push(function (my_validation_error_list) {
+        var message;
+        if (my_validation_error_list.length === 0) {
+          form.querySelector("input[type='submit']").value = "Stop";
           return my_gadget.notify_record();
         }
-        return;
+        message = form.querySelector(".kw-highlight-input");
+        message.className += " kw-highlight-active";
+        message.innerHTML = text_input.value.split(" ").reduce(function (prev, next) {
+          if (my_validation_error_list.indexOf(next) > -1) {
+            return prev + " <span>" + next + "</span>";
+          } else {
+            return prev + " " + next;
+          }
+        }, "");
       })
       .push(function () {
         return false;
@@ -580,7 +588,14 @@
           return false;
       }
     }, false, true)
-    ;
+    
+    .onEvent("input", function (my_event) {
+      var message = this.element.querySelector(".kw-highlight-active");
+      if (message) {
+        message.textContent = "";
+        message.className = message.className.replace(" kw-highlight-active", "");
+      }
+    });
     
 }(window, document, rJS, RSVP, jIO, loopEventListener));
 
