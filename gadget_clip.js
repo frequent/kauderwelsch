@@ -118,6 +118,13 @@
       crop_canvas = canvas_list[1];
       crop_canvas.parentNode.removeChild(crop_canvas);
     }
+    
+  }
+  
+  function deleteAudio(my_gadget, my_event) {
+    return my_gadget.setClipList(
+      my_gadget.element.getAttribute("data-gadget-scope")
+    );
   }
   
   function parseTemplate(my_template, my_value_list) {
@@ -158,7 +165,7 @@
     // acquired methods
     /////////////////////////////
     .declareAcquiredMethod("exportMonoWAV", "exportMonoWAV")
-
+    .declareAcquiredMethod("setClipList", "setClipList")
     /////////////////////////////
     // published methods
     /////////////////////////////
@@ -174,12 +181,12 @@
 
       return new RSVP.Queue()
         .push(function () {
-          return gadget.exportMonoWAV([]);
+          return gadget.exportMonoWAV();
         })
         .push(function (my_export_buffer) {
           props.download_buffer = my_export_buffer;
-          console.log("CLIP DONE");
-          return props.clip;
+          gadget.element.appendChild(props.clip);
+          return gadget.element;
         });
     })
 
@@ -285,14 +292,17 @@
     /////////////////////////////
     .declareService(function () {
       var gadget = this,
-        props = gadget.property_dict;
-      console.log("xxx declare service")
-      props.audio_element.controls = true;
-      props.canvas.setAttribute("width", props.clip.offsetWidth);
-      props.audio_element.src = window.URL.createObjectURL(props.download_buffer);
-      props.audio_element.parentNode.appendChild(initializeDownload(props.download_buffer, "punt.wav"));
+        props = gadget.property_dict,
+        canvas = props.canvas;
 
-      drawBuffer(props.canvas.width, props.canvas.height, props.canvas.getContext('2d'), props.canvas_buffer[0]);
+      canvas.setAttribute("width", props.clip.offsetWidth);
+
+      props.audio_element.controls = true;
+      props.audio_element.src = window.URL.createObjectURL(props.download_buffer);
+      props.audio_element.parentNode.appendChild(
+        initializeDownload(props.download_buffer, "punt.wav")
+      );
+      drawBuffer(canvas.width, canvas.height, canvas.getContext('2d'), props.canvas_buffer[0]);
     })
 
     /////////////////////////////
@@ -303,6 +313,8 @@
       switch (my_event.target.name) {
         case "kw-form-clip-crop":
           return cropAudio(gadget, my_event);
+        case "kw-form-clip-delete":
+          return deleteAudio(gadget, my_event);
       }
     })
 
@@ -311,8 +323,7 @@
         props = gadget.property_dict,
         offset = Math.floor(props.clip.offsetWidth * props.audio_element.currentTime / props.audio_element.duration );
       props.progress.style.left = offset + "px";
-  })
-  ;
+  });
 
 }(window, document, rJS, RSVP, loopEventListener, jIO));
 
