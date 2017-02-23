@@ -238,7 +238,19 @@
         return false;
       });
   }
-  
+
+  function deleteAudio(my_gadget, my_event) {
+    var props = my_gadget.property_dict,
+      form = my_event.target,
+      list = props.clip_list;
+    
+    list.removeChild(form.parentNode.parentNode);
+    return RSVP.all([
+      my_gadget.notify_clear(),
+      my_gadget.setClipList()
+    ]);
+  }
+
   function cropAudio(my_gadget, my_event) {
     var props = my_gadget.property_dict,
       form = my_event.target,
@@ -339,6 +351,19 @@
           props.source.connect(props.node);
           props.node.connect(props.context.destination);
         });
+    })
+    
+    .declareMethod("setClipList", function () {
+      var gadget = this,
+        props = gadget.property_dict,
+        clip_list = props.clip_list,
+        placeholder;
+
+      if (!clip_list.firstChild) {
+        placeholder = document.createElement("p");
+        placeholder.textContent = "No Clips Found";
+        clip_list.appendChild(placeholder);
+      }
     })
     
     .declareMethod("clipSetCrop", function (my_canvas) {
@@ -580,6 +605,8 @@
     .onEvent("submit", function (my_event) {
       var gadget = this;
       switch (my_event.target.name) {
+        case "kw-form-clip-delete":
+          return deleteAudio(gadget, my_event);
         case "kw-form-clip-crop":
           return cropAudio(gadget, my_event);
         case "kw-form-record":
