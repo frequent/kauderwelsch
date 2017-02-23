@@ -10,7 +10,7 @@
   // a 16 x 16 image, but you want it to fill a 32x32 area: you resize
   // (resample) it. the result has less quality (it can be blurry or edgy,
   // depending on the resizing algorithm), but it works, and the resized
-  // image takes up less space. Resampled audio is exactly the same — you
+  // image takes up less space. Resampled audio is exactly the same â you
   // save space, but in practice you will be unable to properly reproduce high
   // frequency content (treble sound).
 
@@ -221,7 +221,7 @@
       } else {
         weight = LAST_WEIGHT;
         for (channel = 0; channel < channels; ++channel) {
-          output_variable_list[channel] = LAST_OUPUT[channel];
+          output_variable_list[channel] = LAST_OUTPUT[channel];
         }
         alreadyProcessedTail = true;
       }
