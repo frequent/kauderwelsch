@@ -126,8 +126,7 @@
 
   function recordAudio(my_gadget, my_event) {
     var props = my_gadget.property_dict,
-      form = my_event.target,
-      text_input = form.querySelector("input[type='text']");
+      form = my_event.target;
 
     my_event.preventDefault();
     
@@ -140,8 +139,8 @@
     // validate and record
     return new RSVP.Queue()
       .push(function () {
-        var text_value = text_input.value.toUpperCase();
-        text_input.value = text_value;
+        var text_value = props.text_input.value.toUpperCase();
+        props.text_input.value = text_value;
         return validateAgainstDict(my_gadget, text_value);
       })
       .push(function (my_validation_error_list) {
@@ -153,7 +152,7 @@
         // flag words not found in dictionary
         message = form.querySelector(".kw-highlight-input");
         message.className += " kw-highlight-active";
-        message.innerHTML = text_input.value.split(" ").reduce(function (prev, next) {
+        message.innerHTML = props.text_input.value.split(" ").reduce(function (prev, next) {
           if (my_validation_error_list.indexOf(next) > -1) {
             return prev + " <span>" + next + "</span>";
           } else {
@@ -190,8 +189,11 @@
     // ready
     /////////////////////////////
     .ready(function () {
-      this.property_dict = {
-        "clip_list": this.element.querySelector(".kw-clip-list")
+      var gadget = this;
+
+      gadget.property_dict = {
+        "clip_list": gadget.element.querySelector(".kw-clip-list"),
+        "text_input": gadget.element.querySelector("form input")
       };
     })
 
@@ -284,10 +286,6 @@
     .declareMethod("notify_stop", function () {
       var gadget = this,
         props = gadget.property_dict;
-        //div = document.createElement("div"),
-        //audio_element,
-        //audio_url,
-        //clip;
 
       props.is_recording = null;
       return new RSVP.Queue()
@@ -298,7 +296,10 @@
           ]);
         })
         .push(function (my_result_list) {
-          return my_result_list[0].render({"canvas_buffer": my_result_list[1]});
+          return my_result_list[0].render({
+            "canvas_buffer": my_result_list[1],
+            "file_name": props.text_input.value
+          });
         })
         .push(function (my_rendered_clip) {
           var placeholder = props.clip_list.querySelector("p");

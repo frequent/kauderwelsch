@@ -14,7 +14,7 @@
     </div>\
     <div class='kw-clip-storage-controls'>\
       <form name='kw-form-save-controls'>\
-        <input type='text' name='kw-clip-reference' value='Unnamed Clip' />\
+        <input type='text' name='kw-clip-reference' value='%s' />\
         <input type='submit' value='Save' />\
       </form>\
     </div>\
@@ -149,16 +149,7 @@
     // ready
     /////////////////////////////
     .ready(function () {
-      var gadget = this,
-        div = document.createElement("div");
-      
-      div.innerHTML = parseTemplate(SOUND_CLIP_TEMPLATE);
-      gadget.property_dict = {
-        "clip": div.firstChild,
-        "canvas": div.querySelector("canvas"),
-        "progress": div.querySelector(".kw-clip-progress"),
-        "audio_element": div.querySelector("audio")
-      };
+      this.property_dict = {};
     })
 
     /////////////////////////////
@@ -175,10 +166,19 @@
     /////////////////////////////
     .declareMethod("render", function (my_option_dict) {
       var gadget = this,
-        props = gadget.property_dict;
+        props = gadget.property_dict,
+        div = document.createElement("div");
+      
+      div.innerHTML = parseTemplate(SOUND_CLIP_TEMPLATE, [
+        my_option_dict.file_name
+      ]);
 
+      props.clip = div.firstChild;
+      props.canvas = div.querySelector("canvas");
+      props.progress = div.querySelector(".kw-clip-progress");
+      props.audio_element = div.querySelector("audio");
       props.canvas_buffer = my_option_dict.canvas_buffer;
-
+    
       return new RSVP.Queue()
         .push(function () {
           return gadget.exportMonoWAV();
