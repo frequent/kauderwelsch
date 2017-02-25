@@ -29,7 +29,7 @@
       </form>\
     </div>\
   </div>";
-  
+
   /////////////////////////////
   // some methods 
   /////////////////////////////
@@ -40,7 +40,7 @@
     link.textContent = "Download Meno";
     return link;
   }
-  
+
   function drawBuffer(width, height, context, data) {
     var step = Math.ceil( data.length / width ),
       amp = height / 2,
@@ -64,6 +64,7 @@
         context.fillRect(i, (1+min)*amp, 1, Math.max(1,(max-min)*amp*0.75));
     }
   }
+
   // Custom loopEventListener
   function customLoopEventListener(my_target, my_type, my_callback) {
     var handle_event_callback,
@@ -100,10 +101,15 @@
 
   function cropAudio(my_gadget, my_event) {
     var props = my_gadget.property_dict,
+      rect = my_gadget.property_dict.rect,
       form = my_event.target,
       canvas_list = form.parentNode.parentNode.querySelectorAll("canvas"),
       clip_canvas,
-      crop_canvas;
+      crop_canvas,
+      bounds,
+      cropped_buffer,
+      slice_start,
+      slice_end;
 
     my_event.preventDefault();
     if (canvas_list.length === 1) {
@@ -114,19 +120,32 @@
       crop_canvas.height = clip_canvas.height;
       clip_canvas.parentNode.insertBefore(crop_canvas, clip_canvas.nextSibling);
       return my_gadget.clipSetCrop(crop_canvas);
-    } else {
+    } else if (confirm("Crop Audio?")) {
+      bounds = canvas_list[1].getBoundingClientRect();
+      slice_start = rect.x / bounds.width;
+      slice_end = (rect.x + rect.w)/bounds.width;
+      props.canvas_buffer = props.canvas_buffer.map(function (buffer) {
+        var len = buffer.length;
+        return buffer.slice((Math.ceil(len * slice_start)), Math.ceil((len * slice_end)));
+      });
       crop_canvas = canvas_list[1];
       crop_canvas.parentNode.removeChild(crop_canvas);
+      return new RSVP.Queue()
+        .push(function () {
+          return my_gadget.convertBuffer();
+        })
+        .push(function () {
+          return my_gadget.drawBuffer();
+        });
     }
-    
   }
-  
+
   function deleteAudio(my_gadget, my_event) {
     return my_gadget.setClipList(
       my_gadget.element.getAttribute("data-gadget-scope")
     );
   }
-  
+
   function parseTemplate(my_template, my_value_list) {
     var template = my_template,
       value_list = my_value_list || [],
@@ -149,7 +168,14 @@
     // ready
     /////////////////////////////
     .ready(function () {
-      this.property_dict = {};
+      this.property_dict = {
+        "rect": {
+          x: null,
+          y: null,
+          w: null,
+          h: null
+        }
+      };
     })
 
     /////////////////////////////
@@ -157,10 +183,11 @@
     /////////////////////////////
     .declareAcquiredMethod("exportMonoWAV", "exportMonoWAV")
     .declareAcquiredMethod("setClipList", "setClipList")
+
     /////////////////////////////
     // published methods
     /////////////////////////////
-    
+
     /////////////////////////////
     // declared methods
     /////////////////////////////
@@ -168,7 +195,7 @@
       var gadget = this,
         props = gadget.property_dict,
         div = document.createElement("div");
-      
+
       div.innerHTML = parseTemplate(SOUND_CLIP_TEMPLATE, [
         my_option_dict.file_name
       ]);
@@ -177,64 +204,94 @@
       props.canvas = div.querySelector("canvas");
       props.progress = div.querySelector(".kw-clip-progress");
       props.audio_element = div.querySelector("audio");
+      props.audio_element.controls = true;
       props.canvas_buffer = my_option_dict.canvas_buffer;
-    
+
       return new RSVP.Queue()
         .push(function () {
-          return gadget.exportMonoWAV();
+          return gadget.convertBuffer();
         })
-        .push(function (my_export_buffer) {
-          props.download_buffer = my_export_buffer;
+        .push(function () {
           gadget.element.appendChild(props.clip);
           return gadget.element;
         });
     })
+    
+    .declareMethod("convertBuffer", function () {
+      var gadget = this,
+        props = gadget.property_dict;
+      return new RSVP.Queue()
+        .push(function () {
+          return gadget.exportMonoWAV(props.canvas_buffer[0]);
+        })
+        .push(function (my_export_buffer) {
+          props.download_buffer = my_export_buffer;
+          props.audio_element.src = window.URL.createObjectURL(props.download_buffer);
+          return;
+          //drawBuffer(props.canvas.width, props.canvas.height, proops.canvas.getContext('2d'), props.download_buffer);
+          //return gadget.drawBuffer();
+        });
+    })
+
+    .declareMethod("drawBuffer", function () {
+      var props = this.property_dict,
+        canvas = props.canvas,
+        buffer = props.canvas_buffer[0];
+
+      //props.audio_element.parentNode.appendChild(
+      //  initializeDownload(props.download_buffer, "punt.wav")
+      //);
+      drawBuffer(canvas.width, canvas.height, canvas.getContext('2d'), buffer);
+    })
 
     .declareMethod("clipSetCrop", function (my_canvas) {
-      var ctx = my_canvas.getContext('2d'),
+      var gadget = this,
+        props = gadget.property_dict,
+        ctx = my_canvas.getContext('2d'),
         canvas_coordinate_list = my_canvas.getBoundingClientRect(),
         left_offset = canvas_coordinate_list.left,
-        rect = {
-          x: my_canvas.width * 0.1,
-          y: 0,
-          w: my_canvas.width * 0.8,
-          h: my_canvas.height
-        },
         current_handle = false,
         handle_size = 16,
         drag = false;
-  
+
+      props.rect = {
+        x: my_canvas.width * 0.1,
+        y: 0,
+        w: my_canvas.width * 0.8,
+        h: my_canvas.height
+      };
+
       function dist(p1, p2) {
         return Math.sqrt(p2.x - p1.x) * (p2.x - p1.x);
       }
-      
+
       function getHandle(mouse) {
-        if (dist(mouse, {"x": rect.x + left_offset}) <= handle_size) {
+        if (dist(mouse, {"x": props.rect.x + left_offset}) <= handle_size) {
           return 'left';
         }
-        if (dist(mouse, {"x": rect.x + left_offset + rect.w}) <= handle_size) {
+        if (dist(mouse, {"x": props.rect.x + left_offset + props.rect.w}) <= handle_size) {
           return 'right';
         }
         return false;
       }
-    
+
       function mouseDownHandle(e) {
         if (current_handle) {
           drag = true;
         }
         draw();
       }
-      
+
       function mouseUpHandle() {
         drag = false;
         current_handle = false;
         draw();
       }
-      
+
       function mouseMoveHandle(e) {
         var previous_handle = current_handle,
           mouse_pos;
-    
+
         if (!drag) {
           current_handle = getHandle({"x": e.pageX - my_canvas.offsetLeft});
         }
@@ -242,11 +299,11 @@
           mouse_pos = {"x": e.pageX - left_offset};
           switch (current_handle) {
             case 'left':
-              rect.w += rect.x - mouse_pos.x;
-              rect.x = mouse_pos.x;
+              props.rect.w += props.rect.x - mouse_pos.x;
+              props.rect.x = mouse_pos.x;
               break;
             case 'right':
-              rect.w = mouse_pos.x - rect.x;
+              props.rect.w = mouse_pos.x - props.rect.x;
               break;
           }
         }
@@ -254,24 +311,25 @@
           draw();
         }
       }
-      
+
       function draw() {
         ctx.clearRect(0, 0, my_canvas.width, my_canvas.height);
         ctx.fillStyle = 'rgba(229, 134, 150, 0.7)';
-        ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+        ctx.fillRect(props.rect.x, props.rect.y, props.rect.w, props.rect.h);
         if (current_handle) {
           switch (current_handle) {
             case 'left':
-              my_canvas.style.cursor= (rect.w > 0 ? 'w' : 'e') + '-resize';
+              my_canvas.style.cursor= (props.rect.w > 0 ? 'w' : 'e') + '-resize';
               break;
             case 'right':
-              my_canvas.style.cursor= (rect.w > 0 ? 'e' : 'w') + '-resize';
+              my_canvas.style.cursor= (props.rect.w > 0 ? 'e' : 'w') + '-resize';
               break;
             }
         } else {
           my_canvas.style.cursor = '';
         }
       }
+
       draw();
       return new RSVP.Queue()
         .push(function () {
@@ -292,17 +350,9 @@
     /////////////////////////////
     .declareService(function () {
       var gadget = this,
-        props = gadget.property_dict,
-        canvas = props.canvas;
-
-      canvas.setAttribute("width", props.clip.offsetWidth);
-
-      props.audio_element.controls = true;
-      props.audio_element.src = window.URL.createObjectURL(props.download_buffer);
-      props.audio_element.parentNode.appendChild(
-        initializeDownload(props.download_buffer, "punt.wav")
-      );
-      drawBuffer(canvas.width, canvas.height, canvas.getContext('2d'), props.canvas_buffer[0]);
+        props = gadget.property_dict;
+      props.canvas.setAttribute("width", props.clip.offsetWidth);
+      return gadget.drawBuffer();
     })
 
     /////////////////////////////

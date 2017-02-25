@@ -18,11 +18,11 @@
       case 'exportWAV':
         return sendMessage("exportWAV", recorder.exportWAV(opts.type));
       case 'exportMonoWAV':
-        return sendMessage("exportMonoWAV", recorder.exportMonoWAV(opts.type));
+        return sendMessage("exportMonoWAV", recorder.exportMonoWAV(opts.type, opts.buffer));
       case 'getBuffers':
         return sendMessage("getBuffers", recorder.getBuffers());
       case 'clear':
-        return sendMessage("clear", recorder.clear());
+        return sendMessage("clear", recorder.clear(opts.sample_rate));
     }
   };
 

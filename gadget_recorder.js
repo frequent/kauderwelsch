@@ -206,8 +206,8 @@
     /////////////////////////////
     // published methods
     /////////////////////////////
-    .allowPublicAcquisition('exportMonoWAV', function () {
-      return this.exportMonoWAV();
+    .allowPublicAcquisition('exportMonoWAV', function (buffer) {
+      return this.exportMonoWAV(undefined, buffer);
     })
     .allowPublicAcquisition('setClipList', function (my_scope) {
       return this.setClipList(my_scope);
@@ -309,6 +309,7 @@
             }
           }
           props.clip_list.appendChild(my_rendered_clip);
+          return gadget.notify_clear();
         });
     })
 
@@ -328,7 +329,9 @@
     
     .declareMethod("notify_clear", function () {
       var gadget = this;
-      return gadget.sendMessage({"command":'clear'});
+      return gadget.sendMessage({"command":'clear', "option_dict": {
+        "sample_rate": gadget.property_dict.context.sampleRate
+      }});
     })
 
     .declareMethod("getBuffers", function () {
@@ -343,10 +346,11 @@
       }});
     })
 
-    .declareMethod("exportMonoWAV", function (my_type) {
+    .declareMethod("exportMonoWAV", function (my_type, my_buffer) {
       var gadget = this;
       return gadget.sendMessage({"command": 'exportMonoWAV', "option_dict": {
-        "type": my_type || "audio/wav"
+        "type": my_type || "audio/wav",
+        "buffer": my_buffer
       }});      
     })
 

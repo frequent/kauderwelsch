@@ -4,28 +4,27 @@
   "use strict";
 
   // Stream Recording inspired by:
-  // Copyright © 2013 Matt Diamond - License (MIT)
+  // Copyright Â© 2013 Matt Diamond - License (MIT)
   // https://github.com/mattdiamond/Recorderjs
 
   var REC_LENGTH = 0,
     REC_BUFFERS_LEFT = [],
     REC_BUFFERS_RIGHT = [],
     SAMPLE_RATE;
-  
+
   var RECORDER = {};
-  
+
   RECORDER.initialize = function (my_option_dict) {
     SAMPLE_RATE = my_option_dict.sample_rate;
     return;
-    //worker_instance.postMessage({"command": "init", "status": 200});
   };
-  
+
   RECORDER.record = function (input_buffer){
     REC_BUFFERS_LEFT.push(input_buffer[0]);
     REC_BUFFERS_RIGHT.push(input_buffer[1]);
     REC_LENGTH += input_buffer[0].length;
   };
-  
+
   RECORDER.exportWAV = function (my_type) {
     var bufferL = mergeBuffers(REC_BUFFERS_LEFT, REC_LENGTH),
       bufferR = mergeBuffers(REC_BUFFERS_RIGHT, REC_LENGTH),
@@ -33,50 +32,42 @@
       dataview = encodeWAV(interleaved),
       audioBlob =  new Blob([dataview], { type: my_type });
     return audioBlob;
-    //worker_instance.postMessage({"command": "exportWAV", "status": 200,
-    //  "result": audioBlob
-    //});
   };
 
-  RECORDER.exportMonoWAV = function (my_type){
-    var bufferL = mergeBuffers(REC_BUFFERS_LEFT, REC_LENGTH),
+  RECORDER.exportMonoWAV = function (my_type, my_buffer, my_sample_rate){
+    var bufferL,
       resampled,
       dataview;
 
+    if (REC_BUFFERS_LEFT.length > 0) {
+      bufferL = mergeBuffers(REC_BUFFERS_LEFT, REC_LENGTH);
+    } else {
+      bufferL = my_buffer[0];
+    }
     resampler.initialize(SAMPLE_RATE, 16000, 1, bufferL.length);
     resampled = resampler.resample(bufferL);
+
     SAMPLE_RATE = 16000;
     dataview = encodeWAV(resampled, true);
-    
-    // resampled = downSample(SAMPLE_RATE, 16000, 1, bufferL),
-    // resampled = new Resampler(SAMPLE_RATE, 16000, 1, bufferL),
-    // dataview = encodeWAV(resampled.outputBuffer, true),
-    // dataview = encodeWAV(bufferL, true),
-    return new Blob([dataview], { type: my_type });
 
-    //worker_instance.postMessage({"command": "exportMonoWAV", "status": 200,
-    //  "result": audioBlob
-    //});
+    return new Blob([dataview], { type: my_type });
   };
-  
+
   RECORDER.getBuffers = function () {
     var buffers = [];
     buffers.push( mergeBuffers(REC_BUFFERS_LEFT, REC_LENGTH) );
     buffers.push( mergeBuffers(REC_BUFFERS_RIGHT, REC_LENGTH) );
     return buffers;
-    //worker_instance.postMessage({"command": "getBuffers", "status": 200,
-    //  "result": buffers
-    //});
   };
-  
-  RECORDER.clear = function(){
+
+  RECORDER.clear = function(my_sample_rate){
     REC_LENGTH = 0;
     REC_BUFFERS_LEFT = [];
     REC_BUFFERS_RIGHT = [];
+    SAMPLE_RATE = my_sample_rate;
     return;
-    //worker_instance.postMessage({"command": "clear", "status": 200});
   };
-  
+
   // utility methods
 
   function mergeBuffers(recBuffers, recLength){
@@ -88,14 +79,14 @@
     }
     return result;
   }
-  
+
   function interleave(inputL, inputR){
     var length = inputL.length + inputR.length;
     var result = new Float32Array(length);
-  
+
     var index = 0,
       inputIndex = 0;
-  
+
     while (index < length){
       result[index++] = inputL[inputIndex];
       result[index++] = inputR[inputIndex];
@@ -110,17 +101,17 @@
       output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
     }
   }
-  
+
   function writeString(view, offset, string){
     for (var i = 0; i < string.length; i++){
       view.setUint8(offset + i, string.charCodeAt(i));
     }
   }
-  
+
   function encodeWAV(samples, mono){
     var buffer = new ArrayBuffer(44 + samples.length * 2);
     var view = new DataView(buffer);
-    
+
     // https://gist.github.com/also/900023
     // set Wave file headers
 
@@ -150,15 +141,16 @@
     writeString(view, 36, 'data');
     /* data chunk length */
     view.setUint32(40, samples.length * 2, true);
-  
+
     floatTo16BitPCM(view, 44, samples);
-  
+
     return view;
   }
-  
+
   worker_instance.recorder = RECORDER;
 
   // error handling
   // worker_instance.close();
-  
+
 }(self));
+
