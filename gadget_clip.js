@@ -1,11 +1,13 @@
 /*jslint nomen: true, indent: 2, maxerr: 3 */
-/*global window, document, rJS, RSVP, loopEventListener, jIO */
-(function (window, document, rJS, RSVP, loopEventListener, jIO) {
+/*global window, document, rJS, RSVP, loopEventListener, jIO, Math */
+(function (window, document, rJS, RSVP, loopEventListener, jIO, Math) {
   "use strict";
 
   /////////////////////////////
   // templates
   /////////////////////////////
+  var CANVAS = "CANVAS";
+
   var SOUND_CLIP_TEMPLATE = "<div class='kw-clip'>\
     <span class='kw-clip-progress'></span>\
     <canvas class='kw-clip-canvas' height='80'></canvas>\
@@ -63,40 +65,6 @@
         }
         context.fillRect(i, (1+min)*amp, 1, Math.max(1,(max-min)*amp*0.75));
     }
-  }
-
-  // Custom loopEventListener
-  function customLoopEventListener(my_target, my_type, my_callback) {
-    var handle_event_callback,
-      callback_promise;
-
-    function cancelResolver() {
-      if ((callback_promise !== undefined) &&
-        (typeof callback_promise.cancel === "function")) {
-        callback_promise.cancel();
-      }
-    }
-    function canceller() {
-      cancelResolver();
-    }
-    function itsANonResolvableTrap(resolve, reject) {
-      handle_event_callback = function (evt) {
-        cancelResolver();
-        callback_promise = new RSVP.Queue()
-          .push(function () {
-            return my_callback(evt);
-          })
-          .push(undefined, function (error) {
-            if (!(error instanceof RSVP.CancellationError)) {
-              canceller();
-              reject(error);
-            }
-          });
-      };
-      // eg object.onfirstpass = function () {...
-      my_target["on" + my_type] = my_callback;
-    }
-    return new RSVP.Promise(itsANonResolvableTrap, canceller);
   }
 
   function cropAudio(my_gadget, my_event) {
@@ -161,6 +129,20 @@
     template.split("%s").map(setHtmlContent(html_content));
     return html_content.join("");
   }
+  
+  function dist(p1, p2) {
+    return Math.sqrt(p2.x - p1.x) * (p2.x - p1.x);
+  }
+  
+  function getHandle(mouse, props) {
+    if (dist(mouse, {"x": props.rect.x + props.left_offset}) <= props.handle_size) {
+      return 'left';
+    }
+    if (dist(mouse, {"x": props.rect.x + props.left_offset + props.rect.w}) <= props.handle_size) {
+      return 'right';
+    }
+    return false;
+  }
 
   rJS(window)
 
@@ -174,7 +156,10 @@
           y: null,
           w: null,
           h: null
-        }
+        },
+        current_handle: false,
+        handle_size: 16,
+        drag: false
       };
     })
 
@@ -243,102 +228,91 @@
       //);
       drawBuffer(canvas.width, canvas.height, canvas.getContext('2d'), buffer);
     })
-
-    .declareMethod("clipSetCrop", function (my_canvas) {
+    
+    .declareMethod("draw", function () {
       var gadget = this,
         props = gadget.property_dict,
-        ctx = my_canvas.getContext('2d'),
-        canvas_coordinate_list = my_canvas.getBoundingClientRect(),
-        left_offset = canvas_coordinate_list.left,
-        current_handle = false,
-        handle_size = 16,
-        drag = false;
+        canvas = props.crop_canvas,
+        ctx = canvas.getContext("2d"),
+        canvas_coordinate_list = canvas.getBoundingClientRect();
+        
+      props.left_offset = canvas_coordinate_list.left;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = 'rgba(229, 134, 150, 0.7)';
+      ctx.fillRect(props.rect.x, props.rect.y, props.rect.w, props.rect.h);
+      if (props.current_handle) {
+        switch (props.current_handle) {
+          case 'left':
+            canvas.style.cursor= (props.rect.w > 0 ? 'w' : 'e') + '-resize';
+            break;
+          case 'right':
+            canvas.style.cursor= (props.rect.w > 0 ? 'e' : 'w') + '-resize';
+            break;
+          }
+      } else {
+        canvas.style.cursor = '';
+      }
+    })
+    
+    .declareMethod("clipSetCrop", function (my_canvas) {
+      var gadget = this,
+        props = gadget.property_dict;
 
+      props.crop_canvas = my_canvas;
       props.rect = {
         x: my_canvas.width * 0.1,
         y: 0,
         w: my_canvas.width * 0.8,
         h: my_canvas.height
       };
+      props.drag = false;
+      props.current_handle = false;
+      
+      return gadget.draw();
+    })
+    
+    .declareMethod("mouseDownHandle", function () {
+      var gadget = this,
+        props = gadget.property_dict;
+      if (props.current_handle) {
+        props.drag = true;
+      }
+      return gadget.draw(); 
+    })
+    
+    .declareMethod("mouseUpHandle", function () {
+      var gadget = this,
+        props = gadget.property_dict;
+      props.drag = false;
+      props.current_handle = false;
+      return gadget.draw();
+    })
+    
+    .declareMethod("mouseMoveHandle", function (my_event) {
+      var gadget = this,
+        props = gadget.property_dict,
+        previous_handle = props.current_handle,
+        mouse_pos;
 
-      function dist(p1, p2) {
-        return Math.sqrt(p2.x - p1.x) * (p2.x - p1.x);
+      if (!props.drag) {
+        props.current_handle = getHandle({"x": my_event.pageX - props.crop_canvas.offsetLeft}, props);
       }
 
-      function getHandle(mouse) {
-        if (dist(mouse, {"x": props.rect.x + left_offset}) <= handle_size) {
-          return 'left';
-        }
-        if (dist(mouse, {"x": props.rect.x + left_offset + props.rect.w}) <= handle_size) {
-          return 'right';
-        }
-        return false;
-      }
-
-      function mouseDownHandle(e) {
-        if (current_handle) {
-          drag = true;
-        }
-        draw();
-      }
-
-      function mouseUpHandle() {
-        drag = false;
-        current_handle = false;
-        draw();
-      }
-
-      function mouseMoveHandle(e) {
-        var previous_handle = current_handle,
-          mouse_pos;
-
-        if (!drag) {
-          current_handle = getHandle({"x": e.pageX - my_canvas.offsetLeft});
-        }
-        if (current_handle && drag) {
-          mouse_pos = {"x": e.pageX - left_offset};
-          switch (current_handle) {
-            case 'left':
-              props.rect.w += props.rect.x - mouse_pos.x;
-              props.rect.x = mouse_pos.x;
-              break;
-            case 'right':
-              props.rect.w = mouse_pos.x - props.rect.x;
-              break;
-          }
-        }
-        if (drag || current_handle != previous_handle) {
-          draw();
+      if (props.current_handle && props.drag) {
+        mouse_pos = {"x": my_event.pageX - props.left_offset};
+        switch (props.current_handle) {
+          case 'left':
+            props.rect.w += props.rect.x - mouse_pos.x;
+            props.rect.x = mouse_pos.x;
+            break;
+          case 'right':
+            props.rect.w = mouse_pos.x - props.rect.x;
+            break;
         }
       }
-
-      function draw() {
-        ctx.clearRect(0, 0, my_canvas.width, my_canvas.height);
-        ctx.fillStyle = 'rgba(229, 134, 150, 0.7)';
-        ctx.fillRect(props.rect.x, props.rect.y, props.rect.w, props.rect.h);
-        if (current_handle) {
-          switch (current_handle) {
-            case 'left':
-              my_canvas.style.cursor= (props.rect.w > 0 ? 'w' : 'e') + '-resize';
-              break;
-            case 'right':
-              my_canvas.style.cursor= (props.rect.w > 0 ? 'e' : 'w') + '-resize';
-              break;
-            }
-        } else {
-          my_canvas.style.cursor = '';
-        }
+      if (props.drag || props.current_handle != previous_handle) {
+        return gadget.draw();
       }
-
-      draw();
-      return new RSVP.Queue()
-        .push(function () {
-          return RSVP.all([
-            customLoopEventListener(my_canvas, "mousedown", mouseDownHandle),
-            customLoopEventListener(my_canvas, "mouseup", mouseUpHandle),
-            customLoopEventListener(my_canvas, "mousemove", mouseMoveHandle),
-          ]);
-        });
     })
 
     /////////////////////////////
@@ -368,6 +342,26 @@
       }
     })
 
+    .onEvent("mousedown", function (my_event) {
+      var gadget = this;
+      if (my_event.target.nodeName === CANVAS) {
+        return gadget.mouseDownHandle(my_event);
+      }
+    })
+    .onEvent("mouseup", function (my_event) {
+      var gadget = this;
+      if (my_event.target.nodeName === CANVAS) {
+        return gadget.mouseUpHandle(my_event);
+      }
+    })
+    .onEvent("mousemove", function (my_event) {
+      var gadget = this;
+      if (my_event.target.nodeName === CANVAS) {
+        return gadget.mouseMoveHandle(my_event);
+      }
+    })
+    
+
     .onEvent("timeupdate", function (my_event) {
       var gadget = this,
         props = gadget.property_dict,
@@ -375,5 +369,5 @@
       props.progress.style.left = offset + "px";
   });
 
-}(window, document, rJS, RSVP, loopEventListener, jIO));
+}(window, document, rJS, RSVP, loopEventListener, jIO, Math));
 
