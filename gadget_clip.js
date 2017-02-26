@@ -1,6 +1,6 @@
 /*jslint nomen: true, indent: 2, maxerr: 3 */
-/*global window, document, rJS, RSVP, loopEventListener, jIO, Math */
-(function (window, document, rJS, RSVP, loopEventListener, jIO, Math) {
+/*global window, document, rJS, RSVP, jIO, Math */
+(function (window, document, rJS, RSVP, jIO, Math) {
   "use strict";
 
   /////////////////////////////
@@ -293,11 +293,13 @@
         props = gadget.property_dict,
         previous_handle = props.current_handle,
         mouse_pos;
-
+      
+      if (!props.crop_canvas) {
+        return;
+      }
       if (!props.drag) {
         props.current_handle = getHandle({"x": my_event.pageX - props.crop_canvas.offsetLeft}, props);
       }
-
       if (props.current_handle && props.drag) {
         mouse_pos = {"x": my_event.pageX - props.left_offset};
         switch (props.current_handle) {
@@ -360,14 +362,14 @@
         return gadget.mouseMoveHandle(my_event);
       }
     })
-    
 
     .onEvent("timeupdate", function (my_event) {
+      console.log("timeupdate")
       var gadget = this,
         props = gadget.property_dict,
         offset = Math.floor(props.clip.offsetWidth * props.audio_element.currentTime / props.audio_element.duration );
       props.progress.style.left = offset + "px";
   });
 
-}(window, document, rJS, RSVP, loopEventListener, jIO, Math));
+}(window, document, rJS, RSVP, jIO, Math));
 
