@@ -342,34 +342,35 @@
         case "kw-form-clip-delete":
           return deleteAudio(gadget, my_event);
       }
-    })
+    }, false, false)
 
     .onEvent("mousedown", function (my_event) {
       var gadget = this;
       if (my_event.target.nodeName === CANVAS) {
         return gadget.mouseDownHandle(my_event);
       }
-    })
+    }, false, false)
+
     .onEvent("mouseup", function (my_event) {
       var gadget = this;
       if (my_event.target.nodeName === CANVAS) {
         return gadget.mouseUpHandle(my_event);
       }
-    })
+    }, false, false)
+
     .onEvent("mousemove", function (my_event) {
       var gadget = this;
       if (my_event.target.nodeName === CANVAS) {
         return gadget.mouseMoveHandle(my_event);
       }
-    })
+    }, false, false)
 
-    .onEvent("timeupdate", function (my_event) {
-      console.log("timeupdate")
+    .onEvent("invalid", function (my_event) {
       var gadget = this,
         props = gadget.property_dict,
         offset = Math.floor(props.clip.offsetWidth * props.audio_element.currentTime / props.audio_element.duration );
       props.progress.style.left = offset + "px";
-  });
+    }, true, false);
 
 }(window, document, rJS, RSVP, jIO, Math));
 
