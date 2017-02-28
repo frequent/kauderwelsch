@@ -70,7 +70,7 @@
     .allowPublicAcquisition("jio_put", function (param_list) {
       return this.getDeclaredGadget("worker")
         .push(function (my_declared_gadget) {
-          return my_declared_gadget.jio_put.apply(nulmy_declared_gadgetl, param_list);
+          return my_declared_gadget.jio_put.apply(my_declared_gadget, param_list);
         });
     })
     .allowPublicAcquisition("jio_get", function (param_list) {
