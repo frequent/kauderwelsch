@@ -1,29 +1,79 @@
+/* === font-family === */
 * {
   font-family: Arial;
 }
-h1 {
-  text-align: center;
-}
+
+/* === font sizes === */
 input,
-select {
+select,
+textarea {
   font-size: 1em;
 }
+
+/* === wrappers === */
 .kw-wrapper {
-	width: 60%;
-	min-width: 1024px;
-	display: block;
-	margin: 0 auto;
-	-webkit-box-sizing: border-box;
+  width: auto;
+  display: block;
+	margin: auto 5%;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+.kw-audio-wrapper,
+.kw-editor-wrapper {
+  width: 49%;
+  display: inline-block;
+  vertical-align: top;
+  -webkit-box-sizing: border-box;
   -moz-box-sizing: border-box;
   box-sizing: border-box;
 }
 @media (max-width: 64em) {
   .kw-wrapper {
+    display: block;
+    margin: 15px 0;
+  }
+  .kw-audio-wrapper,
+  .kw-editor-wrapper {
     width: 100%;
+    display: block;
     min-width: 360px;
-    padding: 0 .5em;
+    padding: 0;
+  }
+  .kw-audio-wrapper {
+     min-width: 360px;
   }
 }
+/* === kauderwelsch === */
+h1, h2 {
+  text-align: center;
+}
+
+/* === modeller === */
+.kw-editor-wrapper .kw-grammar,
+.kw-editor-wrapper .kw-voca {
+  width: 49%;
+  display: inline-block;
+  vertical-align: top;
+  padding: 0 1%;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+.kw-editor-wrapper .kw-grammar textarea,
+.kw-editor-wrapper .kw-voca textarea {
+  width: 100%;
+  min-height: 430px;
+}
+@media (max-width: 32em) {
+  .kw-editor-wrapper .kw-grammar,
+  .kw-editor-wrapper .kw-voca {
+    width: 100%;
+    display: block;
+    padding: 0;
+  }
+}
+/* === recorder === */
 .kw-analyser { 
 	background: #000000; 
 	width: 100%;

@@ -10,11 +10,24 @@
   </head>
   <body>
     <div class="kw-wrapper">
-      <canvas class="kw-analyser" width="1024" height="500"></canvas>
-    </div>
-    <div data-gadget-url="gadget_recorder.html"
-         data-gadget-scope="recorder"
-         data-gadget-sandbox="public">
+      <div class="kw-audio-wrapper">
+        <h2>Audio Recorder</h2>
+        <canvas class="kw-analyser" width="960" height="500"></canvas>
+        <div data-gadget-url="gadget_recorder.html"
+             data-gadget-scope="recorder"
+             data-gadget-sandbox="public">
+        </div>
+      </div>
+      <div class="kw-editor-wrapper">
+        <div data-gadget-url="gadget_modeller.html"
+           data-gadget-scope="modeller"
+           data-gadget-sandbox="public">
+        </div>
+        <div data-gadget-url="gadget_julia.html"
+             data-gadget-scope="julia"
+             data-gadget-sandbox="public">
+        </div>
+      </div>
     </div>
   </body>
 </html>
