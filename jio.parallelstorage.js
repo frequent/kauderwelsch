@@ -101,3 +101,4 @@
   jIO.addStorage('parallel', ParallelStorage);
 
 }(jIO, RSVP, Array, Number));
+

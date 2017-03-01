@@ -203,8 +203,8 @@
     return sendMessage({"command": "getAttachment", "param": [id, name, options]});
   };
 
-  WorkerStorage.prototype.putAttachment = function (id, name) {
-    return sendMessage({"command": "putAttachment", "param": [id, name]});
+  WorkerStorage.prototype.putAttachment = function (id, name, blob) {
+    return sendMessage({"command": "putAttachment", "param": [id, name, blob]});
   };
   
   WorkerStorage.prototype.allAttachment = function (options) {
@@ -228,3 +228,4 @@
   jIO.addStorage('worker', WorkerStorage);
 
 }(self, jIO, RSVP, Blob, navigator));
+
