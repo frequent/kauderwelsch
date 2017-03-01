@@ -94,7 +94,7 @@
     .allowPublicAcquisition("jio_putAttachment", function (param_list) {
       return this.getDeclaredGadget("worker")
         .push(function (my_declared_gadget) {
-          return my_declared_gadget.jio_putAttachment(my_declared_gadget, param_list);
+          return my_declared_gadget.jio_putAttachment.apply(my_declared_gadget, param_list);
         });
     })
     .allowPublicAcquisition("jio_removeAttachment", function (param_list) {
