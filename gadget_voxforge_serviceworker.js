@@ -287,7 +287,7 @@
       case 'removeAttachment':
         return bounceMessage(event, "removeAttachment", data.param);
       case 'putAttachment':
-        return bounceMessage(event, "putAttachment". data.param);
+        return bounceMessage(event, "putAttachment", data.param);
       case 'getAttachment':
         return bounceMessage(event, "getAttachment", data.param);
       default:
@@ -364,3 +364,4 @@
     });
 
 }(self, fetch, Request, Response, console, location, JSON));
+
