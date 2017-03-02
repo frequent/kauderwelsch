@@ -9,6 +9,7 @@
     "url": "gadget_voxforge_serviceworker.js",
     "prefetch_url_list": ["sample.txt"],
     "prefetch_update": true,
+    "authorized_cache_list": ["self", "prefetch", "modeller"],
     "sub_storage": {
       "type": "parallel",
       "storage_list": [{
@@ -64,3 +65,4 @@
     /////////////////////////////
 
 }(window, rJS, RSVP));
+
