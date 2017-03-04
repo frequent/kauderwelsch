@@ -7,12 +7,11 @@
 (function (global, jIO, RSVP, Blob, navigator) {
   "use strict";
 
-  function serializeUrlList(url_list) {
-    var prefix = "prefetch_url_list=",
-      url_param = "";
-    if (url_list) {
-      url_param = url_list.reduce(function (current, next) {
-        return current + prefix + encodeURIComponent(next) + "&";
+  function serializeUrlList(my_url_list, my_prefix) {
+    var url_param = "";
+    if (my_url_list) {
+      url_param = my_url_list.reduce(function (current, next) {
+        return current + my_prefix + encodeURIComponent(next) + "&";
       }, url_param);
     }
     return url_param.substring(0, url_param.length - 1);
@@ -158,7 +157,9 @@
     }
 
     // pass configuration to serviceworker via url
-    this.url = spec.url += "?" + serializeUrlList(spec.prefetch_url_list) + "&" +
+    this.url = spec.url += "?" +
+      serializeUrlList(spec.prefetch_url_list, "prefetch_url_list=") + "&" +
+      serializeUrlList(spec.authorized_cache_list, "authorized_cache_list=") + "&" +
       "sub_storage=" + encodeURIComponent(JSON.stringify(spec.sub_storage));
     
     if (spec.prefetch_update) {
