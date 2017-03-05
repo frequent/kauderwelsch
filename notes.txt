@@ -87,7 +87,7 @@ http://stackoverflow.com/questions/23331546/how-to-use-javascript-to-read-local-
 https://www.codeproject.com/Articles/744986/How-to-do-some-magic-with-indexedDB
 https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API/Using_IndexedDB
 
-
+https://mdn.github.io/indexeddb-examples/idbkeyrange/
 https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API/Using_IndexedDB
 https://github.com/mdn/to-do-notifications/blob/gh-pages/scripts/todo.js
 http://www.codemag.com/article/1411041
