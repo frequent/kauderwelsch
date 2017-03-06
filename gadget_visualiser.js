@@ -82,7 +82,8 @@
     /////////////////////////////
     .declareMethod('render', function (my_option_dict) {
       var gadget = this,
-        props = gadget.property_dict;
+        props = gadget.property_dict,
+        queue = new RSVP.Queue();
 
       if (!AUDIO_CONTEXT) {
         throw new TypeError("Browser does not support AudioContext");
@@ -99,8 +100,17 @@
       props.context = new AUDIO_CONTEXT();
 
       if (props.deferred) {
-        return props.deferred.resolve();
+        queue.push(props.deferred.resolve());
       }
+      return queue
+        /*
+        .push(function () {
+          return gadget.getDeclaredGadget("modeller");
+        })
+        .push(function (my_declared_gadget) {
+          return my_declared_gadget.render();
+        });
+        */
     })
 
     .declareMethod("initializeAnalyser", function () {
@@ -172,3 +182,4 @@
     });
     
 }(window, rJS, RSVP));
+
