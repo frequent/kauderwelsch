@@ -103,14 +103,12 @@
         queue.push(props.deferred.resolve());
       }
       return queue
-        /*
         .push(function () {
           return gadget.getDeclaredGadget("modeller");
         })
         .push(function (my_declared_gadget) {
           return my_declared_gadget.render();
         });
-        */
     })
 
     .declareMethod("initializeAnalyser", function () {
