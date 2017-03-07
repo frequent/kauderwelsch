@@ -313,7 +313,7 @@
     var expected_cache_name_list = Object.keys(CURRENT_CACHE_DICT).map(function(key) {
       return CURRENT_CACHE_DICT[key];
     });
-    console.log(expected_cache_name_list)
+
     return event.waitUntil(
       new RSVP.Queue()
         .push(function () {
@@ -353,13 +353,13 @@
       self.param_dict = deserializeUrlParameters(location.search.substring(1));
 
       // importScripts.apply(null, self.param_dict["xxx"])
-
       // XXX should be authenticated not auth_
       CURRENT_CACHE_DICT = dictify(self.param_dict.auth_cache_list || []);
       PREFETCH_URL_LIST = self.param_dict.prefetch_url_list || [];
       PREFETCH_UPDATE = self.param_dict.prefetch_update;
-
-      return jIO.createJIO(JSON.parse(self.param_dict.sub_storage));
+      return jIO.createJIO(
+        JSON.parse(decodeURIComponent(self.param_dict.sub_storage))
+      );
     })
     .push(function (my_jio_storage) {
       STORAGE = my_jio_storage;
@@ -369,6 +369,10 @@
         workerLoopEventListener(self, "activate", activateHandler),
         workerLoopEventListener(self, "message", messageHandler)
       ]);
+    })
+    .push(undefined, function (my_error) {
+      console.log(my_error);
+      throw my_error;
     });
 
 }(self, fetch, Request, Response, console, location, JSON));
