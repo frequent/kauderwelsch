@@ -1,6 +1,7 @@
 /*jslint indent: 2*/
-/*global self, fetch, Request, Response, console, location, JSON */
-(function (self, fetch, Request, Response, console, location, JSON) {
+/*global self, fetch, Request, Response, console, location, JSON
+  decodeURIComponent*/
+(function (self, fetch, Request, Response, console, location, JSON, decodeURIComponent) {
   "use strict";
 
   // DEBUG:
@@ -176,12 +177,6 @@
                 }
                 throw error;
               });
-              //.push(undefined, function (error) {
-              //  if (error.status_code === 404) {
-              //    console.log("handle network request failing");
-              //  }
-              //  throw error;
-              //});
             })
           );
         })
@@ -351,12 +346,13 @@
   return new RSVP.Queue()
     .push(function () {
       self.param_dict = deserializeUrlParameters(location.search.substring(1));
-
+      
       // importScripts.apply(null, self.param_dict["xxx"])
       // XXX should be authenticated not auth_
-      CURRENT_CACHE_DICT = dictify(self.param_dict.auth_cache_list || []);
+      CURRENT_CACHE_DICT = dictify(self.param_dict.authorized_cache_list || []);
       PREFETCH_URL_LIST = self.param_dict.prefetch_url_list || [];
       PREFETCH_UPDATE = self.param_dict.prefetch_update;
+      
       return jIO.createJIO(
         JSON.parse(decodeURIComponent(self.param_dict.sub_storage))
       );
@@ -375,5 +371,5 @@
       throw my_error;
     });
 
-}(self, fetch, Request, Response, console, location, JSON));
+}(self, fetch, Request, Response, console, location, JSON, decodeURIComponent));
 
