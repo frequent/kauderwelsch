@@ -81,7 +81,7 @@ h1, h2 {
 .kw-controls {
 	display: block;
   margin: 0 auto;
-	width: 60%;
+	width: auto;
 	background: #d1d1de;
 	padding: 1em;
 	border: 1px solid #000;
@@ -92,7 +92,6 @@ h1, h2 {
 }
 @media (max-width: 64em) {
   .kw-controls {
-    width: auto;
     padding: 1em 0;
   	-webkit-box-sizing: border-box;
     -moz-box-sizing: border-box;
@@ -142,7 +141,7 @@ h1, h2 {
 }
 @media (max-width: 64em) {
   .kw-controls input[type="text"] {
-    width: auto;
+    width: 66%;
   }
   .kw-controls select {
     width: 60%;
@@ -151,7 +150,7 @@ h1, h2 {
 .kw-clip-list {
   background: #f3f3f3;
   border: 1px solid #a1a1a1;
-  width: 60%;
+  width: auto;
   display: block;
   margin: .5em auto 0;
   padding: 1em;
@@ -164,7 +163,6 @@ h1, h2 {
 }
 @media (max-width: 64em) {
   .kw-clip-list {
-    width: auto;
     margin: .5em .5em 0;
     border: 1px solid #aaa;
   }
@@ -205,6 +203,7 @@ h1, h2 {
 }
 .kw-controls > form:first-child input[type="submit"] {
   min-width: 4.5em;
+  width: 16%;
 }
 .kw-form-connect input {
   width: 5%;
