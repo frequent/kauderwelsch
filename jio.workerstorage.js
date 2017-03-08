@@ -7,6 +7,8 @@
 (function (global, jIO, RSVP, Blob, navigator) {
   "use strict";
 
+  var ERROR_REFRESH = "Please refresh to initialize serviceworker.";
+
   function serializeUrlList(my_url_list, my_prefix) {
     var url_param = "";
     if (my_url_list) {
@@ -36,9 +38,18 @@
       // use the transferred port to reply via postMessage(), which will in turn
       // trigger the onmessage handler on messageChannel.port1.
       // See https://html.spec.whatwg.org/multipage/workers.html
-      // XXX try catch here to throw for impatient users
-      return navigator.serviceWorker.controller
-        .postMessage(message, [messageChannel.port2]);
+      try {
+        return navigator.serviceWorker.controller
+          .postMessage(message, [messageChannel.port2]);
+      } catch (e) {
+        if (e instanceof TypeError) {
+
+          // XXX wait and ask to refresh instead of throwing
+          throw new Error(ERROR_REFRESH);
+        } else {
+          throw e;
+        }
+      }
     });
   }
   
@@ -54,7 +65,7 @@
               "scope": my_context.scope
             }));   
           }
-          // XXX What if this isn't mine?
+          // XXX what if this isn't mine?
           return resolve(registered_worker);
         });
       });
@@ -100,7 +111,8 @@
       if (registration.active && registration.active.state === 'activated') {
         return resolve();
       } else {
-        return reject(new Error("Please refresh to initialize serviceworker."));
+        // XXX ask to refresh here instead of throwing
+        return reject(new Error(ERROR_REFRESH));
       }
     });
   }
