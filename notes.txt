@@ -24,6 +24,7 @@ emscripten tutorial:
 http://blog.scottlogic.com/2014/03/12/native-code-emscripten-webgl-simmer-gently.html
 
 Links:
+arpabet dictionary (CMUSphinx) => http://www.speech.cs.cmu.edu/cgi-bin/cmudict
 http://cs.stanford.edu/people/karpathy/convnetjs/
 https://github.com/karpathy/convnetjs
 
