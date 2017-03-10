@@ -50,8 +50,8 @@ h1, h2 {
 }
 
 /* === modeller === */
-.kw-editor-wrapper .kw-grammar,
-.kw-editor-wrapper .kw-voca {
+.kw-editor-wrapper .kw-input,
+.kw-editor-wrapper .kw-output {
   width: 49%;
   display: inline-block;
   vertical-align: top;
@@ -60,14 +60,14 @@ h1, h2 {
   -moz-box-sizing: border-box;
   box-sizing: border-box;
 }
-.kw-editor-wrapper .kw-grammar textarea,
-.kw-editor-wrapper .kw-voca textarea {
+.kw-editor-wrapper .kw-input textarea,
+.kw-editor-wrapper .kw-output textarea {
   width: 100%;
   min-height: 430px;
 }
 @media (max-width: 32em) {
-  .kw-editor-wrapper .kw-grammar,
-  .kw-editor-wrapper .kw-voca {
+  .kw-editor-wrapper .kw-input,
+  .kw-editor-wrapper .kw-output {
     width: 100%;
     display: block;
     padding: 0;

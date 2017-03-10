@@ -11,18 +11,42 @@
   </head>
   <body>
     <div class="kw-modeller">
-      <div class="kw-grammar">
-      <h2>Grammar</h2>
-      <form name="kw-grammar-entry">
+      <div class="kw-input">
+      <h2>Input</h2>
+      <div class="kw-modeller-tabs">
+        <select>
+            <option value="" disabled selected>Add A Storage</option>
+          </select>
+          <input type="submit" value="Load" />
+          <input type="submit" value="Add" />
+      </div>
+      <form name="kw-modeller-input">
         <textarea placeholder=""></textarea>
-        <input type="submit" value="Save" />
+          
+          <p>File Operations</p>
+          <input type="submit" value="Save" />
+          <input type="submit" value="Open" />
+          <input type="submit" value="Delete" />
+          <input type="submit" value="Test" />
+          <input type="submit" value="Build Model" />
       </form>
       </div>
-      <div class="kw-voca">
-        <h2>Voca</h2>
-        <form name="kw-voca-entry">
+      <div class="kw-output">
+        <h2>Output</h2>
+        <form name="kw-modeller-output-tabs">
+          <div class="kw-modeller-tabs">
+            <input type="submit" value="Status" />
+            <input type="submit" value="Voca" />
+            <input type="submit" value="Grammar" />
+          </div>
+        </form>
+        <form name="kw-modeller-output">
           <textarea placeholder=""></textarea>
+          <p>File Operations</p>
           <input type="submit" value="Save" />
+          <input type="submit" value="Open" />
+          <input type="submit" value="Delete" />
+          <input type="submit" value="Download Model" />
         </form>
       </div>
     </div>

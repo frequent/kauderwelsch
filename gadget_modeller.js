@@ -11,6 +11,8 @@
   
   var NOT_FOUND = 404;
 
+  var INPUT_PLACEHOLDER = "Example: Hello World";
+
   var GRAMMAR_PLACEHOLDER = "Please enter grammar, format:\n\
   S : NS_B SENT NS_E\n\
   SENT: CALL_V NAME_N\n\
@@ -52,12 +54,18 @@
     } else {
       text = "";
     }
+    console.log("got text, ", text)
     return my_gadget.jio_getAttachment(MODEL, my_name, TEXT)
       .push(undefined, function (my_error) {
         if (isNotFound(my_error)) {
+          console.log("did not find it, save")
           return my_gadget.jio_putAttachment(MODEL, my_name, makeBlob(text));
         }
         throw my_error;
+      })
+      .push(function(my_attachment) {
+        console.log(my_attachmemt)
+        console.log("hum")
       });
   }
 
@@ -70,8 +78,8 @@
       var gadget = this;
 
       gadget.property_dict = {
-        "voca": gadget.element.querySelector(".kw-voca textarea"),
-        "grammar": gadget.element.querySelector(".kw-grammar textarea")
+        "modeller_input": gadget.element.querySelector(".kw-input textarea"),
+        "modeller_output": gadget.element.querySelector(".kw-output textarea")
       };
     })
 
@@ -96,8 +104,9 @@
       var gadget = this,
         props = gadget.property_dict;
 
-      props.voca.setAttribute("placeholder", VOCA_PLACEHOLDER);
-      props.grammar.setAttribute("placeholder", GRAMMAR_PLACEHOLDER);
+      //props.voca.setAttribute("placeholder", VOCA_PLACEHOLDER);
+      //props.grammar.setAttribute("placeholder", GRAMMAR_PLACEHOLDER);
+      props.modeller_input.setAttribute("placeholder", INPUT_PLACEHOLDER);
 
       return new RSVP.Queue()
         .push(function () {
@@ -108,13 +117,13 @@
             return gadget.jio_put("modeller");
           }
           throw my_error;
-        })
-        .push(function () {
-          RSVP.all([
-            storeBlob(gadget, undefined, "grammar"),
-            storeBlob(gadget, undefined, "voca")
-          ]);
         });
+        //.push(function () {
+        //  RSVP.all([
+        //    storeBlob(gadget, undefined, "input"),
+        //    storeBlob(gadget, undefined, "ouput")
+        //  ]);
+        //});
     })
 
     /////////////////////////////
@@ -131,10 +140,12 @@
     .onEvent("submit", function (my_event) {
       var gadget = this;
       switch (my_event.target.name) {
-        case "kw-grammar-entry":
-          return storeBlob(gadget, my_event, "grammar");
-        case "kw-voca-entry":
-          return storeBlob(gadget, my_event, "voca");
+        case "kw-modeller-input":
+          console.log("store input")
+          return storeBlob(gadget, my_event, "input");
+        case "kw-modeller-output":
+          console.log("store output")
+          return storeBlob(gadget, my_event, "output");
         default:
           return false;
       }
