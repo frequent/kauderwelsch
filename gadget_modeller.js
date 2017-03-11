@@ -75,11 +75,13 @@
     // ready
     /////////////////////////////
     .ready(function () {
-      var gadget = this;
+      var gadget = this,
+        element = gadget.element;
 
       gadget.property_dict = {
-        "modeller_input": gadget.element.querySelector(".kw-input textarea"),
-        "modeller_output": gadget.element.querySelector(".kw-output textarea")
+        "is_active_storage": false,
+        "modeller_input": element.querySelector(".kw-input textarea"),
+        "modeller_output": element.querySelector(".kw-output textarea")
       };
     })
 
