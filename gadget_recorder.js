@@ -61,32 +61,31 @@
       undefined
     ];
   }
-  
-  // unsexy
-  function testChunk(my_chunk, my_input) {
-    var rows = my_chunk.split(LINE_BREAKS).filter(Boolean),
-      input_list = my_input.split(" "),
-      output_list = [],
-      len = rows.length,
-      found,
-      input,
-      i,
-      j,
-      row;
 
-    for (j = 0; j < input_list.length; j += 1) {
-      input = input_list[j];
-      found = null;
+  function evaluateChunk(my_chunk, my_input) {
+    var rows = my_chunk.split(LINE_BREAKS).filter(Boolean),
+      len = rows.length; 
+
+    return my_input.split(" ").reduce(function (prev, next) {
+      var match_list,
+        found,
+        i;
       for (i = 0; i < len; i += 1) {
-        if (rows[i].split(" ")[0] === input) {
+        match_list = rows[i].split(" ");
+        if (match_list[0] === next) {
+          prev.match_dict[next] = rows[i].split("]").pop().trim();
           found = true;
+          break;
         }
       }
       if (found !== true) {
-        output_list.push(input);
+        prev.error_list.push(next);
       }
-    }
-    return output_list;
+      return prev;
+    }, {
+      error_list: [],
+      match_dict: {}
+    });
   }
 
   function convertRange(my_range) {
@@ -117,9 +116,9 @@
         props.text_input.value = text_value;
         return my_gadget.validateAgainstDict(text_value);
       })
-      .push(function (my_validation_error_list) {
+      .push(function (my_validation_dict) {
         var message;
-        if (my_validation_error_list.length === 0) {
+        if (my_validation_dict.error_list.length === 0) {
           form.querySelector("input[type='submit']").value = "Stop";
           return my_gadget.notify_record();
         }
@@ -128,7 +127,7 @@
         message = form.querySelector(".kw-highlight-input");
         message.className += " kw-highlight-active";
         message.innerHTML = props.text_input.value.split(" ").reduce(function (prev, next) {
-          if (my_validation_error_list.indexOf(next) > -1) {
+          if (my_validation_dict.error_list.indexOf(next) > -1) {
             return prev + " <span>" + next + "</span>";
           } else {
             return prev + " " + next;
@@ -248,11 +247,11 @@
             }));
         })
         .push(function (my_range_text_list) {
-          return testChunk(my_range_text_list.join(""), my_input);
+          return evaluateChunk(my_range_text_list.join(""), my_input);
         })
-        .push(undefined, function (my_error_list) {
-          console.log(my_error_list);
-          throw my_error_list;
+        .push(undefined, function (my_error) {
+          console.log(my_error);
+          throw my_error;
         });
     })
 
