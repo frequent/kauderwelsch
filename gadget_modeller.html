@@ -12,40 +12,61 @@
   <body>
     <div class="kw-modeller">
       <div class="kw-input">
-      <h2>Input</h2>
-      <div class="kw-modeller-tabs">
-        <select class="kw-modeller-storage-selector">
-          <option value="" disabled selected>Select Storage</option>
-        </select>
-        <input type="submit" value="Load" />
-      </div>
-      <form name="kw-modeller-input">
+        <h2>Input</h2>
+        <div class="kw-modeller-tabs">
+          <form name="kw-modeller-storage-load">
+            <select class="kw-modeller-storage-selector">
+              <option value="" disabled selected>Select Storage</option>
+            </select>
+            <input type="submit" value="Load" />
+          </form>
+        </div>
         <textarea placeholder=""></textarea>
         <select class="kw-modeller-file-selector">
           <option value="" disabled selected>Select a File</option>
         </select>
-        <input type="submit" value="Save" />
-        <input type="submit" value="Open" />
-        <input type="submit" value="Delete" />
-        <input type="submit" value="Test" />
-      </form>
+        <form name="kw-modeller-input-save">
+          <input type="submit" value="Save" />
+        </form>
+        <form name="kw-modeller-input-open">
+          <input type="submit" value="Open" />
+        </form>
+        <form name="kw-modeller-input-delete">
+          <input type="submit" value="Delete" />
+        </form>
+        <form name="kw-modeller-input-test">
+          <input type="submit" value="Test" />
+        </form>
       </div>
       <div class="kw-output">
         <h2>Output</h2>
         <div class="kw-modeller-tabs">
-          <form name="kw-modeller-output-tabs">
+          <form class="kw-modeller-status" name="kw-modeller-output-tab-status">
             <input type="submit" value="Status" />
+          </form>
+          <form class="kw-modeller-voca" name="kw-modeller-output-tab-voca">
             <input type="submit" value="Voca" />
+          </form>
+          <form class="kw-modeller-grammar" name="kw-modeller-output-tab-grammar">
             <input type="submit" value="Grammar" />
           </form>
         </div>
-        <form name="kw-modeller-output">
-          <textarea placeholder=""></textarea>
-          <input type="submit" class="kw-modeller-output-file-action" value="Save" />
-          <input type="submit" class="kw-modeller-output-file-action" value="Open" />
-          <input type="submit" class="kw-modeller-output-file-action" value="Delete" />
-          <input type="submit" class="kw-modeller-output-model-action" value="Build Model" />
-          <input type="submit" class="kw-modeller-output-model-action" value="Download Model" />
+        <textarea placeholder=""></textarea>
+          <form name="kw-modeller-output-save">
+            <input type="submit" class="kw-modeller-output-file-action" value="Save" />
+          </form>
+          <form name="kw-modeller-output-open">
+            <input type="submit" class="kw-modeller-output-file-action" value="Open" />
+          </form>
+          <form name="kw-modeller-output-delete">
+            <input type="submit" class="kw-modeller-output-file-action" value="Delete" />
+          </form>
+          <form name="kw-modeller-output-build">
+            <input type="submit" class="kw-modeller-output-model-action" value="Build Model" />
+          </form>
+          <form name="kw-modeller-output-download">
+            <input type="submit" class="kw-modeller-output-model-action" value="Download Model" />
+          </form>
         </form>
       </div>
     </div>
