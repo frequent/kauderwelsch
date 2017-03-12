@@ -82,6 +82,9 @@ h2 {
 .kw-modeller .kw-modeller-output-file-action {
     width: 32.3%;
 }
+.kw-modeller form {
+  display: inline;
+}
 .kw-modeller .kw-input .kw-modeller-tabs input {
   width: 23%;
 }
@@ -89,7 +92,10 @@ h2 {
   width: 100%;
   margin-bottom: .4em;
 }
-.kw-modeller .kw-modeller-file-selector ~ input {
+.kw-modeller .kw-modeller-active-tab {
+  background: #f3f3f3;
+}
+.kw-modeller .kw-modeller-file-selector ~ form input {
   width: 23.9%;
 }
 .kw-modeller input {
