@@ -64,28 +64,29 @@
 
   function evaluateChunk(my_chunk, my_input) {
     var rows = my_chunk.split(LINE_BREAKS).filter(Boolean),
-      len = rows.length; 
+      input_list = my_input.split(" "),
+      input_len = input_list.length,
+      output_dict = {"error_list": [], "match_dict": {}},
+      row_len = rows.length,
+      match_list,
+      input,
+      i,
+      j;
 
-    return my_input.split(" ").reduce(function (prev, next) {
-      var match_list,
-        found,
-        i;
-      for (i = 0; i < len; i += 1) {
-        match_list = rows[i].split(" ");
-        if (match_list[0] === next) {
-          prev.match_dict[next] = rows[i].split("]").pop().trim();
-          found = true;
+    for (i = 0; i < input_len; i += 1) {
+      input = input_list[i];
+      for (j = 0; j < row_len; j += 1) {
+        match_list = rows[j].split(" ");
+        if (match_list[0] === input) {
+          output_dict.match_dict[input] = rows[i].split("]").pop().trim();
           break;
         }
       }
-      if (found !== true) {
-        prev.error_list.push(next);
+      if (output_dict.match_dict[input] === undefined) {
+        output_dict.error_list.push(input);
       }
-      return prev;
-    }, {
-      error_list: [],
-      match_dict: {}
-    });
+    }
+    return output_dict;
   }
 
   function convertRange(my_range) {
