@@ -15,13 +15,12 @@
       <h2>Input</h2>
       <div class="kw-modeller-tabs">
         <select class="kw-modeller-storage-selector">
-          <option value="" disabled selected>Select A Storage</option>
+          <option value="" disabled selected>Select Storage</option>
         </select>
         <input type="submit" value="Load" />
       </div>
       <form name="kw-modeller-input">
         <textarea placeholder=""></textarea>
-        <p>File Operations</p>
         <select class="kw-modeller-file-selector">
           <option value="" disabled selected>Select a File</option>
         </select>
@@ -33,21 +32,20 @@
       </div>
       <div class="kw-output">
         <h2>Output</h2>
-        <form name="kw-modeller-output-tabs">
-          <div class="kw-modeller-tabs">
+        <div class="kw-modeller-tabs">
+          <form name="kw-modeller-output-tabs">
             <input type="submit" value="Status" />
             <input type="submit" value="Voca" />
             <input type="submit" value="Grammar" />
-          </div>
-        </form>
+          </form>
+        </div>
         <form name="kw-modeller-output">
           <textarea placeholder=""></textarea>
-          <p>File Operations</p>
-          <input type="submit" value="Save" />
-          <input type="submit" value="Open" />
-          <input type="submit" value="Delete" />
-          <input type="submit" value="Build Model" />
-          <input type="submit" value="Download Model" />
+          <input type="submit" class="kw-modeller-output-file-action" value="Save" />
+          <input type="submit" class="kw-modeller-output-file-action" value="Open" />
+          <input type="submit" class="kw-modeller-output-file-action" value="Delete" />
+          <input type="submit" class="kw-modeller-output-model-action" value="Build Model" />
+          <input type="submit" class="kw-modeller-output-model-action" value="Download Model" />
         </form>
       </div>
     </div>

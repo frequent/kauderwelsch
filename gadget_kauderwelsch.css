@@ -48,6 +48,12 @@ textarea {
 h1, h2 {
   text-align: center;
 }
+h1 {
+  margin-bottom: 0;
+}
+h2 {
+  margin: .25em 0;
+}
 
 /* === modeller === */
 .kw-editor-wrapper .kw-input,
@@ -63,7 +69,47 @@ h1, h2 {
 .kw-editor-wrapper .kw-input textarea,
 .kw-editor-wrapper .kw-output textarea {
   width: 100%;
-  min-height: 430px;
+  margin-bottom: .25em;
+  min-height: 386px;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+.kw-modeller .kw-modeller-tabs {
+  margin-bottom: .4em;
+}
+.kw-modeller .kw-output .kw-modeller-tabs input,
+.kw-modeller .kw-modeller-output-file-action {
+    width: 32.3%;
+}
+.kw-modeller .kw-input .kw-modeller-tabs input {
+  width: 23%;
+}
+.kw-modeller .kw-modeller-file-selector {
+  width: 100%;
+  margin-bottom: .4em;
+}
+.kw-modeller .kw-modeller-file-selector ~ input {
+  width: 23.9%;
+}
+.kw-modeller input {
+  padding: .5em;
+  border: 1px solid #000;
+}
+.kw-modeller input:hover {
+  background: #d2d2d2;
+}
+.kw-modeller select {
+  width: 75%;
+  padding: .45em .2em;
+	-webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+  border: 1px solid #000;
+}
+.kw-modeller .kw-modeller-output-model-action {
+  margin-top: .4em;
+  width: 49.2%;
 }
 @media (max-width: 32em) {
   .kw-editor-wrapper .kw-input,
