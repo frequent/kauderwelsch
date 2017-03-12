@@ -76,14 +76,24 @@
     /////////////////////////////
     // acquired methods
     /////////////////////////////
+    
+    /////////////////////////////
+    // published methods
+    /////////////////////////////
+    .allowPublicAcquisition('validateAgainstDict', function (my_input) {
+      var gadget = this;
+      return gadget.getDeclaredGadget("recorder")
+        .push(function (my_gadget) {
+          return my_gadget.validateAgainstDict.apply(my_gadget, my_input);
+        });
+    })
 
     /////////////////////////////
     // declared methods
     /////////////////////////////
     .declareMethod('render', function (my_option_dict) {
       var gadget = this,
-        props = gadget.property_dict,
-        queue = new RSVP.Queue();
+        props = gadget.property_dict;
 
       if (!AUDIO_CONTEXT) {
         throw new TypeError("Browser does not support AudioContext");
@@ -100,15 +110,8 @@
       props.context = new AUDIO_CONTEXT();
 
       if (props.deferred) {
-        queue.push(props.deferred.resolve());
+        return props.deferred.resolve();
       }
-      return queue
-        .push(function () {
-          return gadget.getDeclaredGadget("modeller");
-        })
-        .push(function (my_declared_gadget) {
-          return my_declared_gadget.render();
-        });
     })
 
     .declareMethod("initializeAnalyser", function () {
@@ -151,10 +154,16 @@
   
           return new RSVP.Queue()
             .push(function () {
-              return gadget.getDeclaredGadget("recorder");
+              return RSVP.all([
+                gadget.getDeclaredGadget("recorder"),
+                gadget.getDeclaredGadget("modeller")
+              ]);
             })
-            .push(function (my_recorder_gadget) {
-              return my_recorder_gadget.render({"input_point": input_point});
+            .push(function (my_gadget_list) {
+              return RSVP.all([
+                my_gadget_list[0].render({"input_point": input_point}),
+                my_gadget_list[1].render()
+              ]);
             })
             .push(function () {
             

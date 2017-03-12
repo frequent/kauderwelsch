@@ -98,32 +98,6 @@
     return output_array.join("-");
   }
 
-  function validateAgainstDict(my_gadget, my_input) {
-    return new RSVP.Queue()
-      .push(function () {
-        return RSVP.all(my_input.split(" ").map(function (word) {
-          return my_gadget.jio_allDocs({
-            "include_docs": true,
-            "limit": getLimit(word)
-          });
-        }));
-      })
-      .push(function (my_range_list) {
-        return RSVP.all(my_range_list.map(function (current) {
-            return my_gadget.jio_getAttachment("prefetch", FILE_PREFIX, {
-              "format": "text",
-              "range": "bytes=" + convertRange(current)
-            });
-          }));
-      })
-      .push(function (my_range_text_list) {
-        return testChunk(my_range_text_list.join(""), my_input);
-      })
-      .push(undefined, function (my_error_list) {
-        throw my_error_list;
-      });
-  }
-
   function recordAudio(my_gadget, my_event) {
     var props = my_gadget.property_dict,
       form = my_event.target;
@@ -141,7 +115,7 @@
       .push(function () {
         var text_value = props.text_input.value.toUpperCase();
         props.text_input.value = text_value;
-        return validateAgainstDict(my_gadget, text_value);
+        return my_gadget.validateAgainstDict(text_value);
       })
       .push(function (my_validation_error_list) {
         var message;
@@ -149,6 +123,7 @@
           form.querySelector("input[type='submit']").value = "Stop";
           return my_gadget.notify_record();
         }
+
         // flag words not found in dictionary
         message = form.querySelector(".kw-highlight-input");
         message.className += " kw-highlight-active";
@@ -206,6 +181,9 @@
     /////////////////////////////
     // published methods
     /////////////////////////////
+    .allowPublicAcquisition('validateAgainstDict', function (my_input) {
+      return this.validateAgainstDict(my_input);
+    })
     .allowPublicAcquisition('exportMonoWAV', function (buffer) {
       return this.exportMonoWAV(undefined, buffer);
     })
@@ -249,7 +227,35 @@
           props.node.connect(props.context.destination);
         });
     })
-    
+
+    .declareMethod("validateAgainstDict", function (my_input) {
+      var gadget = this;
+      return new RSVP.Queue()
+        .push(function () {
+          return RSVP.all(my_input.split(" ").map(function (word) {
+            return gadget.jio_allDocs({
+              "include_docs": true,
+              "limit": getLimit(word)
+            });
+          }));
+        })
+        .push(function (my_range_list) {
+          return RSVP.all(my_range_list.map(function (current) {
+              return gadget.jio_getAttachment("prefetch", FILE_PREFIX, {
+                "format": "text",
+                "range": "bytes=" + convertRange(current)
+              });
+            }));
+        })
+        .push(function (my_range_text_list) {
+          return testChunk(my_range_text_list.join(""), my_input);
+        })
+        .push(undefined, function (my_error_list) {
+          console.log(my_error_list);
+          throw my_error_list;
+        });
+    })
+
     .declareMethod("setClipList", function (my_scope) {
       var gadget = this,
         props = gadget.property_dict,
