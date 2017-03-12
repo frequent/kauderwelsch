@@ -58,8 +58,8 @@
             }
           }
           offset += chunk_size;
-          //if (offset >= inbound_blob.size) {
-          if (offset >= 16385) {
+          if (offset >= inbound_blob.size) {
+          //if (offset >= 16385) {
             return resolve({"data": PROCESSOR.prettify(name, boundary_dict)});
           }
           return loopOverBlob(offset);
