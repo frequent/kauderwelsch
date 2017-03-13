@@ -61,16 +61,11 @@
     return my_gadget.jio_getAttachment(MODEL, my_name, TEXT)
       .push(undefined, function (my_error) {
         if (isNotFound(my_error)) {
-          console.log("did not find it, save")
           return my_gadget.jio_putAttachment(MODEL, my_name, makeBlob(text));
         }
         throw my_error;
-      })
-      .push(function(my_attachment) {
-        console.log(my_attachmemt)
-        console.log("hum")
       });
-  }
+    }
 
   rJS(window)
 
@@ -173,20 +168,22 @@
           return gadget.validateAgainstDict(word_list.replace(/W_/g, ""));
         })
         .push(function (my_validation_dict) {
+          var matched_word;
+
           if (my_validation_dict.error_list.length > 0) {
             // output error report in status
           }
 
-          props.grammar_text = (props.grammar_text || props.grammar_init) + 
-            word_list.split(" ").reduce(function (prev, next) {
-              var clean = next.replace("W_", "");
-              return prev += "\n% " + next + "\n" + clean + "       " + 
-                my_validation_dict.match_dict[clean] + "\n";
-            }, "");
-          console.log(props);
+          // varations should be listed under same word
+          props.grammar_text = (props.grammar_text || props.grammar_init);
+          for (matched_word in my_validation_dict.match_dict) {
+            if (my_validation_dict.match_dict.hasOwnProperty(matched_word)) {
+              props.grammar_text += "\n% W_" + matched_word + "\n" + matched_word + 
+                "       " + my_validation_dict.match_dict[matched_word] + "\n";
+            }
+          }
           props.modeller_output.value = props.grammar_text;
-        })
-        
+        });
     })
 
     /////////////////////////////
