@@ -8,40 +8,17 @@
   /////////////////////////////
   var LINE_BREAKS = /(.*?[\r\n])/g;
   var ALPHA_NUMERIC = /[^A-Z0-9.]/gi;
-
   var TEXT = {"format": "text"};
-  var MODEL = "modeller";
-  
-  var NOT_FOUND = 404;
-
+  var STATUS_ERR = "Error.";
+  var STATUS_OK = "Ok.";
+  var MSG_WORD_NOT_FOUND = "Following words not found in dict:";
   var INPUT_PLACEHOLDER = "Example: Hello World";
 
-  var GRAMMAR_PLACEHOLDER = "Please enter grammar, format:\n\
-  S : NS_B SENT NS_E\n\
-  SENT: CALL_V NAME_N\n\
-  SENT: DIAL_V DIGIT";
-                              
-  var VOCA_PLACEHOLDER = "Please enter vocabulary, format:\n\
-  % CALL_V\n\
-  PHONE     f ow n\n\
-  CALL        k ao l\n\
-  \n\
-  % DIAL_V\n\
-  DIAL        d ay l\n\
-  \n\
-  % NAME_N\n\
-  STEVE       s t iy v\n\
-  YOUNG       y ah ng\n\
-  \n\
-  % DIGIT\n\
-  FIVE        f ay v\n\
-  FOUR        f ow r\n";
-
   /////////////////////////////
-  // some methods 
+  // some methods
   /////////////////////////////
   function isNotFound(my_error) {
-    if (my_error.status_code === NOT_FOUND) {
+    if (my_error.status_code === 404) {
       return true;
     }
   }
@@ -82,6 +59,7 @@
         "grammar_init": "% NS_B\n<s>       sil\n\n% NS_E\n<s>        sil\n",
         "voca_text": null,
         "grammar_text": null,
+        "status_text": null,
         "status": element.querySelector(".kw-modeller-status input"),
         "voca": element.querySelector(".kw-modeller-voca input"),
         "grammar": element.querySelector(".kw-modeller-grammar input"),
@@ -138,51 +116,63 @@
         //});
     })
 
+    .declareMethod("setTab", function (my_tab) {
+      var gadget = this,
+        props = gadget.property_dict;
+      props.status.className = props.voca.className = props.grammar.className = "";
+      props[my_tab].className = "kw-modeller-active-tab";
+      props.modeller_output.value = props[my_tab + "_text"];
+    })
+
     .declareMethod("convertInput", function () {
       var gadget = this,
         props = gadget.property_dict,
         input_value = props.modeller_input.value,
-        word_list;
+        word_string,
+        line_list;
 
       if (input_value === "") {
         return;
       }
+      
+      line_list = input_value.toUpperCase().split(LINE_BREAKS).filter(Boolean);
+      word_string = line_list.map(function (line) {
+        return line.split(" ").reduce(function (prev, next) {
+          return prev += "W_" + next.replace(ALPHA_NUMERIC, '') + " ";
+        }, "");
+      }).join("").trim();
 
       return new RSVP.Queue()
         .push(function () {
-          var line_list = input_value.toUpperCase()
-              .split(LINE_BREAKS).filter(Boolean),
-            utter_tag;
-          
-          word_list = line_list.map(function (line) {
-            return line.split(" ").reduce(function (prev, next) {
-              return prev += "W_" + next.replace(ALPHA_NUMERIC, '') + " ";
-            }, "");
-          }).join("").trim();
-
-          props.modeller_count += 1;
-          utter_tag = "UTTER_" + props.modeller_count;
-          props.voca_text = (props.voca_text || props.voca_init) + "S : NS_B " +
-            utter_tag + " NS_E\n" + utter_tag + ":" + word_list + "\n";
-
-          return gadget.validateAgainstDict(word_list.replace(/W_/g, ""));
+          return gadget.validateAgainstDict(word_string.replace(/W_/g, ""));
         })
         .push(function (my_validation_dict) {
-          var matched_word;
+          var matched_word,
+            utter_tag;
 
           if (my_validation_dict.error_list.length > 0) {
-            // output error report in status
+            props.status_text = STATUS_ERR + MSG_WORD_NOT_FOUND + "\n" +
+              my_validation_dict.error_list.join("\n");
+            props.voca_text = props.grammar_text = null;
+            return gadget.setTab("status");
           }
+          props.status_text = STATUS_OK;
+          props.modeller_count += 1;
+          utter_tag = "UTTER_" + props.modeller_count;
 
-          // varations should be listed under same word
+          props.voca_text = (props.voca_text || props.voca_init) +
+            "S : NS_B " + utter_tag + " NS_E\n" + utter_tag + ": " +
+              word_string + "\n\n";
           props.grammar_text = (props.grammar_text || props.grammar_init);
           for (matched_word in my_validation_dict.match_dict) {
             if (my_validation_dict.match_dict.hasOwnProperty(matched_word)) {
-              props.grammar_text += "\n% W_" + matched_word + "\n" + matched_word + 
-                "       " + my_validation_dict.match_dict[matched_word] + "\n";
+              props.grammar_text += "\n% W_" + matched_word + "\n" +
+                matched_word + "       " +
+                  my_validation_dict.match_dict[matched_word] + "\n";
             }
           }
-          props.modeller_output.value = props.grammar_text;
+          props.modeller_output.value = props.status_text;
+          return gadget.setTab("status");
         });
     })
 
@@ -206,9 +196,12 @@
         case "kw-modeller-input-delete": break;
         case "kw-modeller-input-test":
           return gadget.convertInput();
-        case "kw-modeller-output-tab-grammar": break;
-        case "kw-modeller-output-tab-status": break;
-        case "kw-modeller-output-tab-voca": break;
+        case "kw-modeller-output-tab-grammar":
+          return gadget.setTab("grammar");
+        case "kw-modeller-output-tab-status":
+          return gadget.setTab("status");
+        case "kw-modeller-output-tab-voca":
+          return gadget.setTab("voca");
         case "kw-modeller-output-save": break;
         case "kw-modeller-output-open": break;
         case "kw-modeller-output-delete": break;
