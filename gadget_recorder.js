@@ -64,28 +64,26 @@
 
   function evaluateChunk(my_chunk, my_input) {
     var rows = my_chunk.split(LINE_BREAKS).filter(Boolean),
-      input_list = my_input.split(" "),
-      input_len = input_list.length,
+      word_list = my_input.split(" ").join("|"),
+      re = new RegExp("(" + word_list + ")(?:\\([0-9]\\))?"),
       output_dict = {"error_list": [], "match_dict": {}},
       row_len = rows.length,
-      match_list,
-      input,
-      i,
+      candidate,
       j;
 
-    for (i = 0; i < input_len; i += 1) {
-      input = input_list[i];
-      for (j = 0; j < row_len; j += 1) {
-        match_list = rows[j].split(" ");
-        if (match_list[0] === input) {
-          output_dict.match_dict[input] = rows[i].split("]").pop().trim();
-          break;
-        }
-      }
-      if (output_dict.match_dict[input] === undefined) {
-        output_dict.error_list.push(input);
+    for (j = 0; j < row_len; j += 1) {
+      candidate = rows[j].split(" ")[0];
+      if (candidate.match(re) !== null) {
+        output_dict.match_dict[candidate] = rows[j].split("]").pop().trim();
       }
     }
+    output_dict.error_list = word_list.split("|").reduce(function (arr, word) {
+      if (output_dict.match_dict[word] === undefined) {
+        arr.push(word);
+      }
+      return arr;
+    }, []);
+
     return output_dict;
   }
 
