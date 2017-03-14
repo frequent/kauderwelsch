@@ -79,7 +79,7 @@ h2 {
   margin-bottom: .4em;
 }
 .kw-modeller .kw-output .kw-modeller-tabs input,
-.kw-modeller .kw-modeller-output-file-action {
+.kw-modeller .kw-modeller-output-model-action {
     width: 32.3%;
 }
 .kw-modeller form {
@@ -112,10 +112,6 @@ h2 {
   -moz-box-sizing: border-box;
   box-sizing: border-box;
   border: 1px solid #000;
-}
-.kw-modeller .kw-modeller-output-model-action {
-  margin-top: .4em;
-  width: 49.2%;
 }
 @media (max-width: 32em) {
   .kw-editor-wrapper .kw-input,

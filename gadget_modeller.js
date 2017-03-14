@@ -194,17 +194,15 @@
         case "kw-modeller-input-save": break;
         case "kw-modeller-input-open": break;
         case "kw-modeller-input-delete": break;
-        case "kw-modeller-input-test":
-          return gadget.convertInput();
+        case "kw-modeller-input-help": break;
         case "kw-modeller-output-tab-grammar":
           return gadget.setTab("grammar");
         case "kw-modeller-output-tab-status":
           return gadget.setTab("status");
         case "kw-modeller-output-tab-voca":
           return gadget.setTab("voca");
-        case "kw-modeller-output-save": break;
-        case "kw-modeller-output-open": break;
-        case "kw-modeller-output-delete": break;
+        case "kw-modeller-output-test":
+          return gadget.convertInput();
         case "kw-modeller-output-build": break;
         case "kw-modeller-output-download": break;
         default:
