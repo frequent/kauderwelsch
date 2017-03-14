@@ -54,7 +54,7 @@
         element = gadget.element;
 
       gadget.property_dict = {
-        "modeller_count": 0,
+        "utter_count": 0,
         "voca_init": "",
         "grammar_init": "% NS_B\n<s>       sil\n\n% NS_E\n<s>        sil\n",
         "voca_text": null,
@@ -116,12 +116,22 @@
         //});
     })
 
-    .declareMethod("setTab", function (my_tab) {
+    .declareMethod("updateTab", function (my_tab) {
       var gadget = this,
         props = gadget.property_dict;
-      props.status.className = props.voca.className = props.grammar.className = "";
-      props[my_tab].className = "kw-modeller-active-tab";
-      props.modeller_output.value = props[my_tab + "_text"];
+
+      props.status.className = props.voca.className =
+        props.grammar.className = "";
+
+      // set or reset
+      if (my_tab) {
+        props[my_tab].className = "kw-modeller-active-tab";
+        props.modeller_output.value = props[my_tab + "_text"];
+      } else {
+        props.utter_count = 0;
+        props.modeller_output.value = props.modeller_input =
+          props.status_text = props.voca_text = props.grammar_text = "";
+      }
     })
 
     .declareMethod("convertInput", function () {
@@ -157,8 +167,8 @@
             return gadget.setTab("status");
           }
           props.status_text = STATUS_OK;
-          props.modeller_count += 1;
-          utter_tag = "UTTER_" + props.modeller_count;
+          props.utter_count += 1;
+          utter_tag = "UTTER_" + props.utter_count;
 
           props.voca_text = (props.voca_text || props.voca_init) +
             "S : NS_B " + utter_tag + " NS_E\n" + utter_tag + ": " +
@@ -167,7 +177,8 @@
           for (matched_word in my_validation_dict.match_dict) {
             if (my_validation_dict.match_dict.hasOwnProperty(matched_word)) {
               props.grammar_text += "\n% W_" + matched_word + "\n" + matched_word + "       " +
-                my_validation_dict.match_dict[matched_word].join("\n" + matched_word + "       ");
+                my_validation_dict.match_dict[matched_word].join("\n" + matched_word + "       ")
+                + "\n";
             }
           }
           props.modeller_output.value = props.status_text;
@@ -195,14 +206,16 @@
         case "kw-modeller-input-delete": break;
         case "kw-modeller-input-help": break;
         case "kw-modeller-output-tab-grammar":
-          return gadget.setTab("grammar");
+          return gadget.updateTab("grammar");
         case "kw-modeller-output-tab-status":
-          return gadget.setTab("status");
+          return gadget.updateTab("status");
         case "kw-modeller-output-tab-voca":
-          return gadget.setTab("voca");
+          return gadget.updateTab("voca");
         case "kw-modeller-output-test":
           return gadget.convertInput();
         case "kw-modeller-output-build": break;
+        case "kw-modeller-ouptut-clear":
+          return gadget.updateTab();
         case "kw-modeller-output-download": break;
         default:
           return false;

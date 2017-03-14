@@ -82,6 +82,9 @@ h2 {
 .kw-modeller .kw-modeller-output-model-action {
     width: 32.3%;
 }
+.kw-modeller .kw-output form:last-child .kw-modeller-output-model-action {
+  margin-top: .45em;
+}
 .kw-modeller form {
   display: inline;
 }
