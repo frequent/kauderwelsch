@@ -166,9 +166,8 @@
           props.grammar_text = (props.grammar_text || props.grammar_init);
           for (matched_word in my_validation_dict.match_dict) {
             if (my_validation_dict.match_dict.hasOwnProperty(matched_word)) {
-              props.grammar_text += "\n% W_" + matched_word + "\n" +
-                matched_word + "       " +
-                  my_validation_dict.match_dict[matched_word] + "\n";
+              props.grammar_text += "\n% W_" + matched_word + "\n" + matched_word + "       " +
+                my_validation_dict.match_dict[matched_word].join("\n" + matched_word + "       ");
             }
           }
           props.modeller_output.value = props.status_text;

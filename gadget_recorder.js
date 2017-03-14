@@ -68,13 +68,17 @@
       re = new RegExp("\\b(" + word_string + ")\\b(?:\\([0-9]\\))?"),
       output_dict = {"error_list": [], "match_dict": {}},
       row_len = rows.length,
+      match_dict = output_dict.match_dict,
       candidate,
+      clean_candidate,
       j;
 
     for (j = 0; j < row_len; j += 1) {
       candidate = rows[j].split(" ")[0];
       if (candidate.match(re) !== null) {
-        output_dict.match_dict[candidate] = rows[j].split("]").pop().trim();
+        clean_candidate = candidate.replace(/\([0-9]\)+$/, '');
+        match_dict[clean_candidate] = match_dict[clean_candidate] || [];
+        match_dict[clean_candidate].push(rows[j].split("]").pop().trim());
       }
     }
     output_dict.error_list = word_string.split("|").reduce(function (arr, word) {
