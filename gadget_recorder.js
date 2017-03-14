@@ -64,8 +64,8 @@
 
   function evaluateChunk(my_chunk, my_input) {
     var rows = my_chunk.split(LINE_BREAKS).filter(Boolean),
-      word_list = my_input.split(" ").join("|"),
-      re = new RegExp("(" + word_list + ")(?:\\([0-9]\\))?"),
+      word_string = my_input.split(" ").join("|"),
+      re = new RegExp("\\b(" + word_string + ")\\b(?:\\([0-9]\\))?"),
       output_dict = {"error_list": [], "match_dict": {}},
       row_len = rows.length,
       candidate,
@@ -77,7 +77,7 @@
         output_dict.match_dict[candidate] = rows[j].split("]").pop().trim();
       }
     }
-    output_dict.error_list = word_list.split("|").reduce(function (arr, word) {
+    output_dict.error_list = word_string.split("|").reduce(function (arr, word) {
       if (output_dict.match_dict[word] === undefined) {
         arr.push(word);
       }
