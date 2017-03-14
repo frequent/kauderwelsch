@@ -65,7 +65,7 @@
   function evaluateChunk(my_chunk, my_input) {
     var rows = my_chunk.split(LINE_BREAKS).filter(Boolean),
       word_string = my_input.split(" ").join("|"),
-      re = new RegExp("\\b(" + word_string + ")\\b(?:\\([0-9]\\))?"),
+      re = new RegExp("\\b(" + word_string + ")\\b(?!')(?:\\([0-9]\\))?"),
       output_dict = {"error_list": [], "match_dict": {}},
       row_len = rows.length,
       match_dict = output_dict.match_dict,
