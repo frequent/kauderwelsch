@@ -4,6 +4,7 @@
   "use strict";
 
 /*
+https://github.com/VoxForge/develop/blob/master/bin/mkdfa.jl => all into worker
 ###############################################################################
 #
 #    Copyright (C) 2015  VoxForge
@@ -27,156 +28,108 @@
 #
 ###############################################################################
 */
+var LINE_BREAKS = /(.*?[\r\n])/g;
+var LINE_BREAK = /[\r\n]/g;
+var LINE_COMMENT = /[#.*]/g;
+var LINE_TERM = /(?!% )([A-Za-z0-9_]*)/g;
 
-  function reserveGrammar(reverse_file, file) {
-        
-  }
+// re = new RegExp("\\b(" + word_string + ")\\b(?!')(?:\\([0-9]\\))?")
 
-/*
-function reverse_grammar(rgramfile,gramfile)
-  rgramfile_fh=open(rgramfile,"w")
+function sanitizeLine(my_line) {
+  return my_line.replace(LINE_BREAK, "").replace(LINE_COMMENT, "");
+}
 
-  gramfile_arr=open(readlines, gramfile) # automatically closes file handle 
-  n=0
-  for lineln=gramfile_arr
-    if ! ismatch(r"^[\n|\r]", lineln)
-      line=replace(chomp(lineln), r"#.*", "") # remove line endings & comments
-      (left, right)=split(line,r"\:")
-      category_arr=split(right,r"\s")
-      reverse_category_arr=reverse(category_arr)
+function notifyCount(my_count) {
+  return "Status: sample.voca has " + my_count.categories + " categories and " +
+    my_count.words + " words";
+}
 
-      write(rgramfile_fh, left * ":")
-      write(rgramfile_fh, join(reverse_category_arr," ")  )
-      if ismatch(r"\r$", lineln) # windows line ending
-        write(rgramfile_fh, "\n\r")
-      else
-        write(rgramfile_fh, "\n")
+function reverseGrammarFile(my_grammar) {
+  return my_grammar.split(LINE_BREAKS).filter(Boolean)
+    .reduce(function(prev, next) {
+      var clean_next = sanitizeLine(next),
+        list;
+      if (clean_next !== "") {
+        list = clean_next.split(" : "); 
+        prev.push(list[0] + ":" + list[1].split(" ").reverse().join(" "));
+      }
+      return prev;
+    }, []);
+}
 
-      end
-      n=n+1
-    end
-  end
+function createTermFile(my_voca) {
+  return my_voca.split(LINE_BREAKS).filter(Boolean)
+    .reduce(function (prev, next) {
+      var clean_next = sanitizeLine(next),
+        term_index = prev.term.length,
+        match = next.match(LINE_TERM).filter(Boolean);
+      if (match) {
+        prev.term.push(term_index + " " + match);
+        //write(tmpvocafile_fh, "\#$found$(lineend)") => \# ?
+        prev.tmp_voca.push("#" + match);
+        prev.count.categories += 1;
+      } else {
+        prev.count.words += 1;
+      }
+      return prev;
+    }, {"term": [], "tmp_voca": [], "count": {"words": 0, "categories": 0}});
+}
 
-  close(rgramfile_fh)
-  println("$gramfile has $n rules")
-  println("---")
-end
+function createDictFile(my_voca) {
+  return my_voca.split(LINE_BREAKS).filter(Boolean)
+    .reduce(function (prev, next) {
+      var clean_next = sanitizeLine(next),
+        split;
+      if (clean_next.indexOf("%") > 0) {
+        prev.count += 1;
+      } else if (clean_next !== "") {
+        split = clean_next.split();
+        dict.push(prev.count + "[" + split[0] + "]  " + split.pop());
+      }
+      return prev;
+    }, {"dict": [], "count": -1});
+}
 
-
-function make_category_voca(vocafile,termfile,tmpvocafile)
-  tmpvocafile_fh=open(tmpvocafile,"w")
-  termfile_fh=open(termfile,"w")
-
-  vocafile_arr=open(readlines, vocafile) # automatically closes file handle 
-  n1=0
-  n2=0
-  termid=0
-  for lineln=vocafile_arr
-    if ismatch(r"\r$", lineln)
-      lineend="\r\n" # windows line ending
-    else
-      lineend="\n" # unix/linux line ending
-    end
-    line=replace(chomp(lineln), r"#.*", "") # remove line endings & comments
-
-    m=match(r"^%[ \t]*([A-Za-z0-9_]*)", line)
-    if m == nothing
-      n2=n2+1
-    else
-      found=m.captures[1] 
-
-      write(tmpvocafile_fh, "\#$found$(lineend)")
-      write(termfile_fh, "$termid\t$found$(lineend)")
-
-      termid=termid+1
-      n1=n1+1
-    end
-  end
-
-  close(tmpvocafile_fh)
-  close(termfile_fh)
-  println("$vocafile has $n1 categories and $n2 words")
-  println("generated: $termfile")
-  println("---")
-end
+// https://github.com/rti7743/kaden_voice/blob/master/naichichi2/julius/gramtools/mkdfa/mkfa-1.44-flex/main.c
+function createDfaFile() {
+  
+}
 
 
-function voca2dict(vocafile, dictfile)
-  dictfile_fh=open(dictfile,"w")
-
-  vocafile_arr=open(readlines, vocafile) # automatically closes file handle 
-  newid=-1
-  for lineln=vocafile_arr
-    if ismatch(r"\r$", lineln)
-      lineend="\r\n" # windows line ending
-    else
-      lineend="\n" # unix/linux line ending
-    end
-
-    line=replace(chomp(lineln), r"#.*", "") # remove line endings & comments
-    if ismatch(r"^[\s\t]*$", line) # skip blank lines
-      continue
-    end
-
-    if ismatch(r"^%", line)
-      newid=newid+1
-    else
-      line_arr=split(line,r"[\s\t]+")
-      name=shift!(line_arr)
-      write(dictfile_fh, "$(newid)\t[$(name)]\t$(join(line_arr," "))$(lineend)")
-    end
-  end
-
-  close(dictfile_fh)
-
-  println("generated: $dictfile")
-end
-
-
-function main ()
-  grammar_prefix=ARGS[1] # can include path
-  if ! isfile(grammar_prefix * ".grammar")
-    error("can't find gramfile file: $(grammar_prefix).grammar")
-  end
-  if ! isfile(grammar_prefix * ".voca")
-    error("can't find voca file: $(grammar_prefix).voca")
-  end
-  if length(ARGS) > 1
-    error("mkdfa: too many arguments for call from command line")
-  end
+function juliaMakeDfa(my_gadget, my_voca_content, my_grammar_content) {
+  return new RSVP.Queue()
+    .push(function () {
+      return RSVP.all([
+        gadget.notify_processing("Starting Processing"),
+        reverseGrammarFile(my_grammar_content)
+      ]);
+    })
+    .push(function (my_result) {
+      return new RSVP.all([
+        gadget.notify_processing("Grammar rules: " + my_result.length),
+        createTermFile(my_vocal_file)
+      ]);
+    })
+    .push(function (my_result) {
+      return new RSVP.all([
+        gadget.notify_processing(notifyCount(my_result.count)),
+        gadget.notify_processing("Generated .term file."),
+        createDictFile(my_voca_dict)
+      ]);
+    })
+    .push(function (my_result) {
+      return new RSVP.all([
+        gadget.notify_processing("Generates .dict file."),
+        createDfaFile()
+      ]);
+    })
+    .push(undefined, function (my_error) {
+      console.log(my_error);
+      throw my_error;
+    });
+}
 
 
-  mkfa= @windows ? "mkfa.exe" : "mkfa"
-  dfa_minimize= @windows ? "dfa_minimize.exe" : "dfa_minimize"
-  workingfolder=mktempdir()
-
-  rgramfile= "$(workingfolder)/g$(getpid()).grammar"
-  gramfile="$(grammar_prefix).grammar"
-  vocafile=grammar_prefix * ".voca"
-  termfile=grammar_prefix * ".term"
-  tmpvocafile="$(workingfolder)/g$(getpid()).voca"
-  dfafile=grammar_prefix * ".dfa"
-  dictfile="$(grammar_prefix).dict"
-  headerfile="$(workingfolder)/g$(getpid()).h"
-
-  reverse_grammar(rgramfile,gramfile)
-  make_category_voca(vocafile,termfile,tmpvocafile)
-  run(`$mkfa -e1 -fg $rgramfile -fv $tmpvocafile -fo $(dfafile).tmp -fh $headerfile`)
-  run(`$dfa_minimize $(dfafile).tmp -o $dfafile`)
-  voca2dict(vocafile, dictfile)
-
-  rm("$(dfafile).tmp")
-  rm(rgramfile)
-  rm(tmpvocafile)
-  rm(headerfile)
-end
-
-# called from command line
-if length(ARGS) > 0 
-  main()
-end
-
-*/
 
   /////////////////////////////
   // templates
