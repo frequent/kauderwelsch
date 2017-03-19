@@ -33,7 +33,67 @@ var LINE_BREAK = /[\r\n]/g;
 var LINE_COMMENT = /[#.*]/g;
 var LINE_TERM = /(?!% )([A-Za-z0-9_]*)/g;
 
+var GRAMMAR_VALUE =
+  "S : NS_B SENT NS_E\n" +
+  "SENT: CALL_V NAME_N\n" +
+  "SENT: DIAL_V DIGIT\n";
+
+var VOCA_VALUE = 
+  "% NS_B\n" +
+  "<s>        sil\n" +
+  "\n" +
+  "% NS_E\n" +
+  "</s>        sil\n" +
+  "\n" +
+  "% CALL_V\n" +
+  "PHONE        f ow n\n" +
+  "CALL        k ao l\n" +
+  "\n" +
+  "% DIAL_V\n" +
+  "DIAL        d ay l\n" +
+  "\n" +
+  "% NAME_N\n" +
+  "STEVE        s t iy v\n" +
+  "YOUNG        y ah ng\n" +
+  "\n" +
+  "% DIGIT\n" +
+  "FIVE        f ay v\n" +
+  "FOUR        f ow r\n" +
+  "NINE        n ay n\n" +
+  "EIGHT       ey t\n" +
+  "OH          ow\n" +
+  "ONE         w ah n\n" +
+  "SEVEN       s eh v ih n\n" +
+  "SIX         s ih k s\n" +
+  "THREE       th r iy\n" +
+  "TWO         t uw\n" +
+  "ZERO        z iy r ow";
+
 // re = new RegExp("\\b(" + word_string + ")\\b(?!')(?:\\([0-9]\\))?")
+
+//$gramfile = "$ARGV[$#ARGV].grammar";
+//$vocafile = "$ARGV[$#ARGV].voca";
+//$dfafile  = "$ARGV[$#ARGV].dfa";
+//$dictfile = "$ARGV[$#ARGV].dict";
+//$termfile = "$ARGV[$#ARGV].term";
+//$tmpprefix = "$tmpdir/g$$";
+//$tmpvocafile = "${tmpprefix}.voca";
+//$rgramfile = "${tmpprefix}.grammar";
+
+function createResponseObject(my_name) {
+  var name = my_name || "sample",
+    response_object = {};
+  response_object.name = name;
+  response_object[name + ".voca"] = [];
+  response_object[name + ".grammar"] = [];
+  response_object[name + ".voca"] = [];
+  response_object[name + ".dfa"] = [];
+  response_object[name + ".dict"] = [];
+  response_object[name + ".term"] = [];
+  response_object[name + ".tmp.voca"] = [];
+  response_object[name + ".rev.grammar"] = [];
+  return response_object;
+}
 
 function sanitizeLine(my_line) {
   return my_line.replace(LINE_BREAK, "").replace(LINE_COMMENT, "");
@@ -44,90 +104,57 @@ function notifyCount(my_count) {
     my_count.words + " words";
 }
 
-function reverseGrammarFile(my_grammar) {
+function reverseGrammarFile(my_response, my_grammar) {
   return my_grammar.split(LINE_BREAKS).filter(Boolean)
     .reduce(function(prev, next) {
       var clean_next = sanitizeLine(next),
+        pointer = prev[prev.name + ".rev.grammar"],
         list;
       if (clean_next !== "") {
-        list = clean_next.split(" : "); 
-        prev.push(list[0] + ":" + list[1].split(" ").reverse().join(" "));
+        list = clean_next.split(": "); 
+        pointer.push(list[0].trim() + ":" + list[1].split(" ").reverse().join(" "));
       }
       return prev;
-    }, []);
+    }, my_response);
 }
 
-function createTermFile(my_voca) {
+function createTermFile(my_response, my_voca) {
+  my_response.count = {"words": 0, "categories": 0};
   return my_voca.split(LINE_BREAKS).filter(Boolean)
     .reduce(function (prev, next) {
       var clean_next = sanitizeLine(next),
-        term_index = prev.term.length,
+        term_index = prev[prev.name + ".term"].length,
         match = next.match(LINE_TERM).filter(Boolean);
       if (match) {
-        prev.term.push(term_index + " " + match);
-        //write(tmpvocafile_fh, "\#$found$(lineend)")
-        //https://www.tutorialspoint.com/execute_julia_online.php
-        prev.tmp_voca.push("#" + match + "\n");
-        prev.count.categories += 1;
+        prev[prev.name + ".term"].push(term_index + " " + match);
+        prev[prev.name + ".tmp.voca"].push("#" + match + "\n");
+        prev.count.categories +=1;
       } else {
         prev.count.words += 1;
       }
       return prev;
-    }, {"term": [], "tmp_voca": [], "count": {"words": 0, "categories": 0}});
+    }, my_response);
 }
 
-function createDictFile(my_voca) {
+function createDictFile(my_response, my_voca) {
+  my_response.count.dict = -1;
   return my_voca.split(LINE_BREAKS).filter(Boolean)
     .reduce(function (prev, next) {
       var clean_next = sanitizeLine(next),
         split;
       if (clean_next.indexOf("%") > 0) {
-        prev.count += 1;
+        prev.count.dict += 1;
       } else if (clean_next !== "") {
         split = clean_next.split();
-        dict.push(prev.count + "[" + split[0] + "]  " + split.pop());
+        prev[prev.name + ".dict"].push(prev.count.dict + " [" + split[0] + "]  " + split.pop());
       }
       return prev;
-    }, {"dict": [], "count": -1});
+    }, my_response);
 }
 
 // https://github.com/rti7743/kaden_voice/blob/master/naichichi2/julius/gramtools/mkdfa/mkfa-1.44-flex/main.c
 function createDfaFile() {
-  
-}
-
-
-function juliaMakeDfa(my_gadget, my_voca_content, my_grammar_content) {
-  return new RSVP.Queue()
-    .push(function () {
-      return RSVP.all([
-        gadget.notify_processing("Starting Processing"),
-        reverseGrammarFile(my_grammar_content)
-      ]);
-    })
-    .push(function (my_result) {
-      return new RSVP.all([
-        gadget.notify_processing("Grammar rules: " + my_result.length),
-        createTermFile(my_vocal_file)
-      ]);
-    })
-    .push(function (my_result) {
-      return new RSVP.all([
-        gadget.notify_processing(notifyCount(my_result.count)),
-        gadget.notify_processing("Generated .term file."),
-        createDictFile(my_voca_dict)
-      ]);
-    })
-    .push(function (my_result) {
-      return new RSVP.all([
-        gadget.notify_processing("Generates .dict file."),
-        createDfaFile()
-      ]);
-    })
-    .push(undefined, function (my_error) {
-      console.log(my_error);
-      throw my_error;
-    });
+  console.log("end of line")
 }
 
 /*
@@ -341,8 +368,13 @@ dict
     // ready
     /////////////////////////////
     .ready(function () {
-      var gadget = this;
+      var gadget = this,
+        grammar_area = gadget.element.querySelector(".grammar"),
+        voca_area = gadget.element.querySelector(".voca");
       gadget.property_dict = {};
+
+      grammar_area.value = GRAMMAR_VALUE;
+      voca_area.value = VOCA_VALUE;
     })
 
     /////////////////////////////
@@ -359,7 +391,46 @@ dict
     .declareMethod("render", function (my_option_dict) {
       return this;
     })
+    
+    .declareMethod("generateDfa", function (my_grammar, my_voca) {
+      var gadget = this;
+      return new RSVP.Queue()
+        .push(function () {
+          return RSVP.all([
+            reverseGrammarFile(createResponseObject(), my_grammar),
+            gadget.notify_processing("Starting Processing")
+          ]);
+        })
+        .push(function (my_result) {
+          return new RSVP.all([
+            createTermFile(my_result[0], my_voca),
+            gadget.notify_processing("Grammar rules: " + my_result[0].length)
+          ]);
+        })
+        .push(function (my_result) {
+          return new RSVP.all([
+            createDictFile(my_result[0], my_voca),
+            gadget.notify_processing(notifyCount(my_result[0].count)),
+            gadget.notify_processing("Generated .term file.")
+          ]);
+        })
+        .push(function (my_result) {
+          console.log(my_result)
+          return new RSVP.all([
+            createDfaFile(my_result[0]),
+            gadget.notify_processing("Generates .dict file."),
+          ]);
+        })
+        .push(undefined, function (my_error) {
+          console.log(my_error);
+          throw my_error;
+        });
+    })
 
+    .declareMethod("notify_processing", function (my_message) {
+      var gadget = this;
+      gadget.element.querySelector(".status").value += my_message + "\n";
+    })
     /////////////////////////////
     // declared job
     /////////////////////////////
@@ -371,7 +442,18 @@ dict
     /////////////////////////////
     // on event
     /////////////////////////////
-    ;
+    .onEvent("submit", function (my_event) {
+      var gadget = this,
+        target = my_event.target,
+        grammar_value,
+        voca_value;
+      switch (target.name) {
+        case "input":
+          grammar_value = target.querySelector(".grammar").value;
+          voca_value = target.querySelector(".voca").value;
+          return gadget.generateDfa(grammar_value, voca_value);
+      }
+    });
 
 }(window, document, rJS, RSVP));
 
