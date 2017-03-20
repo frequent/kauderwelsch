@@ -31,7 +31,6 @@ https://github.com/VoxForge/develop/blob/master/bin/mkdfa.jl => all into worker
 var LINE_BREAKS = /(.*?[\r\n])/g;
 var LINE_BREAK = /[\r\n]/g;
 var LINE_COMMENT = /[#.*]/g;
-var LINE_TERM = /(?!% )([A-Za-z0-9_]*)/g;
 
 var GRAMMAR_VALUE =
   "S : NS_B SENT NS_E\n" +
@@ -118,26 +117,25 @@ function reverseGrammarFile(my_response, my_grammar) {
     }, my_response);
 }
 
-function createTermFile(my_response, my_voca) {
+function createTermAndDictFile(my_response, my_voca) {
   my_response.count = {"words": 0, "categories": 0};
   return my_voca.split(LINE_BREAKS).filter(Boolean)
     .reduce(function (prev, next) {
       var clean_next = sanitizeLine(next),
-        term_index = prev[prev.name + ".term"].length,
-        match = next.match(LINE_TERM).filter(Boolean);
-      if (match) {
-        prev[prev.name + ".term"].push(term_index + " " + match);
-        prev[prev.name + ".tmp.voca"].push("#" + match + "\n");
-        prev.count.categories +=1;
-      } else {
-        prev.count.words += 1;
+        term_index = prev[prev.name + ".term"],
+        line_feed = clean_next.split("  ").filter(Boolean);
+      if (clean_next[0] === "%") {
+        prev[prev.name + ".term"].push((term_index.length) + "  " + line_feed[0].split(" ").pop());
+        prev.count.categories += 1;
+      } else if (line_feed.length > 0) {
+        prev[prev.name + ".dict"].push((term_index.length -1) + " [" + line_feed[0] + "] " + line_feed[1]);
+        prev.count.words +=1;
       }
       return prev;
     }, my_response);
 }
 
-function createDictFile(my_response, my_voca) {
-  my_response.count.dict = -1;
+function createTemporaryVocaFile(my_response, my_voca) {
   return my_voca.split(LINE_BREAKS).filter(Boolean)
     .reduce(function (prev, next) {
       var clean_next = sanitizeLine(next),
@@ -146,7 +144,7 @@ function createDictFile(my_response, my_voca) {
         prev.count.dict += 1;
       } else if (clean_next !== "") {
         split = clean_next.split();
-        prev[prev.name + ".dict"].push(prev.count.dict + " [" + split[0] + "]  " + split.pop());
+        //prev[prev.name + ".dict"].push(prev.count.dict + " [" + split[0] + "]  " + split.pop());
       }
       return prev;
     }, my_response);
@@ -402,20 +400,23 @@ dict
           ]);
         })
         .push(function (my_result) {
+          var response = my_result[0],
+            pointer = response[response.name + ".rev.grammar"];
           return new RSVP.all([
-            createTermFile(my_result[0], my_voca),
-            gadget.notify_processing("Grammar rules: " + my_result[0].length)
+            createTermAndDictFile(my_result[0], my_voca),
+            gadget.notify_processing("Grammar rules: " + pointer.length)
           ]);
         })
         .push(function (my_result) {
           return new RSVP.all([
-            createDictFile(my_result[0], my_voca),
+            createTemporaryVocaFile(my_result[0], my_voca),
             gadget.notify_processing(notifyCount(my_result[0].count)),
             gadget.notify_processing("Generated .term file.")
           ]);
         })
         .push(function (my_result) {
           console.log(my_result)
+          console.log("end")
           return new RSVP.all([
             createDfaFile(my_result[0]),
             gadget.notify_processing("Generates .dict file."),
