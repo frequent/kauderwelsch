@@ -79,19 +79,23 @@ var VOCA_VALUE =
 //$tmpvocafile = "${tmpprefix}.voca";
 //$rgramfile = "${tmpprefix}.grammar";
 
-function createResponseObject(my_name) {
+function createResponseObject(my_voca, my_grammar, my_name) {
   var name = my_name || "sample",
     response_object = {};
   response_object.name = name;
-  response_object[name + ".voca"] = [];
-  response_object[name + ".grammar"] = [];
-  response_object[name + ".voca"] = [];
+  response_object.count = {"words": 0, "categories": 0};
+  response_object[name + ".voca"] = convertToArray(my_voca);
+  response_object[name + ".grammar"] = convertToArray(my_grammar);
   response_object[name + ".dfa"] = [];
   response_object[name + ".dict"] = [];
   response_object[name + ".term"] = [];
   response_object[name + ".tmp.voca"] = [];
   response_object[name + ".rev.grammar"] = [];
   return response_object;
+}
+
+function convertToArray(my_array) {
+  return my_array.split(LINE_BREAKS).filter(Boolean);
 }
 
 function sanitizeLine(my_line) {
@@ -103,8 +107,8 @@ function notifyCount(my_count) {
     my_count.words + " words";
 }
 
-function reverseGrammarFile(my_response, my_grammar) {
-  return my_grammar.split(LINE_BREAKS).filter(Boolean)
+function reverseGrammarFile(my_response) {
+  return my_response[my_response.name + ".grammar"]
     .reduce(function(prev, next) {
       var clean_next = sanitizeLine(next),
         pointer = prev[prev.name + ".rev.grammar"],
@@ -117,40 +121,26 @@ function reverseGrammarFile(my_response, my_grammar) {
     }, my_response);
 }
 
-function createTermAndDictFile(my_response, my_voca) {
-  my_response.count = {"words": 0, "categories": 0};
-  return my_voca.split(LINE_BREAKS).filter(Boolean)
+function createTermDictAndVocaFile(my_response, my_voca) {
+  return my_response[my_response.name + ".voca"]
     .reduce(function (prev, next) {
       var clean_next = sanitizeLine(next),
         term_index = prev[prev.name + ".term"],
-        line_feed = clean_next.split("  ").filter(Boolean);
+        line_feed = clean_next.split("  ").filter(Boolean),
+        pop;
       if (clean_next[0] === "%") {
-        prev[prev.name + ".term"].push((term_index.length) + "  " + line_feed[0].split(" ").pop());
+        pop = line_feed[0].split(" ").pop();
+        prev[prev.name + ".term"].push((term_index.length) + "  " + pop);
+        prev[prev.name + ".tmp.voca"].push("#" + clean_next.split(" ").pop());
         prev.count.categories += 1;
       } else if (line_feed.length > 0) {
         prev[prev.name + ".dict"].push((term_index.length -1) + " [" + line_feed[0] + "] " + line_feed[1]);
-        prev.count.words +=1;
+        prev.count.words += 1;
       }
       return prev;
     }, my_response);
 }
 
-function createTemporaryVocaFile(my_response, my_voca) {
-  return my_voca.split(LINE_BREAKS).filter(Boolean)
-    .reduce(function (prev, next) {
-      var clean_next = sanitizeLine(next),
-        split;
-      if (clean_next.indexOf("%") > 0) {
-        prev.count.dict += 1;
-      } else if (clean_next !== "") {
-        split = clean_next.split();
-        //prev[prev.name + ".dict"].push(prev.count.dict + " [" + split[0] + "]  " + split.pop());
-      }
-      return prev;
-    }, my_response);
-}
-
-// https://github.com/rti7743/kaden_voice/blob/master/naichichi2/julius/gramtools/mkdfa/mkfa-1.44-flex/main.c
 function createDfaFile() {
   console.log("end of line")
 }
@@ -395,7 +385,7 @@ dict
       return new RSVP.Queue()
         .push(function () {
           return RSVP.all([
-            reverseGrammarFile(createResponseObject(), my_grammar),
+            reverseGrammarFile(createResponseObject(my_voca, my_grammar)),
             gadget.notify_processing("Starting Processing")
           ]);
         })
@@ -403,24 +393,23 @@ dict
           var response = my_result[0],
             pointer = response[response.name + ".rev.grammar"];
           return new RSVP.all([
-            createTermAndDictFile(my_result[0], my_voca),
+            createTermDictAndVocaFile(my_result[0]),
             gadget.notify_processing("Grammar rules: " + pointer.length)
           ]);
         })
         .push(function (my_result) {
+          console.log(my_result[0]);
           return new RSVP.all([
-            createTemporaryVocaFile(my_result[0], my_voca),
             gadget.notify_processing(notifyCount(my_result[0].count)),
             gadget.notify_processing("Generated .term file.")
           ]);
         })
         .push(function (my_result) {
-          console.log(my_result)
-          console.log("end")
-          return new RSVP.all([
-            createDfaFile(my_result[0]),
-            gadget.notify_processing("Generates .dict file."),
-          ]);
+          console.log("end");
+          //return new RSVP.all([
+          //  createDfaFile(my_result[0]),
+          //  gadget.notify_processing("Generates .dict file."),
+          //]);
         })
         .push(undefined, function (my_error) {
           console.log(my_error);
