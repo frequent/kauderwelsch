@@ -7,6 +7,7 @@
 /*
  * ported from:
  * https://github.com/julius-speech/julius/blob/master/gramtools/mkdfa/mkfa-1.44-flex/gram.y
+ * https://en.wikipedia.org/wiki/Terminal_and_nonterminal_symbols
  *
  * Copyright (c) 1991-2013 Kawahara Lab., Kyoto University
  * Copyright (c) 2000-2005 Shikano Lab., Nara Institute of Science and Technology
@@ -14,9 +15,50 @@
  * All rights reserved
  */
 
-  // #include "mkfa.h" => move here https://github.com/julius-speech/julius/blob/master/gramtools/mkdfa/mkfa-1.44-flex/mkfa.h
+  // #include "mkfa.h" => https://github.com/julius-speech/julius/blob/master/gramtools/mkdfa/mkfa-1.44-flex/mkfa.h
 
-  // external parameters should be defined
+  var symbol_len = 256;
+  var body_class_flag = 0;
+  var body_class_flag_max = body_class_flag * 8;
+
+  var body_list = {
+    "body": {},
+    "next": {}
+  };
+  var arc = {
+    "inp": 0,
+    "finite_automaton": {},
+    "body_class_flag_start": 0,
+    "body_class_flag_accept": 0,
+    "next": {}
+  };
+  var unify_arc = {
+    "inp": 0,
+    "finite_automaton": {},
+    "body_class_flag_start": 0,
+    "body_class_flag_accept": 0,
+    "next": {},
+    "flag_reserved": 0
+  };
+  var finite_automaton_list = {
+    "finite_automation": {},
+    "next": {}
+  };
+  var finite_automaton = {
+    // common
+    "stat": 0,
+    "arc": [],
+    "body_class_flag_start": 0,
+    "body_class_flag_accept": 0,
+    "flag_traversed": 0,
+    // for DFA
+    "psNum": 0,
+    "unify_arc_list": [],
+    "finite_automaton_list": [],
+    "flag_volatiled": 0
+  };
+
+  // external parameters, should be defined
   // CLASS_LIST;
   // CLASS_LIST_TAIL;
   // START_SYMBOL;
@@ -29,95 +71,60 @@
   // VERSION_NUMBER;
   // SYMBOL_LEN => 0;
   
+  // let yy be 
   var YYSTYPE;
-  var CLASS_NUM = 100;
-  //var HEAD_NAME[SYMBOL_LEN];
-  //var BODY_NAME[CLASS_NUM][SYMBOL_LEN];
-  var BodyNo = 0;
-  var ClassNo = 0;
-  var ModeAssignAccptFlag = 1;
-  var BlockReverseSw;
-  var ModeBlock = 0;
-  var CurClassNo = 0;
-  var StartFlag = 0;
-  // var FPHeaderFile
-  var ErrParse = 0;
-  var GRamModifyNum = 0;
 
-  function appendNonTerm(my_name, my_mode_assign) {
-    var body = setNonTerm();
-    entryNonTerm(my_name, body, modeAssign, StartFlag, ModeBlock, 0);
-    BodyNo = 0;
-  }
- 
-  function outputHeader(my_name) {
-    if (ClassNo >= CLASSFLAG_MAX) {
-      if (MY_SW_COMPAT_I) {
-        console.warn("Class accepted flag overflow, " + my_name);
-      }
-    } else {
-      if (MY_SW_COMPAT_I === undefined) {
-        FP_HEADER.push("#define ACCEPT_" + my_name + "0x%08x\n",  1 << ClassNo );
-      }
-      CurClassNo = ClassNo ++;
-    }
-  }
+  var body_class_number = 100;
+  var head_name = []; // HEAD_NAME[symbol_len];
+  var body_name = []; // BODY_NAME[body_class_number][symbol_len];
+  var body_count = 0;
+  var class_count = 0;
+  var current_class_count = 0;
+  var is_assign_accept_flag = 1;
+  var is_block_start_or_end = 0;
+  var is_block_reversed;
+  var body_class_flag_start = 0;
+  var error_count = 0;
+  var grammar_modification_number = 0;
 
-  function checkNoInstantClass(my_struct) {
+  function checkNoInstantClass() {
     var current_class = CLASS_LIST;
     while (current_class !== null) {
       if (current_class.branch === undefined) {
         return current_class.name;
       }
-      return null;
+      current_class = current_class.next;
     }
-  }
-  
-  function getNewClassName(my_key_name) {
-    var tmpClassNo = 0,
-      classname;
-    //  classname[SYMBOL_LEN];
-    
-    classname = keyname + "#" + tmpClassNo++;
-    if (!MY_SW_SEMI_COMPAT) {
-      console.log("Now modifying grammar to minimize states[", GramModifyNum + "]");
-      NO_NEW_LINE = 1;
-    }
-    GramModifyNum++;
-    return (1);
+    return null;
   }
 
-  function setNonTerm(my_body) {
-    var top = null,
-      prev = null,
-      i;
-    for (i = 0; i < BodyNo; i += 1) {
-      my_body.name = BodyName[i];
-      my_body.abort = 0;
-      if (prev !== null) {
-      //  prev->next = body;
-      } else {
-        top = body;
-      }
-      prev = body;
+  function getNewClassName(my_key_name) {
+    var tmp_class_count = 0,
+      class_name = my_key_name + "#" + tmp_class_count;
+
+    if (!SW_SEMI_COMPAT) {
+      console.log("Now modifying grammar to minimize states[", grammar_modification_number + "]");
+      NO_NEW_LINE = 1;
     }
-    body.net = null;
+    grammar_modification_number++;
     return (1);
   }
 
   function unifyBody(my_class_name, my_body, my_new_body) {
-    var bodyNext,
-      newbodyNext,
+    var body_next,
+      new_body_next,
       body_class,
-      newbody;
+      new_body,
+      new_class_name;
       
-    bodyNext = my_body.next;
-    newbodyNext = my_new_body.next;
+    body_next = my_body.next;
+    new_body_next = my_new_body.next;
+
     while (1) {
-      if (bodyNext === null && newbodyNext === null) {
+      if (body_next === null && new_body_next === null) {
         return -1;
       }
-      if (newbodyNext === null) {
+      if (new_body_next === null) {
         if (my_body.abort) {
           return -1;
         } else {
@@ -125,45 +132,46 @@
         }
         return 0;
       }
-      if (bodyNext === null) {
+      if (body_next === null) {
         my_body.abort = 1;
-        my_body.next = newbodyNext;
+        my_body.next = new_body_next;
         return 0;
       }
-      if (bodyNext.name === newbodyNext.name) {
+      if (body_next.name === new_body_next.name) {
         break;
       }
-      my_body = bodyNext;
-      my_new_body = newbodyNext;
-      bodyNext = body.next;
-      newbodyNext = newbody.next;
+      my_body = body_next;
+      my_new_body = new_body_next;
+      body_next = body.next;
+      new_body_next = new_body.next;
     }
-    body_class = my_body.name; // getClass?
+
+    body_class = createBodyClass(); // ?
     if (body_class !== null && body_class.tmp) {
-      entryNonTerm(my_body.name, newbodyNext, 0, 0, 0, 1);
+      enterNonTerminalSymbol(my_body.name, new_body_next, 0, 0, 0, 1);
     } else {
-      newClassName = getNewClassName(my_class_name);
-      entryNonTerm(newClassName, bodyNext, 0, 0, 0, 1);
-      entryNonTerm(newClassName, newbodyNext, 0, 0, 0, 1);
-      my_new_body.name = newClassName;
+      new_class_name = getNewClassName(my_class_name);
+      enterNonTerminalSymbol(new_class_name, body_next, 0, 0, 0, 1);
+      enterNonTerminalSymbol(new_class_name, new_body_next, 0, 0, 0, 1);
+      my_new_body.name = new_class_name;
       my_new_body.abort = 0;
       my_new_body.next = null;
       my_body.next = newBody;
-      my_new_Body.next = newBody;
+      body_next.next = body_next;
     }
     return 0;
   }
 
-  function pushBody(body_class, my_new_body) {
-    var bodyList = body_class.bodyList,
-      preBodyList = null,
-      newBodyList,
+  function pushBody(my_body_class, my_new_body) {
+    var body_list = my_body_class.body_list,
+      pre_body_list = null,
+      new_body_list,
       body,
       cmp,
-      defineNo = 1;
+      define_number = 1;
     
-    while (bodyList !== null) {
-      body = bodyList.bdy;
+    while (body_list !== null) {
+      body = body_list.body;
       cmp = body.name === my_new_body.name;
       if (cmp > 0) {
         break;
@@ -174,72 +182,132 @@
         }
         return;
       }
-      preBodyList = bodyList;
-      bodyList = bodyList.next;
-      defineNo++;
+      pre_body_list = body_list;
+      body_list = body_list.next;
+      define_number++;
     }
-    newBodyList.body = newBody;
-    if (preBodyList !== null) {
-      preBodyList.next = newBodyLust;
+    new_body_list.body = new_body;
+    if (pre_body_list !== null) {
+      pre_body_list.next = new_body_list;
     } else {
-      body_class.bodyList = newBodyList;
+      body_class.body_list = new_body_list;
     }
-    newBodyList.next = bodyList;
+    new_body_list.next = body_list;
     body_class.branch++;
   }
 
-  function entryNonTerm(my_name, my_body, my_modeAccpt, my_start, my_member, my_tmp) {
-    var body_class = my_name; //getClass(name)
+  function createBodyClass(my_name) {
+    return {  
+      "number": null,
+      "name": null,
+      "next": {},
+      "body_list": {},
+      "branch": null,
+      "flag_used_fa": 0,
+      "flag_used": 0,
+      "flag_tmp": 0,
+      "tmp": null
+    };
+  }
+  
+  function outputHeader(my_name) {
+    if (class_count >= body_class_flag_max) {
+      if (SW_COMPAT_I) {
+        console.warn("Class accepted flag overflow, " + my_name);
+      }
+    } else {
+      if (SW_COMPAT_I === undefined) {
+        FP_HEADER.push("#define ACCEPT_" + my_name + "0x%08x\n",  1 << class_count );
+      }
+      current_class_count = class_count++;
+    }
+  }
+
+  function enterNonTerminalSymbol(my_name, my_body, my_mode_accept, my_start, my_member, my_tmp) {
+    var body_class = createBodyClass();
     
+    // when does this happen? initial?
     if (body_class === null) {
       if (my_member) {
-        ErrParse++;
-        throw Error("Accepted fla of class is reassigned:", HeadName);
+        error_count++;
+        throw Error("Accepted fla of class is reassigned:", head_name);
       }
     } else {
       body_class.name = my_name;
-      if (my_modeAccpt) {
+      if (my_mode_accept) {
         if (my_member) {
-          body_class.no = CurClassNo;
+          body_class.number = current_class_count;
         } else {
           if (!my_tmp) {
             outputHeader(name);
-            body_class.no = CurClassNo;
+            body_class.number = current_class_count;
           }
         }
       } else {
-        body_class.no = -1;
+        body_class.number = -1;
       }
       body_class.branch = 0;
-      body_class.usedFA = 0;
+      body_class.used_finite_automaton = 0;
       body_class.used = 1; // non-terminal does not appear in voca
-      body_class.bodyList = null;
+      body_class.body_list = null;
       body_class.tmp = tmp;
       body_class.next = null;
-      if (ClassListTail === null) {
-        ClassList = body_class;
+      if (CLASS_LIST_TAIL === null) {
+        CLASS_LIST = body_class;
       } else {
-        ClassListTail.net = body_class;
+        CLASS_LIST_TAIL.next = body_class;
       }
-      ClassListTail = body_class;
+      CLASS_LIST_TAIL = body_class;
     }
     if (my_body === null) {
       pushBody(body_class, my_body);
       if (my_start) {
-        StartFlag = 0;
-        if (StartSymbol === null) {
-          StartSymbol = body_class;
+        body_class_flag_start = 0;
+        if (START_SYMBOL === null) {
+          START_SYMBOL = body_class;
         } else {
-          ErrParse++;
+          error_count++;
           throw Error("Start symbol is redefined: ", body_class.name);
         }
       }
     }
     return body_class;
   }
-  
+
+  function configureNonTerminalSymbol(my_body) {
+    var first_body = null,
+      previous_body = null,
+      i;
+    for (i = 0; i < body_count; i += 1) {
+      my_body.name = body_name[i];
+      my_body.abort = 0;
+      if (previous_body !== null) {
+        previous_body.next = my_body;
+      } else {
+        first_body = my_body;
+      }
+      previous_body = my_body;
+    }
+    my_body.next = null;
+    return first_body;
+  }
+
+  function createBody() {
+    return {
+      "name": null,
+      "flag_abort": 0,
+      "next": {}
+    };
+  }
+
+  function appendNonTerminalSymbol(my_name, my_mode_assign) {
+    var body = configureNonTerminalSymbol(createBody());
+    enterNonTerminalSymbol(my_name, body, my_mode_assign, body_class_flag_start, is_block_start_or_end, 0);
+    body_count = 0;
+  }
+
   function yyerror(my_message) {
-    ErrParse++;
+    error_count++;
     //throw Error(my_message);
     return 0;
   }
@@ -250,10 +318,10 @@
 
 %% /* start definitions => https://github.com/julius-speech/julius/blob/master/gramtools/mkdfa/mkfa-1.44-flex/gram.l */
 
-"@"[a-zA-Z0-9_]+   {yylval = yytext + 1;  return 'TAG';} 
-[a-zA-Z0-9_]+      {yylval = yytext;      return 'SYMBOL';}
-"{"                {ModeBlock = 1;        return 'OPEN';}	
-"}"                {ModeBlock = 0;        return 'CLOSE';}
+"@"[a-zA-Z0-9_]+   {/*yylval = yytext + 1;*/    return 'TAG';} 
+[a-zA-Z0-9_]+      {/*yylval = yytext; */       return 'SYMBOL';}
+"{"                {is_block_start_or_end = 1;  return 'OPEN';}	
+"}"                {is_block_start_or_end = 0;  return 'CLOSE';}
 "%ASSIGN"          {return 'CTRL_ASSIGN';}
 "%IGNORE"          {return 'CTRL_IGNORE';}
 "!"                {return 'REVERSE';}
@@ -262,7 +330,7 @@
 \n                 {return 'NL';}
 "#".*\n            {return 'REMARK';}
 [ \t]              {};
-.                  errorMessage("Lexical mistake: " + yytext);
+.                  console.log("Lexical mistake: " + yytext);
 
 /lex
 
@@ -301,15 +369,15 @@ block
 tag 
   : TAG
     %{
-      BlockReverseSw = 0;
-      if (ModeAssignAccptFlag) {
+      is_block_reversed = 0;
+      if (is_assign_accept_flag) {
         outputHeader( $1 );
       }
     %}
   | REVERSE TAG
     %{
-      BlockReverseSw = 1;
-      if (!ModeAssignAccptFlag) {
+      is_block_reversed = 1;
+      if (!is_assign_accept_flag) {
         outputHeader( $2 );
       }
     %}
@@ -323,11 +391,11 @@ members
 member
   : define
     %{
-      appendNonTerm(HeadName, ModeAssignAccptFlag ^ BlockReverseSw);
+      appendNonTerminalSymbol(head_name, is_assign_accept_flag ^ is_block_reversed);
     %}
   | head remark
     %{
-      entryNonTerm(HeadName, NULL, ModeAssignAccptFlag ^ BlockReverseSw, 0, 1, 0);
+      enterNonTerminalSymbol(head_name, NULL, is_assign_accept_flag ^ is_block_reversed, 0, 1, 0);
     %}
   | remark
   ;
@@ -335,11 +403,11 @@ member
 single
   : define
     %{
-      appendNonTerm(HeadName, ModeAssignAccptFlag);
+      appendNonTerminalSymbol(head_name, is_assign_accept_flag);
     %}
    | REVERSE define
     %{
-      appendNonTerm(HeadName, !ModeAssignAccptFlag);
+      appendNonTerminalSymbol(head_name, !is_assign_accept_flag);
     %};
 
 define
@@ -354,30 +422,30 @@ bodies
 head
   : SYMBOL
    %{
-    HeadName.push( $1 );
+    head_name.push( $1 );
    %}
   | STARTCLASS SYMBOL
    %{
-    StartFlag = 1;
-    HeadName.push( $2 );
+    body_class_flag_start = 1;
+    head_name.push( $2 );
    %}
   ;
 
 body
   : SYMBOL
    %{
-    BodyName[BodyNo++].push( $1 );
+    body_name[body_count++].push( $1 );
    %}
   ;
 
 control
   : CTRL_ASSIGN remark
    %{
-    ModeAssignAccptFlag = 1;
+    is_assign_accept_flag = 1;
    %}
   | CTRL_IGNORE
    %{
-    ModeAssignAccptFlag = 0;
+    is_assign_accept_flag = 0;
    %}
   ;
 
@@ -399,7 +467,7 @@ void setGram( void )
 
     yyparse();
     if( !SW_Quiet ){
-	fprintf( stderr, "\rNow modifying grammar to minimize states[%d]\n", GramModifyNum - 1 );
+	fprintf( stderr, "\rNow modifying grammar to minimize states[%d]\n", grammar_modification_number - 1 );
 	NoNewLine = 0;
     }
     if( StartSymbol == NULL ) StartSymbol = ClassList;
@@ -408,7 +476,7 @@ void setGram( void )
     if( (name = chkNoInstantClass()) != NULL ){
 	errMes( "Prototype-declared Class \"%s\" has no instant definitions", name );
     }
-    if( ErrParse ) errMes( "%d fatal errors exist", ErrParse );
+    if( error_count ) errMes( "%d fatal errors exist", error_count );
 }
 */
 
