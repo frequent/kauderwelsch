@@ -318,14 +318,14 @@
 
 %% /* start definitions => https://github.com/julius-speech/julius/blob/master/gramtools/mkdfa/mkfa-1.44-flex/gram.l */
 
-"@"[a-zA-Z0-9_]+   {/*yylval = yytext + 1;*/    return 'TAG';} 
-[a-zA-Z0-9_]+      {/*yylval = yytext; */       return 'SYMBOL';}
-"{"                {is_block_start_or_end = 1;  return 'OPEN';}	
-"}"                {is_block_start_or_end = 0;  return 'CLOSE';}
+"@"[a-zA-Z0-9_]+   {yylval = yytext + 1; return 'TAG';} 
+[a-zA-Z0-9_]+      {yylval = yytext;     return 'SYMBOL';}
+"{"                {is_block_start_or_end = 1; return 'OPEN';}	
+"}"                {is_block_start_or_end = 0; return 'CLOSE';}
 "%ASSIGN"          {return 'CTRL_ASSIGN';}
 "%IGNORE"          {return 'CTRL_IGNORE';}
 "!"                {return 'REVERSE';}
-"*"                {return 'STARTCLASS";}
+"*"                {return 'STARTCLASS';}
 ":"                {return 'LET';}
 \n                 {return 'NL';}
 "#".*\n            {return 'REMARK';}
@@ -456,7 +456,7 @@ remark
 
 %%
 /* #include "lex.yy.c" => see custom lexer */
-%{
+
   // myscanner.js
   function AlphabetScanner() {
     console.log("WHAT THE FUCK")
@@ -507,6 +507,51 @@ remark
       };
   }
   parser.lexer = new AlphabetScanner();
-}%
 
+
+
+
+
+/*
+void setGram( void )
+{
+    char *name;
+
+    yyparse();
+    if( !SW_Quiet ){
+	fprintf( stderr, "\rNow modifying grammar to minimize states[%d]\n", grammar_modification_number - 1 );
+	NoNewLine = 0;
+    }
+    if( StartSymbol == NULL ) StartSymbol = ClassList;
+    fprintf( FPheader, "// Start Symbol: %s \n", StartSymbol->name );
+    fclose( FPheader );
+    if( (name = chkNoInstantClass()) != NULL ){
+	errMes( "Prototype-declared Class \"%s\" has no instant definitions", name );
+    }
+    if( error_count ) errMes( "%d fatal errors exist", error_count );
+}
+*/
+
+
+
+
+/*
+void setGram( void )
+{
+    char *name;
+
+    yyparse();
+    if( !SW_Quiet ){
+	fprintf( stderr, "\rNow modifying grammar to minimize states[%d]\n", grammar_modification_number - 1 );
+	NoNewLine = 0;
+    }
+    if( StartSymbol == NULL ) StartSymbol = ClassList;
+    fprintf( FPheader, "// Start Symbol: %s \n", StartSymbol->name );
+    fclose( FPheader );
+    if( (name = chkNoInstantClass()) != NULL ){
+	errMes( "Prototype-declared Class \"%s\" has no instant definitions", name );
+    }
+    if( error_count ) errMes( "%d fatal errors exist", error_count );
+}
+*/
 
