@@ -52,7 +52,11 @@
   var YY_MORE_ADJ;
   var YY_DO_BEFORE_ACTION;
   var YY_FLUSH_BUFFER;
+  var YY_AT_BOL;
+  var YY_CHAR;
+  var YY_NUM_RULES;
 
+  var yy_set_interactive;
   var yy_buffer_state;
   var yy_current_buffer;
   var yy_did_buffer_switch_on_eof;
@@ -79,6 +83,29 @@
   var yy_init_buffer;
   var yy_flush_buffer;
   var yy_delete_buffer;
+  var yy_scan_buffer;
+  var yy_scan_string;
+  var yy_scan_bytes;
+  var yy_flex_alloc;
+  var yy_flex_realloc;
+  var yy_flex_free;
+  var yy_new_buffer;
+  var yy_set_bol;
+  var yy_state_type;
+  var yytext;
+  var yy_try_NUL_trans;
+  var yy_get_next_buffer;
+  var yy_fatal_error;
+  var msg;
+  var yy_accept;
+  var yy_ec;
+  var yy_meta;
+  var yy_base;
+  var yy_def;
+  var yy_nxt;
+  var yy_last_accepting_state;
+  var yy_last_accepting_cpos;
+
   var file;
   var size;
 
@@ -362,143 +389,167 @@
   YY_FLUSH_BUFFER = function (current_buffer) {
     yy_flush_buffer(current_buffer);
   };
-    
+  
+  // XXX does what?
+  yy_scan_buffer = function (base, size) {
+    // XXX? YY_BUFFER_STATE yy_scan_buffer YY_PROTO(( char *base, yy_size_t size ));
+  };
+  
+  // XXX find a string?
+  yy_scan_string = function (yy_str) {
+    // XXX? YY_BUFFER_STATE yy_scan_string YY_PROTO(( yyconst char *yy_str ));
+  };
+
+  // XXX scan ?
+  yy_scan_bytes = function (bytes, len) {
+    // XXX ?YY_BUFFER_STATE yy_scan_bytes YY_PROTO(( yyconst char *bytes, int len ));
+  };
+
+  yy_flex_alloc = function (yy_size_t) {
+    // mhmh
+  };
+  
+  yy_flex_realloc = function (yy_size_t) {
+    // XXX *yy_flex_realloc YY_PROTO(( void *, yy_size_t ));
+  };
+  
+  yy_flex_free = function () {
+    // XXX free like a bird
+  };
+
+  yy_new_buffer = yy_create_buffer;
+  
+  yy_set_interactive = function (is_interactive) {
+    if (!yy_current_buffer) {
+      yy_current_buffer = yy_create_buffer(yyin, YY_BUF_SIZE);
+      yy_current_buffer.yy_is_interactive = is_interactive;
+    }
+  };
+  
+  yy_set_bol = function(at_bol) {
+    if (!yy_current_buffer) {
+      yy_current_buffer = yy_create_buffer(yyin, YY_BUF_SIZE);
+      yy_current_buffer.yy_at_bol = at_bol;
+    }
+  };
+
+  YY_AT_BOL = function () {
+    return yy_current_buffer.yy_at_bol;
+  };
+  
+  YY_CHAR;
+  yyin = []; // XXX input file FILE *yyin = (FILE *) 0
+  yyout = []; // XXX *yyout = (FILE *) 0;
+  yy_state_type; // int;
+  yytext = [];
+  yytext_ptr = 0;
+  yy_state_type = yy_get_previous_state() || 0;
+  // XXX hm...
+  yy_state_type = yy_try_NUL_trans() || YY_PROTO(current_state);
+  yy_get_next_buffer;
+  yy_fatal_error = function (msg) {
+    return msg;
+  };
+
+  // Done after the current pattern has been matched and before the
+  // corresponding action - sets up yytext.
+  YY_DO_BEFORE_ACTION = function () {
+    yytext_ptr = yy_bp;
+    yyleng = yy_cp - yy_bp;
+    yy_hold_char = yy_cp; // pointer to
+    yy_c_buf_p = yy_cp;
+  };
+
+  YY_NUM_RULES = 14;
+  YY_END_OF_BUFFER = 15;
+
+  yy_accept = [
+      0,
+      0,    0,   15,   13,   12,   10,    7,   13,   13,    8,
+      2,    9,   13,    3,    4,    0,   11,    0,    0,    2,
+      1,    0,    0,    0,    0,    0,    0,    0,    0,    5,
+      6,    0
+  ];
+  
+  yy_ec = [
+    0,
+    1,    1,    1,    1,    1,    1,    1,    1,    2,    3,
+    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+    1,    2,    4,    1,    5,    1,    6,    1,    1,    1,
+    1,    7,    1,    1,    1,    1,    1,    8,    8,    8,
+    8,    8,    8,    8,    8,    8,    8,    9,    1,    1,
+    1,    1,    1,   10,   11,    8,    8,    8,   12,    8,
+   13,    8,   14,    8,    8,    8,    8,   15,   16,    8,
+    8,   17,   18,    8,    8,    8,    8,    8,    8,    8,
+    1,    1,    1,    1,    8,    1,    8,    8,    8,    8,
+
+    8,    8,    8,    8,    8,    8,    8,    8,    8,    8,
+    8,    8,    8,    8,    8,    8,    8,    8,    8,    8,
+    8,    8,   19,    1,   20,    1,    1,    1,    1,    1,
+    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+
+    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+    1,    1,    1,    1,    1
+  ];
+
+  yy_meta = [
+    0,
+    1,    1,    1,    1,    1,    1,    1,    2,    1,    1,
+    2,    2,    2,    2,    2,    2,    2,    2,    1,    1
+  ];
+
+  yy_base = [
+    0,
+    0,    0,   39,   40,   40,   40,   40,   35,   10,   40,
+    0,   40,    0,   40,   40,   34,   40,   18,   22,    0,
+    0,   16,   18,   18,   15,   17,   12,   13,   15,   40,
+   40,   40,   24,   21,   20
+  ];
+
+  yy_def = [
+     0,
+     32,    1,   32,   32,   32,   32,   32,   33,   32,   32,
+     34,   32,   35,   32,   32,   33,   32,   32,   32,   34,
+     35,   32,   32,   32,   32,   32,   32,   32,   32,   32,
+     32,    0,   32,   32,   32
+  ];
+
+  yy_nxt = [
+    0,
+    4,    5,    6,    7,    8,    9,   10,   11,   12,   13,
+   11,   11,   11,   11,   11,   11,   11,   11,   14,   15,
+   18,   21,   20,   19,   16,   16,   31,   30,   29,   28,
+   27,   26,   25,   24,   23,   22,   17,   17,   32,    3,
+   32,   32,   32,   32,   32,   32,   32,   32,   32,   32,
+   32,   32,   32,   32,   32,   32,   32,   32,   32,   32
+  ];
+
+  yy_chk = [
+    0,
+    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+    9,   35,   34,    9,   33,   33,   29,   28,   27,   26,
+   25,   24,   23,   22,   19,   18,   16,    8,    3,   32,
+   32,   32,   32,   32,   32,   32,   32,   32,   32,   32,
+   32,   32,   32,   32,   32,   32,   32,   32,   32,   32
+  ];
+
+  yy_state_type = yy_last_accepting_state;
+  yy_last_accepting_cpos;
 
 
 
-YY_BUFFER_STATE yy_scan_buffer YY_PROTO(( char *base, yy_size_t size ));
-YY_BUFFER_STATE yy_scan_string YY_PROTO(( yyconst char *yy_str ));
-YY_BUFFER_STATE yy_scan_bytes YY_PROTO(( yyconst char *bytes, int len ));
-
-static void *yy_flex_alloc YY_PROTO(( yy_size_t ));
-static void *yy_flex_realloc YY_PROTO(( void *, yy_size_t ));
-static void yy_flex_free YY_PROTO(( void * ));
-
-#define yy_new_buffer yy_create_buffer
-
-#define yy_set_interactive(is_interactive) \
-  { \
-  if ( ! yy_current_buffer ) \
-    yy_current_buffer = yy_create_buffer( yyin, YY_BUF_SIZE ); \
-  yy_current_buffer->yy_is_interactive = is_interactive; \
-  }
-
-#define yy_set_bol(at_bol) \
-  { \
-  if ( ! yy_current_buffer ) \
-    yy_current_buffer = yy_create_buffer( yyin, YY_BUF_SIZE ); \
-  yy_current_buffer->yy_at_bol = at_bol; \
-  }
-
-#define YY_AT_BOL() (yy_current_buffer->yy_at_bol)
-
-typedef unsigned char YY_CHAR;
-FILE *yyin = (FILE *) 0, *yyout = (FILE *) 0;
-typedef int yy_state_type;
-extern char *yytext;
-#define yytext_ptr yytext
-
-static yy_state_type yy_get_previous_state YY_PROTO(( void ));
-static yy_state_type yy_try_NUL_trans YY_PROTO(( yy_state_type current_state ));
-static int yy_get_next_buffer YY_PROTO(( void ));
-static void yy_fatal_error YY_PROTO(( yyconst char msg[] ));
-
-/* Done after the current pattern has been matched and before the
- * corresponding action - sets up yytext.
- */
-#define YY_DO_BEFORE_ACTION \
-  yytext_ptr = yy_bp; \
-  yyleng = (int) (yy_cp - yy_bp); \
-  yy_hold_char = *yy_cp; \
-  *yy_cp = '\0'; \
-  yy_c_buf_p = yy_cp;
-
-#define YY_NUM_RULES 14
-#define YY_END_OF_BUFFER 15
-static yyconst short int yy_accept[33] =
-    {   0,
-        0,    0,   15,   13,   12,   10,    7,   13,   13,    8,
-        2,    9,   13,    3,    4,    0,   11,    0,    0,    2,
-        1,    0,    0,    0,    0,    0,    0,    0,    0,    5,
-        6,    0
-    } ;
-
-static yyconst int yy_ec[256] =
-    {   0,
-        1,    1,    1,    1,    1,    1,    1,    1,    2,    3,
-        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,    2,    4,    1,    5,    1,    6,    1,    1,    1,
-        1,    7,    1,    1,    1,    1,    1,    8,    8,    8,
-        8,    8,    8,    8,    8,    8,    8,    9,    1,    1,
-        1,    1,    1,   10,   11,    8,    8,    8,   12,    8,
-       13,    8,   14,    8,    8,    8,    8,   15,   16,    8,
-        8,   17,   18,    8,    8,    8,    8,    8,    8,    8,
-        1,    1,    1,    1,    8,    1,    8,    8,    8,    8,
-
-        8,    8,    8,    8,    8,    8,    8,    8,    8,    8,
-        8,    8,    8,    8,    8,    8,    8,    8,    8,    8,
-        8,    8,   19,    1,   20,    1,    1,    1,    1,    1,
-        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-
-        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,    1,    1,    1,    1
-    } ;
-
-static yyconst int yy_meta[21] =
-    {   0,
-        1,    1,    1,    1,    1,    1,    1,    2,    1,    1,
-        2,    2,    2,    2,    2,    2,    2,    2,    1,    1
-    } ;
-
-static yyconst short int yy_base[36] =
-    {   0,
-        0,    0,   39,   40,   40,   40,   40,   35,   10,   40,
-        0,   40,    0,   40,   40,   34,   40,   18,   22,    0,
-        0,   16,   18,   18,   15,   17,   12,   13,   15,   40,
-       40,   40,   24,   21,   20
-    } ;
-
-static yyconst short int yy_def[36] =
-    {   0,
-       32,    1,   32,   32,   32,   32,   32,   33,   32,   32,
-       34,   32,   35,   32,   32,   33,   32,   32,   32,   34,
-       35,   32,   32,   32,   32,   32,   32,   32,   32,   32,
-       32,    0,   32,   32,   32
-    } ;
-
-static yyconst short int yy_nxt[61] =
-    {   0,
-        4,    5,    6,    7,    8,    9,   10,   11,   12,   13,
-       11,   11,   11,   11,   11,   11,   11,   11,   14,   15,
-       18,   21,   20,   19,   16,   16,   31,   30,   29,   28,
-       27,   26,   25,   24,   23,   22,   17,   17,   32,    3,
-       32,   32,   32,   32,   32,   32,   32,   32,   32,   32,
-       32,   32,   32,   32,   32,   32,   32,   32,   32,   32
-    } ;
-
-static yyconst short int yy_chk[61] =
-    {   0,
-        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        9,   35,   34,    9,   33,   33,   29,   28,   27,   26,
-       25,   24,   23,   22,   19,   18,   16,    8,    3,   32,
-       32,   32,   32,   32,   32,   32,   32,   32,   32,   32,
-       32,   32,   32,   32,   32,   32,   32,   32,   32,   32
-    } ;
-
-static yy_state_type yy_last_accepting_state;
-static char *yy_last_accepting_cpos;
 
 /* The intent behind this definition is that it'll catch
  * any uses of REJECT which flex missed.
