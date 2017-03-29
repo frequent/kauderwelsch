@@ -29,6 +29,7 @@
   var EOB_ACT_CONTINUE_SCAN;
   var EOB_ACT_END_OF_FILE;
   var EOB_ACT_LAST_MATCH;
+  var REJECT;
 
   var YY_FLEX_MAJOR_VERSION = 2;
   var YY_FLEX_MINOR_VERSION = 5;
@@ -105,6 +106,8 @@
   var yy_nxt;
   var yy_last_accepting_state;
   var yy_last_accepting_cpos;
+  var yymore_used_but_not_detected;
+  var yymore;
 
   var file;
   var size;
@@ -548,13 +551,14 @@
   yy_state_type = yy_last_accepting_state;
   yy_last_accepting_cpos;
 
+  // The intent behind this definition is that it'll catch
+  // any uses of REJECT which flex missed.
+  REJECT = reject_used_but_not_detected;
+  
+  yymore = function () {
+    return yymore_used_but_not_detected;
+  };
 
-
-
-/* The intent behind this definition is that it'll catch
- * any uses of REJECT which flex missed.
- */
-#define REJECT reject_used_but_not_detected
 #define yymore() yymore_used_but_not_detected
 #define YY_MORE_ADJ 0
 #define YY_RESTORE_YY_MORE_OFFSET
