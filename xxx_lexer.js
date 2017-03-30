@@ -26,10 +26,10 @@
   
   var FLEX_SCANNER;
   var BEGIN;
+  var REJECT;
   var EOB_ACT_CONTINUE_SCAN;
   var EOB_ACT_END_OF_FILE;
   var EOB_ACT_LAST_MATCH;
-  var REJECT;
 
   var YY_FLEX_MAJOR_VERSION = 2;
   var YY_FLEX_MINOR_VERSION = 5;
@@ -56,6 +56,7 @@
   var YY_AT_BOL;
   var YY_CHAR;
   var YY_NUM_RULES;
+
 
   var yy_set_interactive;
   var yy_buffer_state;
@@ -106,8 +107,8 @@
   var yy_nxt;
   var yy_last_accepting_state;
   var yy_last_accepting_cpos;
-  var yymore_used_but_not_detected;
   var yymore;
+  var yymore_used_but_not_detected;
 
   var file;
   var size;
@@ -553,23 +554,22 @@
 
   // The intent behind this definition is that it'll catch
   // any uses of REJECT which flex missed.
-  REJECT = reject_used_but_not_detected;
-  
+  REJECT = function () {
+    return reject_used_but_not_detected;
+  };
   yymore = function () {
     return yymore_used_but_not_detected;
   };
+  YY_MORE_ADJ = 0;
+  YY_RESTORE_YY_MORE_OFFSET;
+  yytext;
+  // #line 1 "gram.l"
+  INITIAL = 0;
+  // #line 391 "lex.yy.c"
 
-#define yymore() yymore_used_but_not_detected
-#define YY_MORE_ADJ 0
-#define YY_RESTORE_YY_MORE_OFFSET
-char *yytext;
-#line 1 "gram.l"
-#define INITIAL 0
-#line 391 "lex.yy.c"
+  // Macros after this point can all be overridden by user definitions in 
+  // section 1.
 
-/* Macros after this point can all be overridden by user definitions in
- * section 1.
- */
 
 #ifndef YY_SKIP_YYWRAP
 #ifdef __cplusplus
