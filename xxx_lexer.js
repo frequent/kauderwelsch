@@ -34,15 +34,23 @@
   var YY_FLEX_MAJOR_VERSION = 2;
   var YY_FLEX_MINOR_VERSION = 5;
   var YY_ALWAYS_INTERACTIVE;
+  var YY_USER_ACTION;
   var YY_NEVER_INTERACTIVE;
   var YY_PROTO;
   var YY_USE_PROTOS;
   var YY_USE_CONST;
+  var YY_MALLOC_DECL;
   var YY_SKIP_YYWRAP;
   var YY_NULL;
+  var YY_DECL;
+  var ECHO;
   var YY_SC_TO_UI;
+  var YY_BREAK;
+  var YY_INPUT;
   var YY_NEW_FILE;
   var YY_START;
+  var YY_USER_INIT;
+  var YY_READ_BUF_SIZE;
   var YY_END_OF_BUFFER;
   var YY_STATE_EOF;
   var YY_END_OF_BUFFER_CHAR;
@@ -55,8 +63,14 @@
   var YY_FLUSH_BUFFER;
   var YY_AT_BOL;
   var YY_CHAR;
+  var YY_RULE_SETUP;
   var YY_NUM_RULES;
-
+  var YY_NEED_STRLEN;
+  var YY_NO_PUSH_STATE;
+  var YY_NO_POP_STATE;
+  var YY_NO_TOP_STATE;
+  var YY_START_STACK_INCR;
+  var YY_FATAL_ERROR;
 
   var yy_set_interactive;
   var yy_buffer_state;
@@ -65,17 +79,24 @@
   var yy_start;
   var yy_const;
   var yywrap;
+  var yy_flex_strle;
   var yyrestart;
   var yyleng;
   var yyin;
+  var yy_match;
   var yyout;
+  var getc;
+  var stdin;
+  var stdout;
   var yy_cp;
+  var yy_act;
   var yy_hold_char;
   var yy_c_buf_p;
   var yy_bp;
   var yyunput;
   var yytext_ptr;
   var unput;
+  var input;
   var yy_size_t;
   var yy_n_chars; 
   var yy_init;
@@ -88,17 +109,27 @@
   var yy_scan_buffer;
   var yy_scan_string;
   var yy_scan_bytes;
+  var new_state;
   var yy_flex_alloc;
   var yy_flex_realloc;
   var yy_flex_free;
   var yy_new_buffer;
+  var yy_top_state;
+  var yy_pop_state;
+  var yy_push_state;
+  var yy_start_stack_ptr;
+  var yy_start_stack_depth;
+  var yy_start_stack;
   var yy_set_bol;
   var yy_state_type;
   var yytext;
+  var yy_flex_strncpy;
   var yy_try_NUL_trans;
   var yy_get_next_buffer;
   var yy_fatal_error;
   var msg;
+  var frwrite;
+  var buf_ptr;
   var yy_accept;
   var yy_ec;
   var yy_meta;
@@ -109,6 +140,14 @@
   var yy_last_accepting_cpos;
   var yymore;
   var yymore_used_but_not_detected;
+  var errno;
+  var buf;
+  var EOF;
+  var EINTR;
+  var clearerr;
+  var fread;
+  var ferror;
+  var yyterminate;
 
   var file;
   var size;
@@ -561,7 +600,7 @@
     return yymore_used_but_not_detected;
   };
   YY_MORE_ADJ = 0;
-  YY_RESTORE_YY_MORE_OFFSET;
+  YY_RESTORE_YY_MORE_OFFSET();
   yytext;
   // #line 1 "gram.l"
   INITIAL = 0;
@@ -569,474 +608,466 @@
 
   // Macros after this point can all be overridden by user definitions in 
   // section 1.
+  if (YY_SKIP_YYWRAP === undefined) {
+    if (__cplusplus) {
+      yywrap = YY_PROTO();
+    } else {
+      yywrap = YY_PROTO();
+    }
+  }
 
+  if (YY_NO_UNPUT === undefined) {
+    // XXX 2 params
+    yyunput = YY_PROTO(c, buf_ptr);
+  }
 
-#ifndef YY_SKIP_YYWRAP
-#ifdef __cplusplus
-extern "C" int yywrap YY_PROTO(( void ));
-#else
-extern int yywrap YY_PROTO(( void ));
-#endif
-#endif
+  if (yytext_ptr === undefined) {
+    // static void yy_flex_strncpy YY_PROTO(( char *, yyconst char *, int ));
+    yy_flex_strncpy = YY_PROTO(char, yyconst);
+  }
 
-#ifndef YY_NO_UNPUT
-static void yyunput YY_PROTO(( int c, char *buf_ptr ));
-#endif
+  if (YY_NEED_STRLEN) {
+    yy_flex_strlen = YY_PROTO(yyconst_char);
+  }
 
-#ifndef yytext_ptr
-static void yy_flex_strncpy YY_PROTO(( char *, yyconst char *, int ));
-#endif
+  if (YY_NO_INPUT === undefined) {
+    if (__cplusplus) {
+      yy_input = YY_PROTO();
+    } else {
+      input = YY_PROTO();
+    }
+  }
+  
+  if (YY_STACK_USED) {
+    yy_start_stack_ptr = 0;
+    yy_start_stack_depth = 0;
+    yy_start_stack = 0; // pointer
+    if (YY_NO_PUSH_STATE === undefined) {
+      yy_push_state = YY_PROTO(new_state);
+    }
+    if (YY_NO_POP_STATE === undefined) {
+      yy_pop_state = YY_PROTO();
+    }
+    if (YY_NO_TOP_STATE === undefined) {
+      yy_top_state = YY_PROTO();
+    }
+  } else {
+    YY_NO_PUSH_STATE = 1;
+    YY_NO_POP_STATE = 1;
+    YY_NO_TOP_STATE = 1;
+  }
+  
+  if (YY_MALLOC_DECL) {
+    YY_MALLOC_DECL;
+  } else {
+    if (__STDC__) {
+      if (__cplusplus === undefined) {
+        // #include <stdlib.h> 
+      }
+    } else {
+      // Just try to get by without declaring the routines.  This will fail
+      // miserably on non-ANSI systems for which sizeof(size_t) != sizeof(int)
+      //* or sizeof(void*) != sizeof(int).
+    }
+  }
 
-#ifdef YY_NEED_STRLEN
-static int yy_flex_strlen YY_PROTO(( yyconst char * ));
-#endif
+  // Amount of stuff to slurp up with each read.
+  if (YY_READ_BUF_SIZE === undefined) {
+    YY_READ_BUF_SIZE = 8192;
+  }
 
-#ifndef YY_NO_INPUT
-#ifdef __cplusplus
-static int yyinput YY_PROTO(( void ));
-#else
-static int input YY_PROTO(( void ));
-#endif
-#endif
+  // Copy whatever the last rule matched to the standard output.
+  if (ECHO === undefined) {
+    // This used to be an fputs(), but since the string might contain NUL's,
+    // we now use fwrite().
+    // write from array to stream
+    //ECHO = fwrite(yytext, yyleng, 1, yyout);
+    ECHO = console.log(yytext, yyleng, 1, yyout);
+  }
 
-#if YY_STACK_USED
-static int yy_start_stack_ptr = 0;
-static int yy_start_stack_depth = 0;
-static int *yy_start_stack = 0;
-#ifndef YY_NO_PUSH_STATE
-static void yy_push_state YY_PROTO(( int new_state ));
-#endif
-#ifndef YY_NO_POP_STATE
-static void yy_pop_state YY_PROTO(( void ));
-#endif
-#ifndef YY_NO_TOP_STATE
-static int yy_top_state YY_PROTO(( void ));
-#endif
+  // Gets input and stuffs it into "buf".  number of characters read, or 
+  // YY_NULL, is returned in "result".
+  if (YY_INPUT === undefined) {
+    YY_INPUT = function (buffer, result, max_size) {
+      var c, n;
+      if (yy_current_buffer.yy_is_interactive) {
+        c = '*';
+        
+        // loop over character line by line and add characters to buffer
+        for (n = 0; n < max_size && (c = getc(yyin) !== EOF && c !== '\n'); n++) {
+          buf[n] = c;
+        }
+        if (c === '\n') {
+          if (n >= 1 && buf[n - 1] === '\r') {
+            buf[n - 1] = c;
+          } else {
+            buf[n++] = c;
+          }
+        }
+        if (c === EOF && ferror(yyin)) {
+          YY_FATAL_ERROR("input in flex scanner failed");
+          result = n;
+        }
+      } else {
+        errno = 0;
+        while (result = fread(buf, 1, max_size, yyin) === 0 && ferror(yyin)) {
+          if (errno !== EINTR) {
+            YY_FATAL_ERROR( "input in flex scanner failed" );
+            break;
+          }
+          errno = 0;
+          clearerr(yyin);
+        }
+        for (n = 0; n < result; n += 1) {
+          if (buf[n] === '\n') {
+            if (n >= 1 && buf[n - 1] === '\r') {
+              buf[n - 1] = '\n';
+            }
+          }
+        }
+      }
+  };
 
-#else
-#define YY_NO_PUSH_STATE 1
-#define YY_NO_POP_STATE 1
-#define YY_NO_TOP_STATE 1
-#endif
+  // No semi-colon after return; correct usage is to write "yyterminate();" -
+  // we don't want an extra ';' after the "return" because that will cause
+  // some compilers to complain about unreachable statements.
+  if (yyterminate === undefined) {
+    yyterminate = function () {
+      return YY_NULL;
+    };
+  }
 
-#ifdef YY_MALLOC_DECL
-YY_MALLOC_DECL
-#else
-#if __STDC__
-#ifndef __cplusplus
-#include <stdlib.h>
-#endif
-#else
-/* Just try to get by without declaring the routines.  This will fail
- * miserably on non-ANSI systems for which sizeof(size_t) != sizeof(int)
- * or sizeof(void*) != sizeof(int).
- */
-#endif
-#endif
+  // Number of entries by which start-condition stack grows.
+  if (YY_START_STACK_INCR === undefined) {
+    YY_START_STACK_INCR = 25;
+  }
 
-/* Amount of stuff to slurp up with each read. */
-#ifndef YY_READ_BUF_SIZE
-#define YY_READ_BUF_SIZE 8192
-#endif
+  // Report a fatal error.
+  if (YY_FATAL_ERROR === undefined) {
+    YY_FATAL_ERROR = function(msg) {
+      return yy_fatal_error(msg);
+    };
+  }
 
-/* Copy whatever the last rule matched to the standard output. */
+  // Default declaration of generated scanner - a define so the user can
+  // easily add parameters.
+  if (YY_DECL) {
+    // XXX? #define YY_DECL int yylex YY_PROTO(( void ))
+    yylex = YY_DECL;
+  }
+  
+  // Code executed at the beginning of each rule, after yytext and yyleng
+  // have been set up.
+  if (YY_USER_ACTION === undefined) {
+    YY_USER_ACTION;
+  }
 
-#ifndef ECHO
-/* This used to be an fputs(), but since the string might contain NUL's,
- * we now use fwrite().
- */
-#define ECHO (void) fwrite( yytext, yyleng, 1, yyout )
-#endif
+  if (YY_BREAK === undefined) {
+    // nah... YY_BREAK = break;
+  }
 
-/* Gets input and stuffs it into "buf".  number of characters read, or YY_NULL,
- * is returned in "result".
- */
-#ifndef YY_INPUT
-#define YY_INPUT(buf,result,max_size) \
-  if ( yy_current_buffer->yy_is_interactive ) \
-    { \
-    int c = '*', n; \
-    for ( n = 0; n < max_size && \
-           (c = getc( yyin )) != EOF && c != '\n'; ++n ) \
-      buf[n] = (char) c; \
-    if ( c == '\n' ) { \
-      if (n >= 1 && buf[n-1] == '\r') { \
-        buf[n-1] = (char) c; \
-      } else { \
-        buf[n++] = (char) c; \
-      } \
-    } \
-    if ( c == EOF && ferror( yyin ) ) \
-      YY_FATAL_ERROR( "input in flex scanner failed" ); \
-    result = n; \
-    } \
-  else \
-    { \
-    errno=0; \
-    while ( (result = fread(buf, 1, max_size, yyin))==0 && ferror(yyin)) \
-      { \
-      if( errno != EINTR) \
-        { \
-        YY_FATAL_ERROR( "input in flex scanner failed" ); \
-        break; \
-        } \
-      errno=0; \
-      clearerr(yyin); \
-      } \
-    int n; \
-    for(n = 0; n < result; n++) { \
-      if (buf[n] == '\n') { \
-        if (n >= 1 && buf[n-1] == '\r') { \
-      buf[n-1] = '\n'; \
-        } \
-      } \
-    } \
+  YY_RULE_SETUP = YY_USER_ACTION;
+  
+  YY_DECL = function () {
+    yy_state_type = yy_current_state;
+    yy_cp;
+    yy_bp;
+    yy_act;
+    
+    // #line 1 "gram.l"
+    
+    // #line 1 "gram.l" 
+     if (yy_init) {
+       yy_init = 0;
+       
+      if (YY_USER_INIT) {
+        YY_USER_INIT;
+      }
+
+      // first start state
+      if (yy_start === undefined) {
+        yy_start = 1;
+      }
+      if (yyin === undefined) {
+        yyin = stdin;
+      }
+      if (yyout === undefined) {
+        yyout = stdout;
+      }
+      if (yy_current_buffer === undefined) {
+        yy_current_buffer = yy_create_buffer(yyin, YY_BUF_SIZE);
+      }
+      yy_load_buffer_state();
+    }
+
+    // oop until end of file is reached
+    do {
+      yy_cp = yy_c_buf_p;
+    
+      //XXX? Support of yytext.
+      yy_cp = yy_hold_char;
+
+      // yy_bp points to the position in yy_ch_buf of the start of
+      // the current run.
+      yy_bp = yy_cp;
+      
+      yy_current_state = yy_start;
+
+    } while (1);
+
+    function yy_match() { 
+      do {
+        // XXX ?
+        YY_CHAR = yy_c = yy_ec[YY_SC_TO_UI(yy_cp)];
+        if (yy_accept[yy_current_state]) {
+          yy_last_accepting_state = yy_current_state;
+          yy_last_accepting_cpos = yy_cp;
+        }
+        while (yy_chk[yy_base[yy_current_state] + yy_c] !== yy_current_state) {
+          yy_current_state = yy_def[yy_current_state];
+          if (yy_current_state >= 33 ) {
+            yy_c = yy_meta[yy_c];
+          }
+        }
+        yy_current_state = yy_nxt[yy_base[yy_current_state] + yy_c];
+        ++yy_cp;  
+      } while (yy_base[yy_current_state] != 40);
+    }
+    
+    function yy_find_action() {
+      yy_act = yy_accept[yy_current_state];
+      
+      // have to back up
+      if (yy_act === 0) {
+        yy_cp = yy_last_accepting_cpos;
+        yy_current_state = yy_last_accepting_state;
+        yy_act = yy_accept[yy_current_state];
+      }
+      YY_DO_BEFORE_ACTION;
+    }
+    
+    // This label is used only to access EOF actions.
+    function do_action() {
+      
+      // beginning of action switch
+      switch (yy_act) {
+        
+        // must back up, undo the effects of YY_DO_BEFORE_ACTION
+        case 0:
+          yy_cp = yy_hold_char;
+          yy_cp = yy_last_accepting_cpos;
+          yy_current_state = yy_last_accepting_state;
+          return yy_find_action();
+        case 1:
+          YY_RULE_SETUP();
+          // #line 2 "gram.l"
+          //{
+          yylval = yytext + 1;
+          return("TAG");
+          //}
+          break;
+        case 2:
+          YY_RULE_SETUP();
+          //#line 7 "gram.l"
+          //{
+          yylval = yytext;
+          return("SYMBOL");
+          //}
+          break;
+        case 3:
+          YY_RULE_SETUP();
+          //#line 12 "gram.l"
+          //{
+          ModeBlock = 1;
+          return("OPEN");
+          //}
+          break;
+        case 4:
+          YY_RULE_SETUP();
+          //#line 17 "gram.l"
+          //{
+          ModeBlock = 0;
+          return("CLOSE");
+          //}
+          break;
+        case 5:
+          YY_RULE_SETUP();
+          //#line 22 "gram.l"
+          return("CTRL_ASSIGN");
+          break;
+        case 6:
+          YY_RULE_SETUP();
+          //#line 23 "gram.l"
+          return("CTRL_IGNORE");
+          break;
+        case 7:
+          YY_RULE_SETUP();
+          //#line 24 "gram.l"
+          return("REVERSE");
+          break;
+        case 8:
+          YY_RULE_SETUP();
+          //#line 25 "gram.l"
+          return("STARTCLASS");
+          break;
+        case 9:
+          YY_RULE_SETUP();
+          //#line 26 "gram.l"
+          return("LET");
+          break;
+        case 10:
+          YY_RULE_SETUP();
+          //#line 27 "gram.l"
+          return("NL");
+          break;
+        case 11:
+          YY_RULE_SETUP();
+          //#line 28 "gram.l"
+          return("REMARK");
+          break;
+        case 12:
+          YY_RULE_SETUP();
+          //#line 29 "gram.l"
+          //{};
+          break;
+        case 13:
+          YY_RULE_SETUP();
+          //#line 31 "gram.l"
+          //{
+          errMes("Lexical mistake \"+ yytext +\"");
+          return 1;
+          //}
+          break;
+        case 14:
+          YY_RULE_SETUP();
+          //#line 35 "gram.l"
+          ECHO();
+          break;
+        
+        //#line 723 "lex.yy.c"
+        case YY_STATE_EOF(INITIAL):
+          return yyterminate();
+        
+        case YY_END_OF_BUFFER:
+    
+          // Amount of text matched not including the EOB char.
+          yy_amount_of_matched_text = (yy_cp - yytext_ptr) - 1;
+
+          // Undo the effects of YY_DO_BEFORE_ACTION.
+          yy_cp = yy_hold_char;
+          YY_RESTORE_YY_MORE_OFFSET();
+
+          if (yy_current_buffer.yy_buffer_status === YY_BUFFER_NEW ) {
+
+            // We're scanning a new file or input source.  It's
+            // possible that this happened because the user
+            // just pointed yyin at a new source and called
+            // yylex().  If so, then we have to assure
+            // consistency between yy_current_buffer and our
+            // globals.  Here is the right place to do so, because
+            // this is the first action (other than possibly a
+            // back-up) that will match for the new input source.
+            yy_n_chars = yy_current_buffer.yy_n_chars;
+            yy_current_buffer.yy_input_file = yyin;
+            yy_current_buffer.yy_buffer_status = YY_BUFFER_NORMAL;
+          }
+
+          // Note that here we test for yy_c_buf_p "<=" to the position
+          // of the first EOB in the buffer, since yy_c_buf_p will
+          // already have been incremented past the NUL character
+          // (since all states make transitions on EOB to the
+          // end-of-buffer state).  Contrast this with the test
+          // in input().
+
+          if (yy_c_buf_p <= yy_current_buffer.yy_ch_buf[yy_n_chars]) {
+            // This was really a NUL.
+            yy_state_type = yy_next_state;
+            yy_c_buf_p = yytext_ptr + yy_amount_of_matched_text;
+            yy_current_state = yy_get_previous_state();
+      
+            // Okay, we're now positioned to make the NUL
+            // transition.  We couldn't have
+            // yy_get_previous_state() go ahead and do it
+            // for us because it doesn't know how to deal
+            // with the possibility of jamming (and we don't
+            // want to build jamming into it because then it
+            // will run more slowly).
+            yy_next_state = yy_try_NUL_trans(yy_current_state);
+            yy_bp = yytext_ptr + YY_MORE_ADJ;
+
+            // Consume the NUL.
+            if (yy_next_state) {
+              yy_cp = ++yy_c_buf_p;
+              yy_current_state = yy_next_state;
+              yy_match();
+            } else {
+              yy_cp = yy_c_buf_p;
+              yy_find_action();
+            }
+          } else switch (yy_get_next_buffer()) {
+      
+            case EOB_ACT_END_OF_FILE:
+              yy_did_buffer_switch_on_eof = 0;
+              if (yywrap()) {
+                
+                // Note: because we've taken care in
+                // yy_get_next_buffer() to have set up
+                // yytext, we can now set up
+                // yy_c_buf_p so that if some total
+                // hoser (like flex itself) wants to
+                // call the scanner after we return the
+                // YY_NULL, it'll still work - another
+                // YY_NULL will get returned.
+                yy_c_buf_p = yytext_ptr + YY_MORE_ADJ;
+                yy_act = YY_STATE_EOF(YY_START);
+                do_action();
+              } else {
+                if (yy_did_buffer_switch_on_eof === undefined) {
+                  YY_NEW_FILE;
                 }
+              }
+              break;
+        
+            case EOB_ACT_CONTINUE_SCAN:
+              yy_c_buf_p = yytext_ptr + yy_amount_of_matched_text;
+              yy_current_state = yy_get_previous_state();
+      
+              yy_cp = yy_c_buf_p;
+              yy_bp = yytext_ptr + YY_MORE_ADJ;
+              yy_match();
+              break
+            case EOB_ACT_LAST_MATCH:
+              yy_c_buf_p = yy_current_buffer.yy_ch_buf[yy_n_chars];
+              yy_current_state = yy_get_previous_state();
+              yy_cp = yy_c_buf_p;
+              yy_bp = yytext_ptr + YY_MORE_ADJ;
+              yy_find_action();
+      }
+    break;
+          
+          
+          }
 
-#endif
 
-/* No semi-colon after return; correct usage is to write "yyterminate();" -
- * we don't want an extra ';' after the "return" because that will cause
- * some compilers to complain about unreachable statements.
- */
-#ifndef yyterminate
-#define yyterminate() return YY_NULL
-#endif
+    }
 
-/* Number of entries by which start-condition stack grows. */
-#ifndef YY_START_STACK_INCR
-#define YY_START_STACK_INCR 25
-#endif
 
-/* Report a fatal error. */
-#ifndef YY_FATAL_ERROR
-#define YY_FATAL_ERROR(msg) yy_fatal_error( msg )
-#endif
+      }
+    }
+  };
 
-/* Default declaration of generated scanner - a define so the user can
- * easily add parameters.
- */
-#ifndef YY_DECL
-#define YY_DECL int yylex YY_PROTO(( void ))
-#endif
-
-/* Code executed at the beginning of each rule, after yytext and yyleng
- * have been set up.
- */
-#ifndef YY_USER_ACTION
-#define YY_USER_ACTION
-#endif
-
-/* Code executed at the end of each rule. */
-#ifndef YY_BREAK
-#define YY_BREAK break;
-#endif
-
-#define YY_RULE_SETUP \
-  YY_USER_ACTION
 
 YY_DECL
   {
-  register yy_state_type yy_current_state;
-  register char *yy_cp, *yy_bp;
-  register int yy_act;
-
-#line 1 "gram.l"
-
-#line 555 "lex.yy.c"
-
-  if ( yy_init )
-    {
-    yy_init = 0;
-
-#ifdef YY_USER_INIT
-    YY_USER_INIT;
-#endif
-
-    if ( ! yy_start )
-      yy_start = 1;  /* first start state */
-
-    if ( ! yyin )
-      yyin = stdin;
-
-    if ( ! yyout )
-      yyout = stdout;
-
-    if ( ! yy_current_buffer )
-      yy_current_buffer =
-        yy_create_buffer( yyin, YY_BUF_SIZE );
-
-    yy_load_buffer_state();
-    }
 
   while ( 1 )    /* loops until end-of-file is reached */
     {
-    yy_cp = yy_c_buf_p;
-
-    /* Support of yytext. */
-    *yy_cp = yy_hold_char;
-
-    /* yy_bp points to the position in yy_ch_buf of the start of
-     * the current run.
-     */
-    yy_bp = yy_cp;
-
-    yy_current_state = yy_start;
-yy_match:
-    do
-      {
-      register YY_CHAR yy_c = yy_ec[YY_SC_TO_UI(*yy_cp)];
-      if ( yy_accept[yy_current_state] )
-        {
-        yy_last_accepting_state = yy_current_state;
-        yy_last_accepting_cpos = yy_cp;
-        }
-      while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
-        {
-        yy_current_state = (int) yy_def[yy_current_state];
-        if ( yy_current_state >= 33 )
-          yy_c = yy_meta[(unsigned int) yy_c];
-        }
-      yy_current_state = yy_nxt[yy_base[yy_current_state] + (unsigned int) yy_c];
-      ++yy_cp;
-      }
-    while ( yy_base[yy_current_state] != 40 );
-
-yy_find_action:
-    yy_act = yy_accept[yy_current_state];
-    if ( yy_act == 0 )
-      { /* have to back up */
-      yy_cp = yy_last_accepting_cpos;
-      yy_current_state = yy_last_accepting_state;
-      yy_act = yy_accept[yy_current_state];
-      }
-
-    YY_DO_BEFORE_ACTION;
-
-
-do_action:  /* This label is used only to access EOF actions. */
-
-
     switch ( yy_act )
-  { /* beginning of action switch */
-      case 0: /* must back up */
-      /* undo the effects of YY_DO_BEFORE_ACTION */
-      *yy_cp = yy_hold_char;
-      yy_cp = yy_last_accepting_cpos;
-      yy_current_state = yy_last_accepting_state;
-      goto yy_find_action;
+  { 
 
-case 1:
-YY_RULE_SETUP
-#line 2 "gram.l"
-{
-    yylval = yytext + 1;
-    return( TAG );
-}
-  YY_BREAK
-case 2:
-YY_RULE_SETUP
-#line 7 "gram.l"
-{
-    yylval = yytext;
-    return( SYMBOL );
-}
-  YY_BREAK
-case 3:
-YY_RULE_SETUP
-#line 12 "gram.l"
-{
-    ModeBlock = 1;
-    return( OPEN );
-}
-  YY_BREAK
-case 4:
-YY_RULE_SETUP
-#line 17 "gram.l"
-{
-    ModeBlock = 0;
-    return( CLOSE );
-}
-  YY_BREAK
-case 5:
-YY_RULE_SETUP
-#line 22 "gram.l"
-return( CTRL_ASSIGN );
-  YY_BREAK
-case 6:
-YY_RULE_SETUP
-#line 23 "gram.l"
-return( CTRL_IGNORE );
-  YY_BREAK
-case 7:
-YY_RULE_SETUP
-#line 24 "gram.l"
-return( REVERSE );
-  YY_BREAK
-case 8:
-YY_RULE_SETUP
-#line 25 "gram.l"
-return( STARTCLASS );
-  YY_BREAK
-case 9:
-YY_RULE_SETUP
-#line 26 "gram.l"
-return( LET );
-  YY_BREAK
-case 10:
-YY_RULE_SETUP
-#line 27 "gram.l"
-return( NL );
-  YY_BREAK
-case 11:
-YY_RULE_SETUP
-#line 28 "gram.l"
-return( REMARK );
-  YY_BREAK
-case 12:
-YY_RULE_SETUP
-#line 29 "gram.l"
-{};
-  YY_BREAK
-case 13:
-YY_RULE_SETUP
-#line 31 "gram.l"
-{
-  errMes("Lexical mistake \"%s\"", yytext );
-  exit( 1 );
-}
-  YY_BREAK
-case 14:
-YY_RULE_SETUP
-#line 35 "gram.l"
-ECHO;
-  YY_BREAK
-#line 723 "lex.yy.c"
-case YY_STATE_EOF(INITIAL):
-  yyterminate();
 
-  case YY_END_OF_BUFFER:
-    {
-    /* Amount of text matched not including the EOB char. */
-    int yy_amount_of_matched_text = (int) (yy_cp - yytext_ptr) - 1;
 
-    /* Undo the effects of YY_DO_BEFORE_ACTION. */
-    *yy_cp = yy_hold_char;
-    YY_RESTORE_YY_MORE_OFFSET
-
-    if ( yy_current_buffer->yy_buffer_status == YY_BUFFER_NEW )
-      {
-      /* We're scanning a new file or input source.  It's
-       * possible that this happened because the user
-       * just pointed yyin at a new source and called
-       * yylex().  If so, then we have to assure
-       * consistency between yy_current_buffer and our
-       * globals.  Here is the right place to do so, because
-       * this is the first action (other than possibly a
-       * back-up) that will match for the new input source.
-       */
-      yy_n_chars = yy_current_buffer->yy_n_chars;
-      yy_current_buffer->yy_input_file = yyin;
-      yy_current_buffer->yy_buffer_status = YY_BUFFER_NORMAL;
-      }
-
-    /* Note that here we test for yy_c_buf_p "<=" to the position
-     * of the first EOB in the buffer, since yy_c_buf_p will
-     * already have been incremented past the NUL character
-     * (since all states make transitions on EOB to the
-     * end-of-buffer state).  Contrast this with the test
-     * in input().
-     */
-    if ( yy_c_buf_p <= &yy_current_buffer->yy_ch_buf[yy_n_chars] )
-      { /* This was really a NUL. */
-      yy_state_type yy_next_state;
-
-      yy_c_buf_p = yytext_ptr + yy_amount_of_matched_text;
-
-      yy_current_state = yy_get_previous_state();
-
-      /* Okay, we're now positioned to make the NUL
-       * transition.  We couldn't have
-       * yy_get_previous_state() go ahead and do it
-       * for us because it doesn't know how to deal
-       * with the possibility of jamming (and we don't
-       * want to build jamming into it because then it
-       * will run more slowly).
-       */
-
-      yy_next_state = yy_try_NUL_trans( yy_current_state );
-
-      yy_bp = yytext_ptr + YY_MORE_ADJ;
-
-      if ( yy_next_state )
-        {
-        /* Consume the NUL. */
-        yy_cp = ++yy_c_buf_p;
-        yy_current_state = yy_next_state;
-        goto yy_match;
-        }
-
-      else
-        {
-        yy_cp = yy_c_buf_p;
-        goto yy_find_action;
-        }
-      }
-
-    else switch ( yy_get_next_buffer() )
-      {
-      case EOB_ACT_END_OF_FILE:
-        {
-        yy_did_buffer_switch_on_eof = 0;
-
-        if ( yywrap() )
-          {
-          /* Note: because we've taken care in
-           * yy_get_next_buffer() to have set up
-           * yytext, we can now set up
-           * yy_c_buf_p so that if some total
-           * hoser (like flex itself) wants to
-           * call the scanner after we return the
-           * YY_NULL, it'll still work - another
-           * YY_NULL will get returned.
-           */
-          yy_c_buf_p = yytext_ptr + YY_MORE_ADJ;
-
-          yy_act = YY_STATE_EOF(YY_START);
-          goto do_action;
-          }
-
-        else
-          {
-          if ( ! yy_did_buffer_switch_on_eof )
-            YY_NEW_FILE;
-          }
-        break;
-        }
-
-      case EOB_ACT_CONTINUE_SCAN:
-        yy_c_buf_p =
-          yytext_ptr + yy_amount_of_matched_text;
-
-        yy_current_state = yy_get_previous_state();
-
-        yy_cp = yy_c_buf_p;
-        yy_bp = yytext_ptr + YY_MORE_ADJ;
-        goto yy_match;
-
-      case EOB_ACT_LAST_MATCH:
-        yy_c_buf_p =
-        &yy_current_buffer->yy_ch_buf[yy_n_chars];
-
-        yy_current_state = yy_get_previous_state();
-
-        yy_cp = yy_c_buf_p;
-        yy_bp = yytext_ptr + YY_MORE_ADJ;
-        goto yy_find_action;
-      }
-    break;
-    }
-
+  
   default:
     YY_FATAL_ERROR(
       "fatal flex scanner internal error--no action found" );
