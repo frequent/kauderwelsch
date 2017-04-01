@@ -62,7 +62,7 @@
   };
   
   YY.parse = function () {
-    return "Hello";
+    console.log("hello");
   };
 
   function getFileByType(my_type) {
@@ -92,12 +92,13 @@
     if (SWITCH_DICT.compat_i) {
       header.content.push("/dev/null\n");
     }
-    header.content.push(
+
+    header.content +=
       "// Header of class reduction flag for finite automaton parser\n\
        //                   made with mkfa " + VERSION_NUMBER + "\n\n\
        //        Do logical AND between label and FA's field #4, #5.\n\
-       //\n\n"
-    );
+       //\n\n";
+
     if (SWITCH_DICT.quiet === undefined) {
       console.log("Now parsing grammar file\n");
     }
@@ -299,4 +300,5 @@
   window.mkdfa = makeDfa;
 
 }(window, RSVP));
+
 
