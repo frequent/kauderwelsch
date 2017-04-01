@@ -1,4 +1,4 @@
-(function (window, RSVP) {
+(function (window, RSVP, YY) {
   "use strict";
 
   /*
@@ -42,8 +42,6 @@
   // http://zaa.ch/jison/try/usf/index.html
   // https://en.wikipedia.org/wiki/LALR_parser#LR_parsers
 
-  var YY = {};
-
   // optF => when -f is specified (to resolve problems with -dfa)
   var IS_OPTION_F_SET = 0;
   var VERSION_NUMBER = "ver.1.44-flex-p1";
@@ -59,10 +57,6 @@
     "verbose": 0,
     "edge_start": 0,
     "edge_accept": 0
-  };
-  
-  YY.parse = function () {
-    console.log("hello");
   };
 
   function getFileByType(my_type) {
@@ -105,7 +99,7 @@
 
     // yyiha!
     YY.parse();
-    
+
     /*
     if (!SWITCH_QUIET) {
       console.log("Now modifying grammar to minimize states [" + START_SYMBOL - 1 + "]\n");
@@ -299,6 +293,6 @@
 
   window.mkdfa = makeDfa;
 
-}(window, RSVP));
+}(window, RSVP, YY));
 
 
