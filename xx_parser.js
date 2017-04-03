@@ -1,4 +1,4 @@
-(function (window) {
+(function (window, Math) {
   "use strict";
 
   /*
@@ -120,26 +120,6 @@
 
     // no need for caluclating yynewbytes and finding the position of stack in 
     // memory yyptr defined in setState because this was a macro
-  }
-
-  // https://en.wikipedia.org/wiki/Liskov_substitution_principle
-  // depending on whether we use a pure parser, context is YY (global) or parse
-  // (local)
-  function setNonLspVariableListForParse(my_context) {
-
-    // lookahead symbol
-    my_context.char;
-
-    // semantic value of lookahead symbol => lval = rval => key
-    my_context.lval;
-
-    // error count (my_context.error_count)
-    my_context.error_count;
-
-    // location data for the lookahead symbol.
-    if (YY.lsp_needed) {
-      my_context.lloc;
-    }
   }
   
   // Stack is an area of memory that holds all local variables and parameters 
@@ -265,6 +245,10 @@
 
   // (YYSIZE_T) type ? set to unsigned_int = 4 bytes   
   YY.sizet_size = 4; // XXX? YYSIZE_T a type?
+  
+  // also set size of char*
+  // http://stackoverflow.com/a/40679845/536768
+  YY.char_pointer_size = 4;
 
   // (YYSTACK_GAP_MAX) Size of the maximum gap between one aligned stack and 
   // the next => sizeof(union yyalloc) - 1;
@@ -275,6 +259,23 @@
 
   // /YYFINAL (rule?)
   YY.final = 43;
+
+  // (YYFLAG) flag rerouting to default action in backup	
+  YY.flag = -32768;
+
+  // (YYTERROR) the audacity... just write 1 no?
+  YY.terror = 1;
+
+  // (YYERROR_VERBOSE)
+  YY.error_verbose = 0;
+
+  // (YYEOF) end of file
+  YY.end_of_file_reached = 0;
+
+  // (yyerror) this only reports, it used to increase error_count++
+  YY.error = function (my_error_count, my_message) {
+    console.log("[error] (#:" + my_error_count + "): " + my_message);
+  };
 
   // https://opensource.apple.com/source/yacc/yacc-8/skeleton.c
   YY.overflow = function () {
@@ -287,11 +288,6 @@
     my_context[my_param + "_stack"] = my_context[my_param + "_view"] =
       my_context[my_param + "_top"] = my_context[my_param + "_bottom"] = null;
   };
-
-  // If nonreentrant, generate the variables and stacks here.
-  if (!YY.pure) {
-   setNonLspVariableListForParse(YY);
-  }
 
   // -------------------------- lookup tables ----------------------------------
 
@@ -607,56 +603,73 @@
   // The user can define parse_param_dict as name of an argument to be passed
   // into parse. It should actually point to an object. Grammar actions can 
   // access the variable by casting it to the proper pointer type.
+  // https://en.wikipedia.org/wiki/Liskov_substitution_principle
   
   YY.parse = function (my_parse_param_dict) {
-    var context = this;
+    var context = this,
+      s;
+
+    // If reentrant, generate the variables locally (set on this)
+    if (YY.pure) {
+      context.scope = s = this;
+    
+    // If nonreentrant, generate the variables and stacks here.
+    } else {
+      context.scope = s = YY;
+    }
+
+    // (yychar) - Lookahead symbol
+    s.char;
+
+    // (yylval) - Semantic value of lookahead symbol => lval = rval => key
+    s.lval;
+
+    // (yynerrs) - Error count
+    s.error_count;
+
+    // (yylloc) - Location data for the lookahead symbol. CAREFUL: not yyloc!
+    if (YY.lsp_needed) {
+      s.lloc;
+    }
 
     // (yyresult) What eventually will be returned    
-    context.result;
+    s.result;
 
     // (yystate) Flex uses as alias for YY_START (that's used by AT&T lex) :)
-    context.current_state;
+    s.current_state;
 
     // (yyerrstatus) Number of tokens to shift before error messages enabled.
-    context.shift_token_error_message_threshold;
+    s.shift_token_error_message_threshold;
 
     // (yychar1) Lookahead token as an internal (translated) token number.
-    context.lookahead_token_number = 0;
+    s.lookahead_token_number = 0;
 
     // (yyn) An all purpose variable! May represent state, rule or ... truc 
-    context.truc;
+    s.truc;
     
     // (yyval) Variable used to return result of semantic evaluation 
     // from action routine, let's call that eval :)
-    context.ival;
+    s.ival;
     
     // (yylen) When reducing, the number of symbols on the RHS (right hand 
     // side) of the reduced rule (length of RHS of a rule).
-    context.right_hand_side_length;
+    s.right_hand_side_length;
 
     // (yyloc) Variable used to return result of location evaluation 
     // from action routine, loco. 
     if (YY.lsp_needed) {
-      context.loco;
+      s.loco;
     }
 
-    // If reentrant, generate the variables locally (set on this)
-    if (YY.pure) {
-      setNonLspVariableListForParse(context);
-      context.scope = this;
-    } else {
-      context.scope = YY;
-    }
-
-    setParserStackList(context.scope, YY.stack_initial_depth);
+    setParserStackList(s.scope, YY.stack_initial_depth);
 
     // Ok done declaring variables. Set the ball rolling!
     console.log("Starting parse.");
 
     // Initial state
-    context.current_state = 0;
-    context.shift_token_error_message_threshold = 0;
-    context.scope.errorcount = 0;
+    s.current_state = 0;
+    s.shift_token_error_message_threshold = 0;
+    s.errorcount = 0;
 
     // Cause a token to be read.
     YY.char = YY.empty;
@@ -666,34 +679,20 @@
     // same level as the state stack. The wasted elements are never initialized.
 
     // yyssp = yyss; Top = bottom for state stack
-    context.scope.state_view.setInt8(context.state_bottom, "");
-    context.scope.state_top = context.state_bottom;
+    s.state_view.setInt8(s.state_bottom, "");
+    s.state_top = s.state_bottom;
 
     // yyvsp = yyvs; Top = bottom for semantic stack
-    context.scope.semantic_view.setInt8(context.semantic_bottom, "");
-    context.scope.semantic_top = context.semantic_bottom;
+    s.semantic_view.setInt8(s.semantic_bottom, "");
+    s.semantic_top = s.semantic_bottom;
 
     // yylsp = yyls; Top = bottom for location stack
     if (YY.lsp_needed) {
-      context.scope.location_view.setInt8(context.semantic_bottom, "");
-      context.scope.location_top = context.location_bottom;
+      s.location_view.setInt8(s.semantic_bottom, "");
+      s.location_top = s.location_bottom;
     }
 
-    context.setState();
-  }
-    //--------------------------------------------
-    // return -- done
-    //--------------------------------------------
-    context.returnResult = function() {
-      if (YY.overflow === undefined) {
-        YY.purge("state", context.scope);
-        YY.purge("semantic", context.scope);
-        if (YY.lsp_needed) {
-          YY.purge("location", context.scope);
-        }
-      }
-      return context.result;
-    }
+    // XXX move those out
 
     //---------------------------------------------------------------
     // overflow -- flag error and "fall through" meaning ?
@@ -709,8 +708,229 @@
     //----------------------------------
     context.abortLab = function() {
       context.result = 1;
-      s.returnResult();
+      context.returnResult();
     };
+
+    //------------------------------------
+    // yyacceptlab -- YYACCEPT comes here.
+    //------------------------------------
+    context.acceptlab = function () {
+      context.result = 0;
+      context.returnResult();
+    };
+
+    //-------------------------------------
+    // errorLab -- here on detecting error
+    // ------------------------------------
+    context.errorLab = function () {
+      var s = context.scope,
+        message,
+        count,
+        len,
+        i;
+
+      // Start i at -truc if negative, avoid negative indexes in YYCHECK
+      function setCounter(my_truc) {
+        if (my_truc < 0) {
+          return -s.truc;
+        }
+        return 0;
+      }
+      
+      function listLen(my_list) {
+        var str = "",
+          i,
+          len;
+        for (i = 0, len = my_list.length; i < len; i += 1) {
+          str += my_list[i];
+        }
+        return str.length;
+      }
+
+      // If not already recovering from an error, report this error.
+      if (s.shift_token_error_message_threshold === undefined) {
+        s.error_count += 1;
+
+        if (YY.error_verbose) {
+          s.truc = YY.table_dict.set_state_action[current_state];
+          if (truc > YY.flag && truc > YY.last) {
+            count = 0;
+
+            // sizeof(YY.table_dict.token_number_of_token)/YY.char_pointer_size
+            len = Math.ceil(
+              listLen(YY.table_dict.token_number_of_token)/YY.char_pointer_size
+            );
+
+            for (i = setCounter(Y.truc); i < len; i += 1) {
+              if (YY.table_dict.state_action_valid[i + s.truc] === i) {
+                count += 1;
+              }
+            }
+            message = "parse error, unexpected " +
+              YY.table_dict.token_number_of_token[YY.translate(s.char)];
+            if (count < 5) {
+              count = 0;
+              for (i = setCounter(Y.truc); i < len; i += 1) {
+                if (YY.table_dict.state_action_valid[i + s.truc] === i) {
+                  if (count === 0) {
+                    message += "expecting ";
+                  } else {
+                    message += " or ";
+                  }
+                  message += YY.table_dict.token_number_of_token[i];
+                  count += 1;
+                }
+              }
+            }
+            YY.error(message);
+          }
+        } else {
+          YY.error("parse error", s.error_count);
+        }
+      }
+      context.errorLabExtended();
+    };
+
+    //----------------------------------------------------
+    // errorLabExtended -- error raised explicitly by an action
+    //----------------------------------------------------
+    context.errorLabExtended = function () {
+      var s = context.scope;
+
+      // If just tried and failed to reuse lookahead token after error, discard
+      if (s.shift_token_error_message_threshold === 3) {
+        if (s.char == YY.end_of_file_reached) {
+          context.abortLab();
+        }
+        
+        // return failure if at the end of input
+        console.log("[info] Discarding token " + s.char + " (" + 
+          YY.table_dict.token_number_of_token[s.lookahead_token_number] + ").");
+        s.char = YY.empty;
+      }
+  
+      // Else will try to reuse lookahead token after shifting the error token.
+      // Each real token shifted decrements this
+      s.shift_token_error_message_threshold = 3;
+      context.errorHandle();
+    };
+    
+    //--------------------------------------------------------------------------
+    // errorDefault - current state does not do anything special for error token                                     |
+    //--------------------------------------------------------------------------
+    context.errorDefault = function () {
+      //if (0) {
+      //  // This is wrong; only states that explicitly want error tokens
+      //  // should shift them.
+      //  truc = YY.table_dict.default_reduction_rule[current_state];
+      //  if (truc) {
+      //   yydefault();
+      //  }
+      //}
+      return;
+    };
+
+    //--------------------------------------------------------------------------
+    // errorPop -- pop current state because it cannot handle the error token                                   |
+    //--------------------------------------------------------------------------
+    context.errorPop = function () {
+      var s = context.scope,
+        temp_state_top;
+      if (s.state_top === s.state_bottom) {
+        context.abortLab();
+      }
+      s.semantic_top = s.semantic_top - 1;
+
+      // XXX *--yyssp?
+      current_state = s.state_top - 1;
+      if (YY.lsp_needed) {
+        s.location_top = s.location_top - 1;
+      }
+      
+      if (YY.debug) {
+       temp_state_bottom = s.state_bottom - 1;
+       console.log("[error] state stack now");
+       while (temp_state_bottom !== s.state_top) {
+         console.log("[error]" + temp_state_bottom);
+         temp_state_bottom += 1;
+       }
+      }
+    };
+
+    //----------------------------------------------------
+    // errorHandle 
+    //----------------------------------------------------
+    context.errorHandle = function () {
+      var s = context.scope;
+
+      s.truc = YY.table_dict.set_state_action[current_state];
+      if (s.truc === YY.flag) {
+        context.errorDefault();
+      }
+
+      s.truc = s.truc + YY.terror;
+      if (s.truc < 0 || s.truc > YY.last ||
+        YY.table_dict.state_action_valid[truc] !== YY.terror) {
+        context.errorDefault();
+      }
+      s.truc = YY.table_dict.state_action[s.truc];
+      if (s.truc < 0) {
+        if (s.truc == YY.flag) {
+          context.errorPop();
+        }
+        s.truc = -s.truc;
+        context.reduceState();
+      } else if (s.truc === 0) {
+        context.errorPop();
+      }
+      if (s.truc == YY.final) {
+        context.acceptLab();
+      }
+      console.log("[info] Shifting error token.");
+      
+      // XXX ? set new entries as top of the stack
+      s.semantic_view[s.semantic_top] = s.lval; // yylval
+      if (YY.lsp_needed) {
+        s.location_view[s.semantic_top] = s.loco; // yyloc;
+      }
+      current_state = s.truc;
+      context.newState();
+    };
+
+    //--------------------------------------------
+    // return -- done
+    //--------------------------------------------
+    context.returnResult = function() {
+      if (YY.overflow === undefined) {
+        YY.purge("state", context.scope);
+        YY.purge("semantic", context.scope);
+        if (YY.lsp_needed) {
+          YY.purge("location", context.scope);
+        }
+      }
+      return context.result;
+    };
+
+    //--------------------------------------------------------------------------
+    // defaultAction -- do the default reduction (action) for the current state.
+    //--------------------------------------------------------------------------
+    context.defaultAction = function () {
+      truc = YY.table_dict.default_reduction_rule[current_state];
+      if (truc === 0) {
+        context.errlab();
+      }
+      context.reduce();
+    };
+    
+    //------------------------------------------------------------
+    // newState -- Push a new state, which is found in current_state.
+    //------------------------------------------------------------
+    function yynewstate() {
+      
+      // In all cases, when you get here, the value and location stacks
+      // have just been pushed. so pushing a state here evens the stacks.
+      context.state_top++;
+    }
 
     //------------------------------------------------------------
     // setstate -- set a new state
@@ -792,7 +1012,7 @@
         if (YY.lsp_needed) {
          s.location_top = s.location_bottom + current_stack_size - 1;
         }
-        console.log("Stack size increased to " + s.stack_size)
+        console.log("Stack size increased to " + s.stack_size);
 
         if (s.state_top >= s.state_bottom + s.stack_size - 1) {
          s.abortLab();
@@ -802,8 +1022,103 @@
       console.log("Entering state: " + current_state);
       s.backup();
     };
-    
-    
+
+    //------------------------------------------------------------
+    // backup --  the main parsing code starts here
+    //------------------------------------------------------------
+    context.backup = function () {
+      var s = context.scope;
+
+    // Do appropriate processing given the current state. Read a lookahead 
+    // token if we need one and don't already have one.
+
+    // First try to decide what to do without reference to lookahead token.
+    // Refer to what yypact is saying about the current state
+    s.truc = YY.table_dict.set_state_action[current_state];
+    if (s.truc == YY.flag) {
+      context.defaultAction();
+    }
+
+    // Not known => get a lookahead token if don't already have one.
+
+    // YY.char  is either YY.empty or YY.end_of_file_reached or a valid token 
+    // in external form.
+    if (YY.char == YY.empty) {
+      console.log("[info] - Reading a token: ");
+      YY.char = YYLEX();  // XXX HERE XXX
+    }
+
+    // Convert token to internal form (in s.lookahead_token_number) for indexing tables with 
+    if (yychar <= 0) {	// This means end of input.
+      s.lookahead_token_number = 0;
+      yychar = YY.end_of_file_reached;		// Don't call YYLEX any more.
+      YYDPRINTF("info", "Now at end of input.\n");
+    } else {
+      s.lookahead_token_number = YY.translate(yychar);
+   
+      if (YYDEBUG) {
+      
+       // We have to keep this `#if YYDEBUG', since we use variables
+       // which are defined only if `YYDEBUG' is set.  */
+       if (yydebug) {
+        YYDPRINTF("info", "Next token is " + yychar + " (" + YY.table_dict.token_number_of_token[s.lookahead_token_number]);
+       
+        // Give the individual parser a way to print the precise meaning 
+        // of a token, for further debugging info.
+        if (YYPRINT) {
+          YYPRINT("info", yychar, yylval);
+        }
+        YYDPRINTF("info", ")\n");
+       }
+      }
+    }
+   
+    // XXX add character to truc
+    truc += s.lookahead_token_number;
+    if (truc < 0 || truc > YY.last || YY.table_dict.state_action_valid[truc] !== s.lookahead_token_number) {
+      yydefault();
+    }
+    truc = YY.table_dict.state_action[truc];
+   
+    // truc is what to do for this token type in this state.
+    //  Negative => reduce, -truc is rule number.
+    //  Positive => shift, truc is new state.
+    //    New state is final state => don't bother to shift, just return success.
+    //  0, or most negative number => error.
+   
+    if (truc < 0) {
+       if (truc == YY.flag) {
+        yyerrlab();
+       }
+       truc = -truc;
+       yyreduce();
+    } else if (truc === 0) {
+      yyerrlab();
+    }
+
+    if (truc == YY.final) {
+      context.acceptLab();
+    }
+   
+    // Shift the lookahead token.
+    YYDPRINTF("info", "Shifting token " + yychar + " (" + YY.table_dict.token_number_of_token[s.lookahead_token_number] + ")");
+   
+    // Discard the token being shifted unless it is eof.
+    if (yychar != YY.end_of_file_reached) {
+      yychar = YY.empty;
+    }
+    yyvsp[yyvsp.length] = yylval;
+    if (YY.lsp_needed) {
+      yylsp[yylsp.length] = yylloc;
+    }
+   
+    // Count tokens shifted since error; after three, turn off error status.
+    if (shift_token_error_message_threshold) {
+      shift_token_error_message_threshold--;
+    }
+    current_state = truc;
+    yynewstate();
+   }
 
     // var baffer = new ArrayBuffer(200);
     // var bafferView = new DataView(baffer);
@@ -831,125 +1146,6 @@
 
     // ======================= START ===========================================
     context.setState();
-
-  //------------------------------------------------------------
-    // backup --
-    //------------------------------------------------------------
-    context.backup = function () {
-      
-    // Do appropriate processing given the current state. Read a lookahead 
-    // token if we need one and don't already have one.
-    // yyresume:
-   
-    // First try to decide what to do without reference to lookahead token.
-    truc = YY.table_dict.set_state_action[current_state];
-    if (truc == YYFLAG) {
-      yydefault();
-    }
-   
-    // Not known => get a lookahead token if don't already have one.
-   
-    // yychar is either YY.empty or YYEOF or a valid token in external form.
-    if (yychar == YY.empty) {
-      YYDPRINTF("info", "Reading a token: ");
-      yychar = YYLEX();
-    }
-   
-    // Convert token to internal form (in lookahead_token_number) for indexing tables with 
-    if (yychar <= 0) {	// This means end of input.
-      lookahead_token_number = 0;
-      yychar = YYEOF;		// Don't call YYLEX any more.
-      YYDPRINTF("info", "Now at end of input.\n");
-    } else {
-      lookahead_token_number = YY.translate(yychar);
-   
-      if (YYDEBUG) {
-      
-       // We have to keep this `#if YYDEBUG', since we use variables
-       // which are defined only if `YYDEBUG' is set.  */
-       if (yydebug) {
-        YYDPRINTF("info", "Next token is " + yychar + " (" + YY.table_dict.token_number_of_token[lookahead_token_number]);
-       
-        // Give the individual parser a way to print the precise meaning 
-        // of a token, for further debugging info.
-        if (YYPRINT) {
-          YYPRINT("info", yychar, yylval);
-        }
-        YYDPRINTF("info", ")\n");
-       }
-      }
-    }
-   
-    // XXX add character to truc
-    truc += lookahead_token_number;
-    if (truc < 0 || truc > YY.last || YY.table_dict.state_action_valid[truc] !== lookahead_token_number) {
-      yydefault();
-    }
-    truc = YY.table_dict.state_action[truc];
-   
-    // truc is what to do for this token type in this state.
-    //  Negative => reduce, -truc is rule number.
-    //  Positive => shift, truc is new state.
-    //    New state is final state => don't bother to shift, just return success.
-    //  0, or most negative number => error.
-   
-    if (truc < 0) {
-       if (truc == YYFLAG) {
-        yyerrlab();
-       }
-       truc = -truc;
-       yyreduce();
-    } else if (truc === 0) {
-      yyerrlab();
-    }
-   
-    if (truc == YY.final) {
-      YYACCEPT();
-    }
-   
-    // Shift the lookahead token.
-    YYDPRINTF("info", "Shifting token " + yychar + " (" + YY.table_dict.token_number_of_token[lookahead_token_number] + ")");
-   
-    // Discard the token being shifted unless it is eof.
-    if (yychar != YYEOF) {
-      yychar = YY.empty;
-    }
-    yyvsp[yyvsp.length] = yylval;
-    if (YY.lsp_needed) {
-      yylsp[yylsp.length] = yylloc;
-    }
-   
-    // Count tokens shifted since error; after three, turn off error status.
-    if (shift_token_error_message_threshold) {
-      shift_token_error_message_threshold--;
-    }
-    current_state = truc;
-    yynewstate();
-   }
-  
-  //------------------------------------------------------------
-   // yynewstate -- Push a new state, which is found in current_state.
-   //------------------------------------------------------------
-   function yynewstate() {
-      
-    // In all cases, when you get here, the value and location stacks
-    // have just been pushed. so pushing a state here evens the stacks.
-    yyssp++;
-   }
-  
-  
-   
-  
-   //-----------------------------------------------------------
-   // yydefault -- do the default action for the current state.
-   //-----------------------------------------------------------
-   function yydefault() {
-    truc = YY.table_dict.default_reduction_rule[current_state];
-    if (truc == 0) {
-      yyerrlab();
-    }
-    yyreduce();
-   }
   
    //------------------------------
    // yyreduce -- Do a reduction.
@@ -1091,175 +1287,6 @@
     yynewstate();
    }
   
-   //-------------------------------------
-   // yyerrlab -- here on detecting error
-   // ------------------------------------
-   // XXX ojojoj
-   function yyerrlab() {
-    var yymsg,
-      yysize,
-      yyx,
-      yycount;
-   
-    // If not already recovering from an error, report this error.
-    if (!shift_token_error_message_threshold) {
-      my_context.error_count++;
-      
-      if (YYERROR_VERBOSE) {
-       truc = YY.table_dict.set_state_action[current_state];
-       if (truc > YYFLAG && truc < YY.last) {
-        //YYSIZE_T yysize = 0;
-        yysize = 0;
-        yycount = 0;
-        
-        // Start YYX at -truc if negative to avoid negative indexes in YYCHECK.
-        // XXX char* pointer to char, but what is char???
-        for (yyx = truc < 0 ? -truc : 0; yyx < allocator.sizeof(YY.table_dict.token_number_of_token) / allocator.sizeof(char *)); yyx++) {
-          if (YY.table_dict.state_action_valid[yyx + truc] == yyx) {
-           yysize += yystrlen(YY.table_dict.token_number_of_token[yyx]) + 15, yycount++;
-          }
-        }
-        yysize += yystrlen("parse error, unexpected ") + 1;
-        yysize += yystrlen(YY.table_dict.token_number_of_token[YY.translate(yychar)]);
-        yymsg = (char *) YYSTACK_ALLOC (yysize);
-        if (yymsg !== 0) {
-          yyp = yystpcpy(yymsg, "parse error, unexpected ");
-          yyp = yystpcpy(yyp, YY.table_dict.token_number_of_token[YY.translate (yychar)]);
-          if (yycount < 5) {
-   	       yycount = 0;
-           for (yyx = truc < 0 ? -truc : 0; yyx < (int) (sizeof (YY.table_dict.token_number_of_token) / sizeof (char *)); yyx++) {
-   	        if (YY.table_dict.state_action_valid[yyx + truc] == yyx) {
-          			yyq = !yycount ? ", expecting " : " or ";
-          			yyp = yystpcpy (yyp, yyq);
-          			yyp = yystpcpy (yyp, YY.table_dict.token_number_of_token[yyx]);
-          			yycount++;
-   	        }
-           } 
-   	      }
-          yyerror(yymsg);
-          YYSTACK_FREE(yymsg);
-        } else  {
-          yyerror("parse error; also virtual memory exhausted");
-        }
-       }
-      } else { // defined (YYERROR_VERBOSE)
-       yyerror("parse error");
-      }
-    }
-    yyerrlab1();
-   }
-  
-   //----------------------------------------------------
-   // yyerrlab1 -- error raised explicitly by an action
-   //----------------------------------------------------
-   function yyerrlab1() {
-    
-    if (shift_token_error_message_threshold === 3) {
-      // If just tried and failed to reuse lookahead token after error, discard
-      if (yychar == YYEOF) {
-   	   context.abortLab();
-      }
-      
-      // return failure if at end of input */
-      YYDPRINTF("info", "Discarding token " + yychar + " (" + YY.table_dict.token_number_of_token[lookahead_token_number] + ").\n");
-      yychar = YY.empty;
-    }
-   
-    // Else will try to reuse lookahead token after shifting the error token.
-    shift_token_error_message_threshold = 3;		// Each real token shifted decrements this
-    yyerrhandle();
-   }
-   
-   //----------------------------------------------------------------------------
-   // yyerrdefault -- current state does not do anything special for error token.                                     |
-   //----------------------------------------------------------------------------
-   function yyerrdefault() {
-    //if (0) {
-    //  // This is wrong; only states that explicitly want error tokens
-    //  // should shift them.
-    //  truc = YY.table_dict.default_reduction_rule[current_state];
-    //  if (truc) {
-    //   yydefault();
-    //  }
-    //}
-   }
-  
-   //----------------------------------------------------------------------------
-   // yyerrpop -- pop the current state because it cannot handle the error token                                   |
-   //----------------------------------------------------------------------------
-   function yyerrpop() {
-    if (yyssp === yyss) {
-      context.abortLab();
-    }
-    yyvsp = yyvsp - 1;
-    current_state = --yyss; // XXX what is *--yyss?
-    if (YY.lsp_needed) {
-      yylsp = yylsp - 1;
-    }
-    
-    if (YYDEBUG) {
-      if (yydebug) {
-       yyssp1 = yyss - 1;
-       YYDPRINTF("info", "state stack now");
-       while (yyssp1 !== yyssp) {
-        YYDPRINTF("info", yyssp1[yyssp1.length])
-        yyssp1++;
-        YYDPRINTF("info", "\n");
-       }
-      }
-    }
-   }
-  
-   //-------------
-   // yyerrhandle. 
-   //-------------
-   function yyerrhandle() {
-    truc = YY.table_dict.set_state_action[current_state];
-  
-    if (truc === YYFLAG) {
-      yyerrdefault();
-    }
-    truc = truc + YYTERROR;
-    if (truc < 0 || truc > YY.last || YY.table_dict.state_action_valid[truc] !== YYTERROR) {
-      yyerrdefault();
-    }
-    truc = YY.table_dict.state_action[truc];
-    if (truc < 0) {
-      if (truc == YYFLAG) {
-   	   yyerrpop();
-      }
-      truc = -truc;
-      yyreduce();
-    } else if (truc == 0) {
-      yyerrpop();
-    }
-    if (truc == YY.final) {
-      YYACCEPT();
-    }
-    YYDPRINTF("info", "Shifting error token.");
-    yyvsp[yyvsp.length] = yylval;
-    if (YY.lsp_needed) {
-      yylsp[yylsp.length] = yyloc;  
-    }
-  
-    current_state = truc;
-    yynewstate();
-   }
-  
-   //------------------------------------
-   // yyacceptlab -- YYACCEPT comes here.
-   //------------------------------------
-   function yyacceptlab() {
-    result = 0;
-    yyreturn();
-   }
-  
-
-  
-
-  
-
-  
   } // end of parse.... SIGH
 
   // ==========================================================================
@@ -1371,13 +1398,12 @@
   var is_block_start_or_end = 0;
   var is_block_reversed;
   var body_class_flag_start = 0;
-  var error_count = 0;
   var grammar_modification_number = 0;
 
   // -------------------------- Declarations ----------------------------------
 
   // whywhy? 
-  var YYFLAG = -32768;
+
   var YYNTBASE = 14;
  
   // ---------------------------- "ROUTING" ------------------------------------
@@ -1387,17 +1413,10 @@
   yyclearin = function () {
    yychar = YY.empty;
   }
-  YYACCEPT = function () {
-   yyacceptlab();
-  }
   YYERROR = function () {
    yyerrlab1();
   }
-  yyerror = function(my_message) {
-   error_count++;
-   console.log("[yyerror] (#:" + error_count + "): " + my_message);
-   //return 0;
-  }
+  
 
   // Like YYERROR except do call yyerror.  This remains here temporarily
   // to ease the transition to the new meaning of YYERROR, for GCC.
@@ -1413,12 +1432,12 @@
    if (yychar === YY.empty && yylen === 1) {
     yychar = Token;
     yylval = Value;
-    lookahead_token_number = YY.translate(yychar);
+    s.lookahead_token_number = YY.translate(yychar);
     YYPOPSTACK();
     yybackup();
    } else {
-    yyerror("Syntax error: Cannot back up.");
-    YYERROR();
+    YY.error("Syntax error: Cannot back up.");
+    YY.error();
    }
    // } while (0);
   }
@@ -1488,7 +1507,7 @@
   }
 
   
-  if (!YYERROR_VERBOSE) {
+  if (!YY.error_verbose) {
    if (yystrlen === undefined) { 
     if (__GLIBC__ && _STRING_H) {
       yystrlen = strlen;
@@ -1751,5 +1770,5 @@
 
   window.YY = YY;
 
-}(window));
+}(window, Math));
 
