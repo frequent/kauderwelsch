@@ -224,6 +224,8 @@
   // (YY.empty)
   YY.empty = -2;
 
+  YY.nt_base = 14;
+
   // Lookahead token? or symbol
   YY.char;
 
@@ -287,6 +289,87 @@
   YY.purge = function (my_param, my_context) {
     my_context[my_param + "_stack"] = my_context[my_param + "_view"] =
       my_context[my_param + "_top"] = my_context[my_param + "_bottom"] = null;
+  };
+  
+  
+  // (YYLLOC_DEFAULT) -- Compute the default location (before the actions are run).
+  // When YYLLOC_DEFAULT is run, CURRENT is set the location of the
+  // first token.  By default, to implement support for ranges, extend
+  // its range to the last symbol.
+  YY.loco_default = function (my_current, my_right_hand_side, my_n) {
+    my_current.last_line = my_right_hand_side[my_n].last_line;
+    my_current.last_column = my_right_hand_side[my_n].last_column;
+  };
+
+  // --------------------------- token values ----------------------------------
+  // Here is the definitions section for the yacc input file:
+  // %token INTEGER
+  //
+  // This definition declares an INTEGER token. Yacc generates a parser in 
+  // file y.tab.c and an include file y.tab.h, like:
+  //
+  // #ifndef YYSTYPE
+  // #define YYSTYPE int
+  // #endif
+  // #define INTEGER 258
+  // extern YYSTYPE yylval;
+  //
+  // Lex includes this file and utilizes the definitions for token values. 
+  // To obtain tokens yacc calls yylex. Function yylex has a return type of int 
+  // that returns a token. Values associated with the token are returned by 
+  // lex in variable yylval. For example:
+  // 
+  // [0-9]+      {
+  //                yylval = atoi(yytext);
+  //                return INTEGER;
+  //             }
+  //
+  // would store the value of the integer in yylval, and return token INTEGER 
+  // to yacc. The type of yylval is determined by YYSTYPE. Since the default 
+  // type is integer this works well in this case. Token values 0-255 are 
+  // reserved for character values. For example, if you had a rule such as:
+  //
+  // [-+]       return *yytext;    /* return operator */
+  //
+  // the character value for minus or plus is returned. Note that we placed 
+  // the minus sign first so that it wouldnât be mistaken for a range 
+  // designator. Generated token values typically start around 258 because lex 
+  // reserves several values for end-of-file and error processing.
+
+  YY.token_values = {
+    "CTRL_ASSIGN": 257,
+    "CTRL_IGNORE": 258,
+    "OPEN": 259,
+    "CLOSE": 260,
+    "REVERSE": 261,
+    "STARTCLASS": 262,
+    "LET": 263,
+    "TAG": 264,
+    "SYMBOL": 265,
+    "REMARK": 266,
+    "NL": 267
+  };
+
+  YY.custom_dict = {};
+
+  YY.block_reservse_switch = null;
+  YY.is_mode_assign_accept = null,
+
+  YY.outputHeader = function (my_name) {
+    if (class_count >= body_class_flag_mayx)    
+  }    
+  if 
+    if (SW_COMPAT_I) {
+      console.warn("Class accepted flag overflow, " + my_name);
+    }
+   } else {
+    if (SW_COMPAT_I === undefined) {
+      FP_HEADER.push("#define ACCEPT_" + my_name + "0x%08x\n",  1 << class_count );
+    }
+    current_class_count = class_count++;
+   }
+  }
+
   };
 
   // -------------------------- lookup tables ----------------------------------
@@ -692,7 +775,43 @@
       s.location_top = s.location_bottom;
     }
 
-    // XXX move those out
+    // --------------------------------------------------------------
+    // unused -- XXX remove
+    // --------------------------------------------------------------
+    // (yyerrok) - not used
+    context.errorAccept = function () {
+      s.shift_token_error_message_threshold = 0;
+    };
+
+    // (yyclearin)
+    context.clearChar = function () {
+      YY.char = YY.empty;
+    };
+
+    // (YYFAIL) - from transition of new meaning of YYERROR when moving from
+    // GCC v2 from v1, remove this
+    context.fail = function () {
+      context.errorLab();
+    };
+
+    // (YYRECOVERING)
+    context.recover = function () {
+      return !!s.shift_token_error_message_threshold;
+    };
+
+    // (YYBACKUP)
+    context.oldBackup = function (my_token, my_value) {
+      if (YY.char === YY.empty && s.right_hand_side_length === 1) {
+        YY.char = my_token;
+        s.lval = my_value;
+        s.lookahead_token_number = YY.translate(YY.char);
+        my_context.popStack();
+        context.backup();
+      } else {
+        YY.error("Syntax error: Cannot back up.");
+        context.errorLabExtended();
+      }
+    };
 
     //---------------------------------------------------------------
     // overflow -- flag error and "fall through" meaning ?
@@ -925,12 +1044,12 @@
     //------------------------------------------------------------
     // newState -- Push a new state, which is found in current_state.
     //------------------------------------------------------------
-    function yynewstate() {
+    context.newState = function () {
       
       // In all cases, when you get here, the value and location stacks
       // have just been pushed. so pushing a state here evens the stacks.
       context.state_top++;
-    }
+    };
 
     //------------------------------------------------------------
     // setstate -- set a new state
@@ -1029,200 +1148,178 @@
     context.backup = function () {
       var s = context.scope;
 
-    // Do appropriate processing given the current state. Read a lookahead 
-    // token if we need one and don't already have one.
+      // Do appropriate processing given the current state. Read a lookahead 
+      // token if we need one and don't already have one.
 
-    // First try to decide what to do without reference to lookahead token.
-    // Refer to what yypact is saying about the current state
-    s.truc = YY.table_dict.set_state_action[current_state];
-    if (s.truc == YY.flag) {
-      context.defaultAction();
-    }
+      // First try to decide what to do without reference to lookahead token.
+      // Refer to what yypact is saying about the current state
+      s.truc = YY.table_dict.set_state_action[current_state];
+      if (s.truc == YY.flag) {
+        context.defaultAction();
+      }
 
-    // Not known => get a lookahead token if don't already have one.
+      // Not known => get a lookahead token if don't already have one.
 
-    // YY.char  is either YY.empty or YY.end_of_file_reached or a valid token 
-    // in external form.
-    if (YY.char == YY.empty) {
-      console.log("[info] - Reading a token: ");
-      YY.char = YYLEX();  // XXX HERE XXX
-    }
+      // YY.char  is either YY.empty or YY.end_of_file_reached or a valid token 
+      // in external form. Note, lexer will also set YY.lval(!)
+      if (YY.char == YY.empty) {
+        console.log("[info] - Reading a token: ");
+        YY.char = YYLEX();
+        console.log("XXX CHAR =", YY.char);
+        console.log("XXX LVAL =", YY.lval);
+      }
 
-    // Convert token to internal form (in s.lookahead_token_number) for indexing tables with 
-    if (yychar <= 0) {	// This means end of input.
-      s.lookahead_token_number = 0;
-      yychar = YY.end_of_file_reached;		// Don't call YYLEX any more.
-      YYDPRINTF("info", "Now at end of input.\n");
-    } else {
-      s.lookahead_token_number = YY.translate(yychar);
-   
-      if (YYDEBUG) {
-      
-       // We have to keep this `#if YYDEBUG', since we use variables
-       // which are defined only if `YYDEBUG' is set.  */
-       if (yydebug) {
-        YYDPRINTF("info", "Next token is " + yychar + " (" + YY.table_dict.token_number_of_token[s.lookahead_token_number]);
-       
-        // Give the individual parser a way to print the precise meaning 
-        // of a token, for further debugging info.
-        if (YYPRINT) {
-          YYPRINT("info", yychar, yylval);
+      // Convert token to internal form (in s.lookahead_token_number) for 
+      // indexing tables with
+
+      // This is the end of the input.
+      if (YY.char <= 0) {
+        s.lookahead_token_number = 0;
+
+        // Don't call YYLEX any more.
+        YY.char = YY.end_of_file_reached;
+        console.log("[info] - Now at end of input.");
+      } else {
+        s.lookahead_token_number = YY.translate(YY.char);
+
+        if (YY.debug) {
+          console.log("[info] - Next token is " + YY.char + " (" +
+            YY.table_dict.token_number_of_token[s.lookahead_token_number]);
+
+          // Give the individual parser a way to print the precise meaning 
+          // of a token, for further debugging info.
+          console.log("[info] " + YY.char + " " + YY.lval);
         }
-        YYDPRINTF("info", ")\n");
-       }
       }
-    }
-   
-    // XXX add character to truc
-    truc += s.lookahead_token_number;
-    if (truc < 0 || truc > YY.last || YY.table_dict.state_action_valid[truc] !== s.lookahead_token_number) {
-      yydefault();
-    }
-    truc = YY.table_dict.state_action[truc];
-   
-    // truc is what to do for this token type in this state.
-    //  Negative => reduce, -truc is rule number.
-    //  Positive => shift, truc is new state.
-    //    New state is final state => don't bother to shift, just return success.
-    //  0, or most negative number => error.
-   
-    if (truc < 0) {
-       if (truc == YY.flag) {
-        yyerrlab();
-       }
-       truc = -truc;
-       yyreduce();
-    } else if (truc === 0) {
-      yyerrlab();
-    }
 
-    if (truc == YY.final) {
-      context.acceptLab();
-    }
-   
-    // Shift the lookahead token.
-    YYDPRINTF("info", "Shifting token " + yychar + " (" + YY.table_dict.token_number_of_token[s.lookahead_token_number] + ")");
-   
-    // Discard the token being shifted unless it is eof.
-    if (yychar != YY.end_of_file_reached) {
-      yychar = YY.empty;
-    }
-    yyvsp[yyvsp.length] = yylval;
-    if (YY.lsp_needed) {
-      yylsp[yylsp.length] = yylloc;
-    }
-   
-    // Count tokens shifted since error; after three, turn off error status.
-    if (shift_token_error_message_threshold) {
-      shift_token_error_message_threshold--;
-    }
-    current_state = truc;
-    yynewstate();
-   }
-
-    // var baffer = new ArrayBuffer(200);
-    // var bafferView = new DataView(baffer);
-    // bafferView.setInt8(0, 15)
-    // bafferView.setInt8(100, 12)
-    // bafferView.setInt8(150, 11)
-    // bafferView.setInt8(199, 10)
-    // console.log(bafferView.getInt8(0).toString(8)); 
-    // console.log(bafferView.getInt8(100).toString(8)); 
-    // console.log(bafferView.getInt8(150).toString(8));
-    // console.log(bafferView.getInt8(199).toString(8)); 
-
-    //context.state_view      //yyssa
-    //context.state_top       //yyssp
-    //context.state_bottom    //yyss
-    //context.semantic_view   //yyvsa
-    //context.semantic_top    //yyvsp
-    //context.semantic_bottom //yyvs
-    //context.location_view   //yylsa
-    //context.location_top    //yylsp
-    //context.location_bottom //yyls
-    //context.eval            //yyval
-    //context.loco            //yyloc
-    //context.right_hand_side_length; //ylen
-
-    // ======================= START ===========================================
-    context.setState();
-  
-   //------------------------------
-   // yyreduce -- Do a reduction.
-   //------------------------------
-   function yyreduce() {
-    var yyi;
-   
-    // truc is the number of a rule to reduce with.
-    yylen = YY.table_dict.rule_right_hand_side_symbol_length[truc];
-   
-    // If YYLEN is nonzero, implement the default value of the action:
-    // `$$ = $1'.
-    //
-    //  Otherwise, the following line sets YYVAL to the semantic value of
-    //  the lookahead token.  This behavior is undocumented and Bison
-    //  users should not rely upon it.  Assigning to YYVAL
-    //  unconditionally makes the parser a bit smaller, and it avoids a
-    //  GCC warning that YYVAL may be used uninitialized.  */
-    yyval = yyvsp[1 - yylen];
-   
-    if (YLSP_NEEDED) {
-      
-      // Similarly for the default location.  Let the user run additional
-      // commands if for instance locations are ranges.
-      yyloc = yylsp[1 - yylen];
-      YYLLOC_DEFAULT(yyloc, (yylsp - yylen), yylen);   
-    }
-   
-    if (YYDEBUG) {
-      
-      // We have to keep this `#if YYDEBUG', since we use variables which
-      // are defined only if `YYDEBUG' is set.
-      if (yydebug) {
-       YYDPRINTF("info", "Reducing via rule " + truc + " (line " + YY.table_dict.rule_line_pointer[truc] + ")");
-    
-       // Print the symbols being reduced, and their result.
-       for (yyi = YY.table_dict.right_hand_side_index[truc]; YY.table_dict.right_hand_side[yyi] > 0; yyi++) {
-        YYDPRINTF("info", YY.table_dict.token_number_of_token[YY.table_dict.right_hand_side[yyi]] + " ");
-       }
-       YYDPRINTF("info", " -> " + YY.table_dict.token_number_of_token[YY.table_dict.rule_left_hand_side_symbol_number[truc]] + "\n");
+      // add character to YY.truc. ah, math...
+      YY.truc += s.lookahead_token_number;
+      if (YY.truc < 0 || YY.truc > YY.last || YY.table_dict.state_action_valid[YY.truc] !== s.lookahead_token_number) {
+        context.defaultAction();
       }
-    }
+      YY.truc = YY.table_dict.state_action[YY.truc];
+
+      // YY.truc can be rule or state, now it is what to do for this token type 
+      // in this current state.
+      //  Negative => reduce, -YY.truc is rule number.
+      //  Positive => shift, YY.truc is new state.
+      //  if new state is final state => don't bother shift, just return success
+      //  if 0 or most negative number => error.
+      if (YY.truc < 0) {
+         if (YY.truc == YY.flag) {
+          context.errorLab();
+         }
+         YY.truc = -YY.truc;
+         context.reduceState();
+      } else if (YY.truc === 0) {
+        context.errorLab();
+      }
+
+      if (YY.truc === YY.final) {
+        context.acceptLab();
+      }
+
+      // Shift the lookahead token.
+      console.log("[info] - Shifting token " + YY.char + " (" + YY.table_dict.token_number_of_token[s.lookahead_token_number] + ")");
+
+      // Discard the token being shifted unless it is eof.
+      if (YY.char !== YY.end_of_file_reached) {
+        YY.char = YY.empty;
+      }
+      s.semantic_view.setInt8(s.semantic_top, s.lval);
+      if (YY.lsp_needed) {
+        s.location_view.setInt8(s.location_top, s.lloc);
+      }
+
+      // Count tokens shifted since error; after three, turn off error status.
+      if (s.shift_token_error_message_threshold) {
+        s.shift_token_error_message_threshold--;
+      }
+      current_state = YY.truc;
+      context.newState();
+    };
+
+    //----------------------------------------------------------
+    // reduceState -- Do a reduction.
+    //----------------------------------------------------------
+    context.reduceState = function () {
+      var i;
+
+      // truc is the number of a rule to reduce with.
+      s.right_hand_side_length =
+        YY.table_dict.rule_right_hand_side_symbol_length[YY.truc];
+
+      // If YYLEN (s.right_hand_side_length) is nonzero, implement the default 
+      // value of the action:
+      // $$ = $1
+      // Otherwise, the following line sets YYVAL to the semantic value of
+      // the lookahead token.  This behavior is undocumented and Bison
+      // users should not rely upon it.  Assigning to YYVAL
+      // unconditionally makes the parser a bit smaller, and it avoids a
+      // GCC warning that YYVAL may be used uninitialized.
+      s.ival = s.semantic_view.getInt8(1 - s.right_hand_side_length);
+
+      if (YY.lsp_needed) {
+
+        // Similarly for the default location.  Let the user run additional
+        // commands if for instance locations are ranges.
+        s.loco = s.location_view.getInt8(1 - s.right_hand_side_length);
+        YY.loco_default(
+          s.loco,
+          (s.location_top - s.right_hand_side_length),
+          s.right_hand_side_length
+        );   
+      }
+
+      if (YY.debug) {
+        console.log(
+          "[info] - Reducing via rule " + YY.truc + " (line " +
+            YY.table_dict.rule_line_pointer[YY.truc] + ")"
+        );
+
+        // Print the symbols being reduced, and their result.
+        for (i = YY.table_dict.right_hand_side_index[YY.truc]; YY.table_dict.right_hand_side[i] > 0; i++) {
+          console.log("[info] " + YY.table_dict.token_number_of_token[YY.table_dict.right_hand_side[i]] + " ");
+        }
+        console.log("[info] ->" + YY.table_dict.token_number_of_token[YY.table_dict.rule_left_hand_side_symbol_number[YY.truc]]);
+      }
   
-    switch (truc) {
+    switch (YY.truc) {
       case 7:
        //#line 59 "gram.y"
-       yyerrok();
+       context.errorAccept();
        break;
       case 9:
        //#line 66 "gram.y"
-       BlockReverseSw = 0;
-       if(ModeAssignAccptFlag) {
-        outputHeader(yyvsp[0]);
+       block_reservse_switch = 0;
+       if (is_mode_assign_accept) {
+         
+        // it should be from top, but I guess it's view
+        outputHeader(s.semantic_view.getInt8(0));
        }
        break;
       case 10:
        //#line 71 "gram.y"
-       BlockReverseSw = 1;
-       if(!ModeAssignAccptFlag) {
-        outputHeader(yyvsp[0]);
+       block_reservse_switch = 1;
+       if (!is_mode_assign_accept) {
+        outputHeader(s.semantic_view.getInt8(0));
        }
        break;
       case 13:
        //#line 79 "gram.y"
-       appendNonTerm(HeadName, ModeAssignAccptFlag ^ BlockReverseSw);
+       appendNonTerm(HeadName, is_mode_assign_accept ^ block_reservse_switch);
        break;
       case 14:
        //#line 83 "gram.y"
-       entryNonTerm(HeadName, NULL, ModeAssignAccptFlag ^ BlockReverseSw, 0, 1, 0 );
+       entryNonTerm(HeadName, NULL, is_mode_assign_accept ^ block_reservse_switch, 0, 1, 0 );
        break;
       case 16:
        //#line 89 "gram.y"
-       appendNonTerm(HeadName, ModeAssignAccptFlag);
+       appendNonTerm(HeadName, is_mode_assign_accept);
        break;
       case 17:
        //#line 93 "gram.y"
-       appendNonTerm(HeadName, !ModeAssignAccptFlag);
+       appendNonTerm(HeadName, !is_mode_assign_accept);
        break;
       case 21:
        //#line 102 "gram.y"
@@ -1239,11 +1336,11 @@
        break;
       case 24:
        //#line 117 "gram.y"
-       ModeAssignAccptFlag = 1;
+       is_mode_assign_accept = 1;
        break;
       case 25:
        //#line 121 "gram.y"
-       ModeAssignAccptFlag = 0;
+       is_mode_assign_accept = 0;
        break;
     }
   
@@ -1278,34 +1375,42 @@
     // number reduced by.
   
     truc = YY.table_dict.rule_left_hand_side_symbol_number[truc];
-    current_state = yypgoto[truc - trucTBASE] + yyssp;
+    current_state = yypgoto[truc - YY.nt_base] + yyssp;
     if (current_state >= 0 && current_state <= YY.last && YY.table_dict.state_action_valid[current_state] === yyssp) {
       current_state = YY.table_dict.state_action[current_state];
     } else {
-      current_state = YY.table_dict.default_goto_method[truc - trucTBASE];
+      current_state = YY.table_dict.default_goto_method[truc - YY.nt_base];
     }
     yynewstate();
-   }
-  
-  } // end of parse.... SIGH
+   };
 
-  // ==========================================================================
-  // ==========================================================================
-  // ==========================================================================
-  // ==========================================================================
+    // var baffer = new ArrayBuffer(200);
+    // var bafferView = new DataView(baffer);
+    // bafferView.setInt8(0, 15)
+    // bafferView.setInt8(100, 12)
+    // bafferView.setInt8(150, 11)
+    // bafferView.setInt8(199, 10)
+    // console.log(bafferView.getInt8(0).toString(8)); 
+    // console.log(bafferView.getInt8(100).toString(8)); 
+    // console.log(bafferView.getInt8(150).toString(8));
+    // console.log(bafferView.getInt8(199).toString(8)); 
 
+    //context.state_view      //yyssa
+    //context.state_top       //yyssp
+    //context.state_bottom    //yyss
+    //context.semantic_view   //yyvsa
+    //context.semantic_top    //yyvsp
+    //context.semantic_bottom //yyvs
+    //context.location_view   //yylsa
+    //context.location_top    //yylsp
+    //context.location_bottom //yyls
+    //context.eval            //yyval
+    //context.loco            //yyloc
+    //context.right_hand_side_length; //ylen
 
-  var CTRL_ASSIGN = 257;
-  var CTRL_IGNORE = 258;
-  var OPEN = 259;
-  var CLOSE = 260;
-  var REVERSE = 261;
-  var STARTCLASS = 262;
-  var LET = 263;
-  var TAG = 264;
-  var SYMBOL = 265;
-  var REMARK = 266;
-  var NL = 267;
+    // Here! we go
+    context.setState();
+  }; // end of parse
   
   // ------------------------------ mkfa.h -------------------------------------
   var symbol_len = 256;
@@ -1399,62 +1504,10 @@
   var is_block_reversed;
   var body_class_flag_start = 0;
   var grammar_modification_number = 0;
-
-  // -------------------------- Declarations ----------------------------------
-
-  // whywhy? 
-
-  var YYNTBASE = 14;
  
-  // ---------------------------- "ROUTING" ------------------------------------
-  yyerrok = function () {
-   shift_token_error_message_threshold = 0;
-  }
-  yyclearin = function () {
-   yychar = YY.empty;
-  }
-  YYERROR = function () {
-   yyerrlab1();
-  }
-  
-
-  // Like YYERROR except do call yyerror.  This remains here temporarily
-  // to ease the transition to the new meaning of YYERROR, for GCC.
-  // Once GCC version 2 has supplanted version 1, this can go
-  YYFAIL = function () {
-   yyerrlab();
-  }
-  YYRECOVERING = function () {
-   return !!shift_token_error_message_threshold;
-  }
-  YYBACKUP = function (Token, Value) {
-   // do {
-   if (yychar === YY.empty && yylen === 1) {
-    yychar = Token;
-    yylval = Value;
-    s.lookahead_token_number = YY.translate(yychar);
-    YYPOPSTACK();
-    yybackup();
-   } else {
-    YY.error("Syntax error: Cannot back up.");
-    YY.error();
-   }
-   // } while (0);
-  }
-
 
   // ---------------------------- paser stuf -----------------------------------
-  // YYLLOC_DEFAULT -- Compute the default location (before the actions are run).
-  // When YYLLOC_DEFAULT is run, CURRENT is set the location of the
-  // first token.  By default, to implement support for ranges, extend
-  // its range to the last symbol.
-  
-  if (!YYLLOC_DEFAULT) {
-   YYLLOC_DEFAULT = function(Current, Rhs, N) {
-    Current.last_line = Rhs[N].last_line;
-    Current.last_column = Rhs[N].last_column;
-   };
-  }
+
 
   // YYLEX -- calling `yylex' with the right arguments.
   if (YY.pure) {
@@ -1674,19 +1727,6 @@
    }
    new_body_list.next = body_list;
    body_class.branch++;
-  }
-
-  function outputHeader(my_name) {
-   if (class_count >= body_class_flag_max) {
-    if (SW_COMPAT_I) {
-      console.warn("Class accepted flag overflow, " + my_name);
-    }
-   } else {
-    if (SW_COMPAT_I === undefined) {
-      FP_HEADER.push("#define ACCEPT_" + my_name + "0x%08x\n",  1 << class_count );
-    }
-    current_class_count = class_count++;
-   }
   }
 
   function enterNonTerminalSymbol(my_name, my_body, my_mode_accept, my_start, my_member, my_tmp) {
