@@ -360,9 +360,15 @@
   YY.custom_dict.current_class_count = 0;
   YY.custom_dict.start_flag = 0;
   YY.custom_dict.grammar_modification_number = 0;
-  YY.custom_dict.symbol_len = 256; // not used
+  YY.custom_dict.finite_automaton_list = null; // Pointer of start FA in FA network
 
   // XXX mkfa.h? what is this for?
+  // "Can't alloc nonterminal list buffer" => this is a buffer for non-terminals
+  // BODY_NAME[body_class_number][symbol_len];
+  // with 100 elements each 256 bytes space?
+  YY.custom_dict.body_buffer_list = new ArrayBuffer(YY.custom_dict.body_class_number);
+  YY.custom_dict.body_symbol_len = 256;
+  YY.custom_dict.body_class_number = 100;
   YY.custom_dict.body_count = 0;
   YY.custom_dict.body_class_flag = 0;
   YY.custom_dict.body_class_flag_start = 0;
@@ -371,7 +377,6 @@
   YY.custom_dict.is_block_start_or_end = 0;
 
   YY.custom_dict.head_name = "";
-  YY.custom_dict.body_name = "";
 
   // (CLASS_LIST_TAIL) The last node of the linear list of classes
   YY.custom_dict.class_list_tail = null;
@@ -441,7 +446,7 @@
       previous_body = null,
       i;
     for (i = 0; i < YY.custom_dict.body_count; i += 1) {
-      my_body.name = body_name[i];
+      my_body.name = YY.custom_dict.body_buffer_list.getInt(i);
       my_body.abort = 0;
       if (previous_body !== null) {
         previous_body.next = my_body;
@@ -638,27 +643,6 @@
     );
     YY.custom_dict.body_count = 0;
   };
-
-
-  // external parameters, should be defined
-  
-  
-  
-  FA_LIST = null; // Pointer of start FA in FA network
-
-  // current_state_SYMBOL;
-  // ;
-  // GramFile [1024]
-  // HeaderFile [1024]
-  // SW_COMPAT_I;
-  // SW_QUIET;
-  // SW_SEMI_QUIET;
-  // VERSION_NUMBER;
-  // SYMBOL_LEN => 0;
-
-  var body_class_number = 100;
-  var body_name = []; // BODY_NAME[body_class_number][symbol_len];
-  var is_block_reversed;
 
   // -------------------------- lookup tables ----------------------------------
 
@@ -1336,7 +1320,7 @@
       
       // In all cases, when you get here, the value and location stacks
       // have just been pushed. so pushing a state here evens the stacks.
-      context.state_top++;
+      context.state_top = context.state_top + 1;
     };
 
     //------------------------------------------------------------
@@ -1531,7 +1515,8 @@
     // reduceState -- Do a reduction.
     //----------------------------------------------------------
     context.reduceState = function () {
-      var i;
+      var i,
+        tmp_semantic_top;
 
       // truc is the number of a rule to reduce with.
       s.right_hand_side_length =
@@ -1628,7 +1613,8 @@
         break;
       case 23: //#line 112 "gram.y"
         // XXX ? what is BodyName strcpy(BodyName[YY.custom_dict.body_count++], yyvsp[0]);
-        YY.custom_dict.body_name[YY.custom_dict.body_count++] = s.semantic_view.getInt8(context.semantic_top);
+        YY.custom_dict.body_count = YY.custom_dict.body_count + 1;
+        YY.custom_dict.body_buffer_list.setInt8(YY.custom_dict.body_count, s.semantic_view.getInt8(context.semantic_top));
         break;
       case 24: //#line 117 "gram.y"
         YY.custom_dict.is_mode_assign_accept = 1;
@@ -1639,55 +1625,43 @@
       }
   
       //#line 705 "/usr/share/bison/bison.simple"
-    yyvsp -= yylen;
-    yyssp -= yylen;
-    if (YY.lsp_needed) {
-      yylsp -= yylen;   
-    }
-  
-    if (YYDEBUG) {
-      if (yydebug) {
-       yyssp1 = yyss - 1;
-       YYDPRINTF("info", "state stack now");
-       while (yyssp1 != yyssp) {
-        YYFPRINTF ("error", " " + yyssp1);
-        yyssp++;
-       }
-       YYDPRINTF("info", "\n");
+      s.semantic_top -= s.right_hand_side_length;
+      s.state_top -= s.right_hand_side_length;
+      if (YY.lsp_needed) {
+        s.location_top -= s.right_hand_side_length;   
       }
+
+    if (YY.debug) {
+       tmp_semantic_top = s.semantic_bottom - 1;
+       console.log("[info] - State stack now");
+       while (tmp_semantic_top != s.semantic_top) {
+        console.log("[info] -", " " + s.semantic_view.getInt8(tmp_semantic_top));
+        tmp_semantic_top++;
+       }
     }
-    
+
     // XXX *++yyvsp => *p = arr, *(++p) => arr[0] = 10, arr[1] = 20, *p = 20
     // XXX *++yylsp = yyval
-    yyvsp[yyvsp.length] = yyval;
+    s.semantic_top = s.semantic_top + 1;
+    s.semantic_view.setInt8(s.semantic_top, s.ival);
     if (YY.lsp_needed) {
-      yylsp[yylsp.length] = yyloc;
+      s.location_top = s.location_top + 1;
+      s.location_view.setInt8(s.location-top, s.loco);
     }
   
     // Now `shift' the result of the reduction.  Determine what state
     // that goes to, based on the state we popped back to and the rule
     // number reduced by.
   
-    truc = YY.table_dict.rule_left_hand_side_symbol_number[truc];
-    current_state = yypgoto[truc - YY.nt_base] + yyssp;
-    if (current_state >= 0 && current_state <= YY.last && YY.table_dict.state_action_valid[current_state] === yyssp) {
+    YY.truc = YY.table_dict.rule_left_hand_side_symbol_number[YY.truc];
+    current_state = YY.switch_dict.non_terminal_goto_method[YY.truc - YY.nt_base] + s.state_top;
+    if (current_state >= 0 && current_state <= YY.last && YY.table_dict.state_action_valid[current_state] === s.semantic_top) {
       current_state = YY.table_dict.state_action[current_state];
     } else {
       current_state = YY.table_dict.default_goto_method[truc - YY.nt_base];
     }
-    yynewstate();
+    context.newState();
    };
-
-    // var baffer = new ArrayBuffer(200);
-    // var bafferView = new DataView(baffer);
-    // bafferView.setInt8(0, 15)
-    // bafferView.setInt8(100, 12)
-    // bafferView.setInt8(150, 11)
-    // bafferView.setInt8(199, 10)
-    // console.log(bafferView.getInt8(0).toString(8)); 
-    // console.log(bafferView.getInt8(100).toString(8)); 
-    // console.log(bafferView.getInt8(150).toString(8));
-    // console.log(bafferView.getInt8(199).toString(8)); 
 
     //context.state_view      //yyssa
     //context.state_top       //yyssp
