@@ -42,13 +42,16 @@
   // http://zaa.ch/jison/try/usf/index.html
   // https://en.wikipedia.org/wiki/LALR_parser#LR_parsers
 
-  // optF => when -f is specified (to resolve problems with -dfa)
-  var IS_OPTION_F_SET = 0;
-  var VERSION_NUMBER = "ver.1.44-flex-p1";
   var FILE_DICT = {};
+
+  // set from main.c
   var SWITCH_DICT = {
+
+    // optF => when -f is specified (to resolve problems with -dfa)
+    "is_option_f_set": 0,
     "sent_list": 0,
     "no_warning": 0,
+    "no_new_line": 0,
     "compat_i": 0,
     "quiet": 0,
     "semi_quiet": 0,
@@ -71,7 +74,8 @@
   }
 
   function setGrammarFile() {
-    var struct, 
+    var struct,
+      version = "ver.1.44-flex-p1",
       grammar = getFileByType("grammar"),
       header = getFileByType("header");
 
@@ -81,19 +85,25 @@
     if (header === undefined) {
       throw("Can't open header file");
     }
-    
-    YY["in"] = grammar.content; // read
-    if (SWITCH_DICT.compat_i) {
-      header.content.push("/dev/null\n");
+    if (YY.switch_dict === undefined) {
+      YY.switch_dict = SWITCH_DICT;
+    }
+    if (YY.file_dict === undefined) {
+      YY.file_dict = FILE_DICT;
+    }
+    YY["file_in"] = grammar.content; // read
+
+    if (YY.switch_dict.compat_i) {
+      header.content += "/dev/null\n";
     }
 
     header.content +=
       "// Header of class reduction flag for finite automaton parser\n\
-       //                   made with mkfa " + VERSION_NUMBER + "\n\n\
+       //                   made with mkfa " + version + "\n\n\
        //        Do logical AND between label and FA's field #4, #5.\n\
        //\n\n";
 
-    if (SWITCH_DICT.quiet === undefined) {
+    if (YY.switch_dict.quiet === undefined) {
       console.log("Now parsing grammar file\n");
     }
 
@@ -103,7 +113,7 @@
     /*
     if (!SWITCH_QUIET) {
       console.log("Now modifying grammar to minimize states [" + START_SYMBOL - 1 + "]\n");
-      NO_NEW_LINE = 0;
+      SWITCH_DICT.no_new_line = 0;
     }
     if (START_SYMBOL == NULL) {
       START_SYMBOL = CLASS_LIST; // struct?
@@ -116,6 +126,20 @@
     if (errorParse) {
       errorMessage("Fatal Errors exists");
     }
+    
+    
+      function checkNoInstantClass() {
+   var current_class = CLASS_LIST;
+   while (current_class !== null) {
+    if (current_class.branch === undefined) {
+      return current_class.name;
+    }
+    current_class = current_class.next;
+   }
+   return null;
+  }
+
+    
     */
   }
 
@@ -151,7 +175,7 @@
 
       // spec2
       case 5:
-        IS_OPTION_F_SET = 1;
+        SWITCH_DICT.is_option_f_set = 1;
         FILE_DICT.key = my_param[0];
         FILE_DICT[FILE_DICT.key + ".grammar"] = setFile("grammar", my_param[1]);
         FILE_DICT[FILE_DICT.key + ".voca"] = setFile("voca", my_param[2]);
@@ -187,13 +211,13 @@
         SWITCH_DICT.debug = 1;
         break;
       case "dfa":
-        if (IS_OPTION_F_SET) {
+        if (SWITCH_DICT.is_option_f_set) {
           console.log("dfa resolving option set");
         }
         SWITCH_DICT.nfa_output = 0;
         break;
       case "nfa":
-        if (IS_OPTION_F_SET) {
+        if (SWITCH_DICT.is_option_f_set) {
           console.log("dfa resolving option set");
         }
         SWITCH_DICT.nfa_output = 1;
@@ -294,5 +318,4 @@
   window.mkdfa = makeDfa;
 
 }(window, RSVP, YY));
-
 

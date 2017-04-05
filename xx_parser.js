@@ -350,27 +350,315 @@
     "NL": 267
   };
 
+  // ------------------ custom foo (mkfa.h and mkdfa) --------------------------
+  // declared in gram.y, not sure yet what these do
   YY.custom_dict = {};
 
-  YY.block_reservse_switch = null;
-  YY.is_mode_assign_accept = null,
+  YY.custom_dict.block_reservse_switch = null;
+  YY.custom_dict.is_mode_assign_accept = 1;
+  YY.custom_dict.class_count = 0;
+  YY.custom_dict.current_class_count = 0;
+  YY.custom_dict.start_flag = 0;
+  YY.custom_dict.grammar_modification_number = 0;
+  YY.custom_dict.symbol_len = 256; // not used
 
-  YY.outputHeader = function (my_name) {
-    if (class_count >= body_class_flag_mayx)    
-  }    
-  if 
-    if (SW_COMPAT_I) {
-      console.warn("Class accepted flag overflow, " + my_name);
-    }
-   } else {
-    if (SW_COMPAT_I === undefined) {
-      FP_HEADER.push("#define ACCEPT_" + my_name + "0x%08x\n",  1 << class_count );
-    }
-    current_class_count = class_count++;
-   }
-  }
+  // XXX mkfa.h? what is this for?
+  YY.custom_dict.body_count = 0;
+  YY.custom_dict.body_class_flag = 0;
+  YY.custom_dict.body_class_flag_start = 0;
+  YY.custom_dict.body_class_flag_accept = 0;
+  YY.custom_dict.body_class_flag_max = YY.custom_dict.body_class_flag * 8;
+  YY.custom_dict.is_block_start_or_end = 0;
 
+  YY.custom_dict.head_name = "";
+  YY.custom_dict.body_name = "";
+
+  // (CLASS_LIST_TAIL) The last node of the linear list of classes
+  YY.custom_dict.class_list_tail = null;
+
+  // (CLASS_LIST) Linear list of classes
+  YY.custom_dict.class_list = null;
+
+  // (START_SYMBOL) Class of start symbol
+  YY.custom_dict.start_symbol = null;
+
+  // XXX all of those are not used (yet?)
+  YY.custom_dict.body_list = {"body": {}, "next": {}};
+  YY.custom_dict.arc = {
+    "inp": 0,
+    "finite_automaton": {},
+    "body_class_flag_start": 0,
+    "body_class_flag_accept": 0,
+    "next": {}
   };
+  YY.custom_dict.unify_arc = {
+    "inp": 0,
+    "finite_automaton": {},
+    "body_class_flag_start": 0,
+    "body_class_flag_accept": 0,
+    "next": {},
+    "flag_reserved": 0
+  };
+  YY.custom_dict.finite_automaton_list = {
+    "finite_automation": {},
+    "next": {}
+  };
+  YY.custom_dict.finite_automaton = {
+    // common
+    "stat": 0,
+    "arc": [],
+    "body_class_flag_start": 0,
+    "body_class_flag_accept": 0,
+    "flag_traversed": 0,
+    // for DFA
+    "psNum": 0,
+    "unify_arc_list": [],
+    "finite_automaton_list": [],
+    "flag_volatiled": 0
+  };
+  // XXX end unused
+
+  YY.custom_dict.createBody = function () {
+   return {"name": null, "flag_abort": 0, "next": {}};
+  };
+
+  YY.custom_dict.createBodyClass = function () {
+    return {  
+      "number": null,
+      "name": null,
+      "next": {},
+      "body_list": {},
+      "branch": null,
+      "flag_used_fa": 0,
+      "flag_used": 0,
+      "flag_tmp": 0,
+      "tmp": null
+    };
+  };  
+
+  YY.custom_dict.configureNonTerminalSymbol = function (my_body) {
+    var first_body = null,
+      previous_body = null,
+      i;
+    for (i = 0; i < YY.custom_dict.body_count; i += 1) {
+      my_body.name = body_name[i];
+      my_body.abort = 0;
+      if (previous_body !== null) {
+        previous_body.next = my_body;
+      } else {
+        first_body = my_body;
+      }
+      previous_body = my_body;
+    }
+    my_body.next = null;
+    return first_body;
+  };
+
+  YY.custom_dict.outputHeader = function (my_name) {
+    if (YY.custom_dict.class_count >= YY.custom_dict.body_class_flag_max) {
+      if (YY.switch_dict && YY.switch_dict.compat_i === 0) {
+        console.log("[info] - Class accepted flag overflow, " + my_name);
+      }
+    } else {
+      if (YY.switch_dict && YY.switch_dict.compat_i === 0) {
+
+        // 0x%08x = pointer http://stackoverflow.com/a/33324713/536768
+        // XXX why the class_count check?
+        YY.file_dict.header += "#define ACCEPT_" + my_name + "0x%08x\n", 1 << YY.custom_dict.class_count;
+      }
+      YY.custom_dict.current_class_count = YY.custom_dict.class_count++;
+   }
+  };
+
+  YY.custom_dict.getNewClassName = function (my_key_name) {
+    var tmp_class_count = 0,
+      class_name = my_key_name + "#" + tmp_class_count;
+    if (YY.switch_dict && YY.switch_dict.semi_quiet === 0) {
+      console.log("[info] - Now modifying grammar to minimize states[" +
+        YY.custom_dict.grammar_modification_number + "]");
+      YY.switch_dict.no_new_line = 1;
+    }
+    YY.custom_dict.grammar_modification_number++;
+    return 1;
+  };
+  
+  YY.custom_dict.unifyBody = function (my_class_name, my_body, my_new_body) {
+    var body_next,
+      new_body_next,
+      body_class,
+      new_body,
+      new_class_name;
+
+    // alors...
+    body_next = my_body.next;
+    new_body_next = my_new_body.next;
+
+    while (1) {
+      if (body_next === null && new_body_next === null) {
+        return -1;
+      }
+      if (new_body_next === null) {
+        if (my_body.abort) {
+         return -1;
+        } else {
+         my_body.abort = 1;
+        }
+        return 0;
+      }
+      if (body_next === null) {
+        my_body.abort = 1;
+        my_body.next = new_body_next;
+        return 0;
+      }
+      if (body_next.name === new_body_next.name) {
+        break;
+      }
+
+      // XXX ?
+      my_body = body_next;
+      my_new_body = new_body_next;
+      body_next = body.next;
+      new_body_next = new_body.next;
+    }
+
+    body_class = YY.custom_dict.createBodyClass(); // XXX another one?
+    if (body_class !== null && body_class.tmp) {
+      YY.custom_dict.enterNonTerminalSymbol(my_body.name, new_body_next, 0, 0, 0, 1);
+    } else {
+      new_class_name = getNewClassName(my_class_name);
+      YY.custom_dict.enterNonTerminalSymbol(new_class_name, body_next, 0, 0, 0, 1);
+      YY.custom_dict.enterNonTerminalSymbol(new_class_name, new_body_next, 0, 0, 0, 1);
+      my_new_body.name = new_class_name;
+      my_new_body.abort = 0;
+      my_new_body.next = null;
+      my_body.next = newBody;
+      body_next.next = body_next;
+    }
+    return 0;
+  };
+
+  YY.custom_dict.pushBody = function (my_body_class, my_new_body) {
+    var body_list = my_body_class.body_list,
+      define_number = 1,
+      pre_body_list = null,
+      new_body_list,
+      body,
+      cmp;
+   
+    while (body_list !== null) {
+      body = body_list.body;
+      cmp = body.name === my_new_body.name;
+      if (cmp > 0) {
+        break;
+      }
+      if (cmp === 0) {
+        if (YY.custom_dict.unifyBody(my_body_class.name, body, my_new_body)) {
+          console.log("[info] - Redefining class: ", my_body_class.name, body.name);
+        }
+        return;
+      }
+      pre_body_list = body_list;
+      body_list = body_list.next;
+      define_number++;
+    }
+    new_body_list.body = new_body;
+    if (pre_body_list !== null) {
+      pre_body_list.next = new_body_list;
+    } else {
+      my_body_class.body_list = new_body_list;
+    }
+    new_body_list.next = body_list;
+    my_body_class.branch++;
+  };
+
+  // Class Finite Automaton.
+  YY.custom_dict.enterNonTerminalSymbol = function(my_name, my_body_accept, my_start, my_member, my_tmp) {
+    // XXX mh not sure what to make of this
+    // CLASS *class;
+    // class = getClass( name );
+    var body_class = YY.custom_dict.createBodyClass();
+
+    if (body_class === null) {
+      if (my_member) {
+        context.scope.error_count++;
+        console.log("[error] - Accepted fla of class is reassigned:", YY.custom_dict.head_name);
+      }
+    } else {
+      body_class.name = my_name;
+      if (my_mode_accept) {
+        if (my_member) {
+          body_class.number = YY.custom_dict.current_class_count;
+        } else {
+          if (my_tmp === 0) {
+            outputHeader(name);
+            body_class.number = YY.custom_dict.current_class_count;
+          }
+        }
+      } else {
+        body_class.number = -1;
+      }
+      body_class.branch = 0;
+      body_class.used_finite_automaton = 0;
+      body_class.used = 1; // non-terminal does not appear in voca
+      body_class.body_list = null;
+      body_class.tmp = tmp;
+      body_class.next = null;
+      if (YY.custom_dict.class_list_tail === null) {
+        //YY.custom_dict.class_list.push(body_class);
+        YY.custom_dict.class_list = body_class;
+      } else {
+        YY.custom_dict.class_list_tail.next = body_class;
+      }
+      YY.custom_dict.class_list_tail = body_class;
+     }
+
+     if (my_body === null) {
+      YY.custom_dict.pushBody(body_class, my_body);
+      if (my_start) {
+        YY.custom_dict.body_class_flag_start = 0;
+        if (YY.custom_dict.start_symbol === null) {
+          YY.custom_dict.start_symbol = body_class;
+        } else {
+          context.scope.error_count++;
+          console.log("[error] - Start symbol is redefined: ", body_class.name);
+        }
+      }
+     }
+     return body_class;
+  };
+
+  YY.custom_dict.appendNonTerminalSymbol = function (my_name, my_mode_assign) {
+    YY.custom_dict.enterNonTerminalSymbol(
+      my_name,
+      YY.custom_dict.configureNonTerminalSymbol(YY.custom_dict.createBody()),
+      my_mode_assign,
+      YY.custom_dict.body_class_flag_start,
+      YY.custom_dict.is_block_start_or_end,
+      0
+    );
+    YY.custom_dict.body_count = 0;
+  };
+
+
+  // external parameters, should be defined
+  
+  
+  
+  FA_LIST = null; // Pointer of start FA in FA network
+
+  // current_state_SYMBOL;
+  // ;
+  // GramFile [1024]
+  // HeaderFile [1024]
+  // SW_COMPAT_I;
+  // SW_QUIET;
+  // SW_SEMI_QUIET;
+  // VERSION_NUMBER;
+  // SYMBOL_LEN => 0;
+
+  var body_class_number = 100;
+  var body_name = []; // BODY_NAME[body_class_number][symbol_len];
+  var is_block_reversed;
 
   // -------------------------- lookup tables ----------------------------------
 
@@ -1164,7 +1452,7 @@
       // in external form. Note, lexer will also set YY.lval(!)
       if (YY.char == YY.empty) {
         console.log("[info] - Reading a token: ");
-        YY.char = YYLEX();
+        YY.char = YYLEX(YY.ival, YY.loco, "YYLEX_PARAM");
         console.log("XXX CHAR =", YY.char);
         console.log("XXX LVAL =", YY.lval);
       }
@@ -1285,66 +1573,72 @@
       }
   
     switch (YY.truc) {
-      case 7:
-       //#line 59 "gram.y"
-       context.errorAccept();
-       break;
-      case 9:
-       //#line 66 "gram.y"
-       block_reservse_switch = 0;
-       if (is_mode_assign_accept) {
+      case 7: //#line 59 "gram.y"
+        context.errorAccept();
+        break;
+      case 9: //#line 66 "gram.y"
+        YY.custom_dict.block_reservse_switch = 0;
+        if (YY.custom_dict.is_mode_assign_accept) {
          
-        // it should be from top, but I guess it's view
-        outputHeader(s.semantic_view.getInt8(0));
-       }
+          // it should be from top, but I guess it's view
+          outputHeader(s.semantic_view.getInt8(0));
+        }
+        break;
+      case 10: //#line 71 "gram.y"
+        YY.custom_dict.block_reservse_switch = 1;
+        if (YY.custom_dict.is_mode_assign_accept === 0) {
+          outputHeader(s.semantic_view.getInt8(0));
+        }
        break;
-      case 10:
-       //#line 71 "gram.y"
-       block_reservse_switch = 1;
-       if (!is_mode_assign_accept) {
-        outputHeader(s.semantic_view.getInt8(0));
-       }
-       break;
-      case 13:
-       //#line 79 "gram.y"
-       appendNonTerm(HeadName, is_mode_assign_accept ^ block_reservse_switch);
-       break;
-      case 14:
-       //#line 83 "gram.y"
-       entryNonTerm(HeadName, NULL, is_mode_assign_accept ^ block_reservse_switch, 0, 1, 0 );
-       break;
-      case 16:
-       //#line 89 "gram.y"
-       appendNonTerm(HeadName, is_mode_assign_accept);
-       break;
-      case 17:
-       //#line 93 "gram.y"
-       appendNonTerm(HeadName, !is_mode_assign_accept);
-       break;
-      case 21:
-       //#line 102 "gram.y"
-       strcpy(HeadName, yyvsp[0]);
-       break;
-      case 22:
-       //#line 106 "gram.y"
-       StartFlag = 1;
-       strcpy(HeadName, yyvsp[0]);
-       break;
-      case 23:
-       //#line 112 "gram.y"
-       strcpy(BodyName[BodyNo++], yyvsp[0]);
-       break;
-      case 24:
-       //#line 117 "gram.y"
-       is_mode_assign_accept = 1;
-       break;
-      case 25:
-       //#line 121 "gram.y"
-       is_mode_assign_accept = 0;
-       break;
-    }
+      case 13: //#line 79 "gram.y"
+        YY.custom_dict.appendNonTerminalSymbol(
+          YY.custom_dict.head_name,
+          YY.custom_dict.is_mode_assign_accept ^ YY.custom_dict.block_reservse_switch
+        );
+        break;
+      case 14: //#line 83 "gram.y"
+        YY.custom_dict.enterNonTerminalSymbol(
+          YY.custom_dict.head_name,
+          null,
+          YY.custom_dict.is_mode_assign_accept ^ YY.custom_dict.block_reservse_switch,
+          0,
+          1,
+          0
+        );
+        break;
+      case 16: //#line 89 "gram.y"
+        YY.custom_dict.appendNonTerminalSymbol(
+          YY.custom_dict.head_name,
+          YY.custom_dict.is_mode_assign_accept
+        );
+        break;
+      case 17: //#line 93 "gram.y"
+        YY.custom_dict.appendNonTerminalSymbol(
+          YY.custom_dict.head_name,
+          !YY.custom_dict.is_mode_assign_accept
+        );
+        break;
+      case 21: //#line 102 "gram.y"
+        // XXX strcpy(YY.custom_dict.head_name, yyvsp[0]);
+        YY.custom_dict.head_name += s.semantic_view.getInt8(context.semantic_top);
+        break;
+      case 22: //#line 106 "gram.y"
+        YY.custom_dict.start_flag = 1;
+        YY.custom_dict.head_name += s.semantic_view.getInt8(context.semantic_top);
+        break;
+      case 23: //#line 112 "gram.y"
+        // XXX ? what is BodyName strcpy(BodyName[YY.custom_dict.body_count++], yyvsp[0]);
+        YY.custom_dict.body_name[YY.custom_dict.body_count++] = s.semantic_view.getInt8(context.semantic_top);
+        break;
+      case 24: //#line 117 "gram.y"
+        YY.custom_dict.is_mode_assign_accept = 1;
+        break;
+      case 25: //#line 121 "gram.y"
+        YY.custom_dict.is_mode_assign_accept = 0;
+        break;
+      }
   
-    //#line 705 "/usr/share/bison/bison.simple"
+      //#line 705 "/usr/share/bison/bison.simple"
     yyvsp -= yylen;
     yyssp -= yylen;
     if (YY.lsp_needed) {
@@ -1410,403 +1704,7 @@
 
     // Here! we go
     context.setState();
-  }; // end of parse
-  
-  // ------------------------------ mkfa.h -------------------------------------
-  var symbol_len = 256;
-  var body_class_flag = 0;
-  var body_class_flag_max = body_class_flag * 8;
-
-  var body_list = {
-   "body": {},
-   "next": {}
   };
-  var arc = {
-   "inp": 0,
-   "finite_automaton": {},
-   "body_class_flag_start": 0,
-   "body_class_flag_accept": 0,
-   "next": {}
-  };
-  var unify_arc = {
-   "inp": 0,
-   "finite_automaton": {},
-   "body_class_flag_start": 0,
-   "body_class_flag_accept": 0,
-   "next": {},
-   "flag_reserved": 0
-  };
-  var finite_automaton_list = {
-   "finite_automation": {},
-   "next": {}
-  };
-  var finite_automaton = {
-   // common
-   "stat": 0,
-   "arc": [],
-   "body_class_flag_start": 0,
-   "body_class_flag_accept": 0,
-   "flag_traversed": 0,
-   // for DFA
-   "psNum": 0,
-   "unify_arc_list": [],
-   "finite_automaton_list": [],
-   "flag_volatiled": 0
-  };
-
-  function createBody() {
-   return {
-    "name": null,
-    "flag_abort": 0,
-    "next": {}
-   };
-  }
-  function createBodyClass(my_name) {
-   return {  
-    "number": null,
-    "name": null,
-    "next": {},
-    "body_list": {},
-    "branch": null,
-    "flag_used_fa": 0,
-    "flag_used": 0,
-    "flag_tmp": 0,
-    "tmp": null
-   };
-  }
-
-  // external parameters, should be defined
-  CLASS_LIST = null; // Linear list of classes
-  CLASS_LIST_TAIL = null; // The last node of the linear list of classes
-  START_SYMBOL = null; // Class of start symbol
-  FA_LIST = null; // Pointer of start FA in FA network
-
-  // CLASS_LIST;
-  // CLASS_LIST_TAIL;
-  // current_state_SYMBOL;
-  // NO_NEW_LINE;
-  // GramFile [1024]
-  // HeaderFile [1024]
-  // SW_COMPAT_I;
-  // SW_QUIET;
-  // SW_SEMI_QUIET;
-  // VERSION_NUMBER;
-  // SYMBOL_LEN => 0;
-
-  var body_class_number = 100;
-  var head_name = []; // HEAD_NAME[symbol_len];
-  var body_name = []; // BODY_NAME[body_class_number][symbol_len];
-  var body_count = 0;
-  var class_count = 0;
-  var current_class_count = 0;
-  var is_assign_accept_flag = 1;
-  var is_block_start_or_end = 0;
-  var is_block_reversed;
-  var body_class_flag_start = 0;
-  var grammar_modification_number = 0;
- 
-
-  // ---------------------------- paser stuf -----------------------------------
-
-
-  // YYLEX -- calling `yylex' with the right arguments.
-  if (YY.pure) {
-   if (YY.lsp_needed) {
-    if (YYLEX_PARAM) {    
-      YYLEX = function () {
-       return yylex(yylval, yylloc, YYLEX_PARAM);
-      };
-    } else {
-      YYLEX = function () {
-       return yylex(yylval, yylloc);
-      };
-    }
-   } else {
-    if (YYLEX_PARAM) {
-      YYLEX = function () {
-       return yylex(yylval, YYLEX_PARAM);
-      };
-    } else {
-      YYLEX = function () {
-       return yylex(yylval);
-      };
-    }
-   } // !YY.lsp_needed
-  } else {
-   // !YY.pure
-   YYLEX = function() {
-    return yylex();
-   };
-  } // YY.pure
-
-  // Enable debugging if requested
-  if (YYDEBUG) {
-   if (!YYFPRINTF) {
-    YYFPRINTF = console.log;
-   }
-   YYDPRINTF = function () {
-    // do {
-    if (yydebug) {
-      YYFPRINTF(arguments);
-    }
-    // } while (0);
-   };
-
-   // Nonzero means print parse trace. It is left uninitialized so that
-   // multiple parsers can coexist.
-   // yydebug;
-  } else {
-   YYDPRINTF(Args);
-  }
-
-  
-  if (!YY.error_verbose) {
-   if (yystrlen === undefined) { 
-    if (__GLIBC__ && _STRING_H) {
-      yystrlen = strlen;
-    } else {
-     
-      // Return the length of YYSTR.
-      // XXX lost again...
-      YYSIZE_T = (function () {
-      
-       if (__STDC__ || __cplusplus) {
-        yystrlen = yystr;
-       } else {
-        yystrlen = yystr;
-       }
-       yys = yystr;
-      
-       while (yys[yys.length] !== '\0') {
-        continue;
-       }
-       return yys - yystr - 1;
-      })();
-    }
-   }
-
-   if (!yystpcpy) {
-    if (__GLIBC__ && _STRING_H && _GNU_SOURCE) {
-      yystpcpy = stpcpy;
-    } else {
-      
-      // Copy YYSRC to YYDEST, returning the address of the terminating '\0' in
-      // YYDEST.
-      // XXX sigh...
-      YYDEST = (function () {
-       if (__STDC__ || __cplusplus) {
-        yystpcpy(yydest, yysrc);
-       } else {
-        yystpcpy(yydest, yysrc);
-        // char *yydest;
-        // const char *yysrc;
-       }
-
-       yyd = yydest;
-       yys = yysrc;
-
-       while (yyd !== '\0') {
-        yyd = yys++;
-        continue;
-       }
-       return yyd - 1;
-      }());
-    }
-   }
-  }
-
-
-  // ---------------------------- The rest -------------------------------------
-  
-  
-  
-  function checkNoInstantClass() {
-   var current_class = CLASS_LIST;
-   while (current_class !== null) {
-    if (current_class.branch === undefined) {
-      return current_class.name;
-    }
-    current_class = current_class.next;
-   }
-   return null;
-  }
-
-  function getNewClassName(my_key_name) {
-   var tmp_class_count = 0,
-    class_name = my_key_name + "#" + tmp_class_count;
-
-   if (!SW_SEMI_COMPAT) {
-    console.log("Now modifying grammar to minimize states[", grammar_modification_number + "]");
-    NO_NEW_LINE = 1;
-   }
-   grammar_modification_number++;
-   return (1);
-  }
-
-  function unifyBody(my_class_name, my_body, my_new_body) {
-   var body_next,
-    new_body_next,
-    body_class,
-    new_body,
-    new_class_name;
-    
-   body_next = my_body.next;
-   new_body_next = my_new_body.next;
-
-   while (1) {
-    if (body_next === null && new_body_next === null) {
-      return -1;
-    }
-    if (new_body_next === null) {
-      if (my_body.abort) {
-       return -1;
-      } else {
-       my_body.abort = 1;
-      }
-      return 0;
-    }
-    if (body_next === null) {
-      my_body.abort = 1;
-      my_body.next = new_body_next;
-      return 0;
-    }
-    if (body_next.name === new_body_next.name) {
-      break;
-    }
-    my_body = body_next;
-    my_new_body = new_body_next;
-    body_next = body.next;
-    new_body_next = new_body.next;
-   }
-
-   body_class = createBodyClass(); // ?
-   if (body_class !== null && body_class.tmp) {
-    enterNonTerminalSymbol(my_body.name, new_body_next, 0, 0, 0, 1);
-   } else {
-    new_class_name = getNewClassName(my_class_name);
-    enterNonTerminalSymbol(new_class_name, body_next, 0, 0, 0, 1);
-    enterNonTerminalSymbol(new_class_name, new_body_next, 0, 0, 0, 1);
-    my_new_body.name = new_class_name;
-    my_new_body.abort = 0;
-    my_new_body.next = null;
-    my_body.next = newBody;
-    body_next.next = body_next;
-   }
-   return 0;
-  }
-
-  function pushBody(my_body_class, my_new_body) {
-   var body_list = my_body_class.body_list,
-    pre_body_list = null,
-    new_body_list,
-    body,
-    cmp,
-    define_number = 1;
-   
-   while (body_list !== null) {
-    body = body_list.body;
-    cmp = body.name === my_new_body.name;
-    if (cmp > 0) {
-      break;
-    }
-    if (cmp === 0) {
-      if (unifyBody(body_class.name, body, my_new_body)) {
-       console.warn("Redefining class: ", body_class.name, body.name);
-      }
-      return;
-    }
-    pre_body_list = body_list;
-    body_list = body_list.next;
-    define_number++;
-   }
-   new_body_list.body = new_body;
-   if (pre_body_list !== null) {
-    pre_body_list.next = new_body_list;
-   } else {
-    body_class.body_list = new_body_list;
-   }
-   new_body_list.next = body_list;
-   body_class.branch++;
-  }
-
-  function enterNonTerminalSymbol(my_name, my_body, my_mode_accept, my_start, my_member, my_tmp) {
-   var body_class = createBodyClass();
-   
-   // when does this happen? initial?
-   if (body_class === null) {
-    if (my_member) {
-      error_count++;
-      throw Error("Accepted fla of class is reassigned:", head_name);
-    }
-   } else {
-    body_class.name = my_name;
-    if (my_mode_accept) {
-      if (my_member) {
-       body_class.number = current_class_count;
-      } else {
-       if (!my_tmp) {
-        outputHeader(name);
-        body_class.number = current_class_count;
-       }
-      }
-    } else {
-      body_class.number = -1;
-    }
-    body_class.branch = 0;
-    body_class.used_finite_automaton = 0;
-    body_class.used = 1; // non-terminal does not appear in voca
-    body_class.body_list = null;
-    body_class.tmp = tmp;
-    body_class.next = null;
-    if (CLASS_LIST_TAIL === null) {
-      CLASS_LIST = body_class;
-    } else {
-      CLASS_LIST_TAIL.next = body_class;
-    }
-    CLASS_LIST_TAIL = body_class;
-   }
-   if (my_body === null) {
-    pushBody(body_class, my_body);
-    if (my_start) {
-      body_class_flag_start = 0;
-      if (START_SYMBOL === null) {
-       START_SYMBOL = body_class;
-      } else {
-       error_count++;
-       throw Error("Start symbol is redefined: ", body_class.name);
-      }
-    }
-   }
-   return body_class;
-  }
-
-  function configureNonTerminalSymbol(my_body) {
-   var first_body = null,
-    previous_body = null,
-    i;
-   for (i = 0; i < body_count; i += 1) {
-    my_body.name = body_name[i];
-    my_body.abort = 0;
-    if (previous_body !== null) {
-      previous_body.next = my_body;
-    } else {
-      first_body = my_body;
-    }
-    previous_body = my_body;
-   }
-   my_body.next = null;
-   return first_body;
-  }
-
-  function appendNonTerminalSymbol(my_name, my_mode_assign) {
-   var body = configureNonTerminalSymbol(createBody());
-   enterNonTerminalSymbol(my_name, body, my_mode_assign, body_class_flag_start, is_block_start_or_end, 0);
-   body_count = 0;
-  }
-
-
-
-
 
   window.YY = YY;
 
