@@ -1,4 +1,4 @@
-(function (window, Math) {
+(function (window, Math, Lexer) {
   "use strict";
 
   /*
@@ -128,7 +128,7 @@
   // Refer to the stacks through separate pointers to allow overflow to
   // reallocate them elsewhere.
   // using ArrayBuffer http://www.javascripture.com/ArrayBuffer
-  function setParserStackList(my_context, my_depth) {
+  function setParserStackList(my_context, my_depth, my_init) {
     
     function setStack(my_param) {
       var stack = my_param + "_stack",
@@ -175,7 +175,7 @@
     }
 
     // no need to redefine on updates
-    if (my_context[stack] === undefined) {
+    if (my_init === true) {
 
       // will also be overwritten externally, no need to update on relocates
       my_context.stack_size = YY.stack_initial_depth;
@@ -195,6 +195,9 @@
 
   // Identify Bison output.
   YY.bison = 1;
+
+  // (YYLEX)
+  YY.lexer = window.lexer;
 
   // Hardcoded now. Pure parser = reeentrant = can be called during modification
   // https://www.gnu.org/software/bison/manual/html_node/Pure-Decl.html
@@ -940,17 +943,16 @@
     ];
   }
 
-  if (YY.debug || YY.verbose) {
-
-    // (yytname[n]) - A string specifying the symbol for symbol number n. 
-    // ~ yytoknum[n] - Token number of token n (String name of token TOKEN_NUM)
-    YY.table_dict.token_number_of_token = [
-      "$", "error", "$undefined.", "CTRL_ASSIGN", "CTRL_IGNORE", "OPEN", 
-      "CLOSE", "REVERSE", "STARTCLASS", "LET", "TAG", "SYMBOL", "REMARK", 
-      "NL", "src", "statement", "block", "tag", "members", "member", "single", 
-      "define", "bodies", "head", "body", "contol", "remark", 0  
-    ];
-  }
+  //if (YY.debug || YY.verbose) {
+  // (yytname[n]) - A string specifying the symbol for symbol number n. 
+  // ~ yytoknum[n] - Token number of token n (String name of token TOKEN_NUM)
+  YY.table_dict.token_number_of_token = [
+    "$", "error", "$undefined.", "CTRL_ASSIGN", "CTRL_IGNORE", "OPEN", 
+    "CLOSE", "REVERSE", "STARTCLASS", "LET", "TAG", "SYMBOL", "REMARK", 
+    "NL", "src", "statement", "block", "tag", "members", "member", "single", 
+    "define", "bodies", "head", "body", "contol", "remark", 0  
+  ];
+  //}
 
   // ----------------------------- PARSE ---------------------------------------
 
@@ -966,7 +968,7 @@
 
     // If reentrant, generate the variables locally (set on this)
     if (YY.pure) {
-      context.scope = s = this;
+      context.scope = s = context;
     
     // If nonreentrant, generate the variables and stacks here.
     } else {
@@ -1016,7 +1018,7 @@
       s.loco;
     }
 
-    setParserStackList(s.scope, YY.stack_initial_depth);
+    setParserStackList(s.scope, YY.stack_initial_depth, true);
 
     // Ok done declaring variables. Set the ball rolling!
     console.log("Starting parse.");
@@ -1063,6 +1065,7 @@
     // (YYFAIL) - from transition of new meaning of YYERROR when moving from
     // GCC v2 from v1, remove this
     context.fail = function () {
+      console.log("FAILING")
       context.errorLab();
     };
 
@@ -1099,13 +1102,14 @@
     //----------------------------------
     context.abortLab = function() {
       context.result = 1;
+      console.log("RESULINTG")
       context.returnResult();
     };
 
     //------------------------------------
     // yyacceptlab -- YYACCEPT comes here.
     //------------------------------------
-    context.acceptlab = function () {
+    context.acceptLab = function () {
       context.result = 0;
       context.returnResult();
     };
@@ -1143,7 +1147,7 @@
         s.error_count += 1;
 
         if (YY.error_verbose) {
-          s.truc = YY.table_dict.set_state_action[current_state];
+          s.truc = YY.table_dict.set_state_action[s.current_state];
           if (truc > YY.flag && truc > YY.last) {
             count = 0;
 
@@ -1213,7 +1217,7 @@
       //if (0) {
       //  // This is wrong; only states that explicitly want error tokens
       //  // should shift them.
-      //  truc = YY.table_dict.default_reduction_rule[current_state];
+      //  truc = YY.table_dict.default_reduction_rule[s.current_state];
       //  if (truc) {
       //   yydefault();
       //  }
@@ -1233,7 +1237,7 @@
       s.semantic_top = s.semantic_top - 1;
 
       // XXX *--yyssp?
-      current_state = s.state_top - 1;
+      s.current_state = s.state_top - 1;
       if (YY.lsp_needed) {
         s.location_top = s.location_top - 1;
       }
@@ -1254,14 +1258,14 @@
     context.errorHandle = function () {
       var s = context.scope;
 
-      s.truc = YY.table_dict.set_state_action[current_state];
+      s.truc = YY.table_dict.set_state_action[s.current_state];
       if (s.truc === YY.flag) {
         context.errorDefault();
       }
 
       s.truc = s.truc + YY.terror;
       if (s.truc < 0 || s.truc > YY.last ||
-        YY.table_dict.state_action_valid[truc] !== YY.terror) {
+        YY.table_dict.state_action_valid[s.truc] !== YY.terror) {
         context.errorDefault();
       }
       s.truc = YY.table_dict.state_action[s.truc];
@@ -1277,14 +1281,19 @@
       if (s.truc == YY.final) {
         context.acceptLab();
       }
-      console.log("[info] Shifting error token.");
+
+      console.log("[info] - Shifting error token.");
+      console.log(s)
+      console.log(s.truc)
+      console.log(s.lval)
+      console.log(s.loco)
       
       // XXX ? set new entries as top of the stack
       s.semantic_view[s.semantic_top] = s.lval; // yylval
       if (YY.lsp_needed) {
         s.location_view[s.semantic_top] = s.loco; // yyloc;
       }
-      current_state = s.truc;
+      s.current_state = s.truc;
       context.newState();
     };
 
@@ -1306,11 +1315,11 @@
     // defaultAction -- do the default reduction (action) for the current state.
     //--------------------------------------------------------------------------
     context.defaultAction = function () {
-      truc = YY.table_dict.default_reduction_rule[current_state];
-      if (truc === 0) {
-        context.errlab();
+      s.truc = YY.table_dict.default_reduction_rule[s.current_state];
+      if (s.truc === 0) {
+        context.errorLab();
       }
-      context.reduce();
+      context.reduceState();
     };
     
     //------------------------------------------------------------
@@ -1320,7 +1329,7 @@
       
       // In all cases, when you get here, the value and location stacks
       // have just been pushed. so pushing a state here evens the stacks.
-      context.state_top = context.state_top + 1;
+      context.scope.state_top = context.state_top + 1;
     };
 
     //------------------------------------------------------------
@@ -1334,7 +1343,7 @@
         copy_semantic_view,
         copy_location_view;
 
-      s.state_top = current_state;
+      s.state_top = s.current_state;
 
       // Introduce a pile of code for handlinge memory overflow
       if (s.state_top >= s.state_bottom + s.stack_size - 1) {
@@ -1410,7 +1419,7 @@
         }
       }
 
-      console.log("Entering state: " + current_state);
+      console.log("Entering state: " + s.current_state);
       s.backup();
     };
 
@@ -1425,7 +1434,7 @@
 
       // First try to decide what to do without reference to lookahead token.
       // Refer to what yypact is saying about the current state
-      s.truc = YY.table_dict.set_state_action[current_state];
+      s.truc = YY.table_dict.set_state_action[s.current_state];
       if (s.truc == YY.flag) {
         context.defaultAction();
       }
@@ -1436,7 +1445,7 @@
       // in external form. Note, lexer will also set YY.lval(!)
       if (YY.char == YY.empty) {
         console.log("[info] - Reading a token: ");
-        YY.char = YYLEX(YY.ival, YY.loco, "YYLEX_PARAM");
+        YY.lexer(YY.ival, YY.loco, "YYLEX_PARAM");
         console.log("XXX CHAR =", YY.char);
         console.log("XXX LVAL =", YY.lval);
       }
@@ -1464,35 +1473,37 @@
         }
       }
 
-      // add character to YY.truc. ah, math...
-      YY.truc += s.lookahead_token_number;
-      if (YY.truc < 0 || YY.truc > YY.last || YY.table_dict.state_action_valid[YY.truc] !== s.lookahead_token_number) {
+      // add character to s.truc. ah, math...
+      s.truc += s.lookahead_token_number;
+      if (s.truc < 0 || s.truc > YY.last || YY.table_dict.state_action_valid[s.truc] !== s.lookahead_token_number) {
         context.defaultAction();
       }
-      YY.truc = YY.table_dict.state_action[YY.truc];
+      s.truc = YY.table_dict.state_action[s.truc];
 
-      // YY.truc can be rule or state, now it is what to do for this token type 
+      // s.truc can be rule or state, now it is what to do for this token type 
       // in this current state.
-      //  Negative => reduce, -YY.truc is rule number.
-      //  Positive => shift, YY.truc is new state.
+      //  Negative => reduce, -s.truc is rule number.
+      //  Positive => shift, s.truc is new state.
       //  if new state is final state => don't bother shift, just return success
       //  if 0 or most negative number => error.
-      if (YY.truc < 0) {
-         if (YY.truc == YY.flag) {
+      if (s.truc < 0) {
+         if (s.truc == YY.flag) {
           context.errorLab();
          }
-         YY.truc = -YY.truc;
+         s.truc = -s.truc;
          context.reduceState();
-      } else if (YY.truc === 0) {
+      } else if (s.truc === 0) {
         context.errorLab();
       }
 
-      if (YY.truc === YY.final) {
+      if (s.truc === YY.final) {
         context.acceptLab();
       }
 
       // Shift the lookahead token.
-      console.log("[info] - Shifting token " + YY.char + " (" + YY.table_dict.token_number_of_token[s.lookahead_token_number] + ")");
+      if (YY.verbose) {
+        console.log("[info] - Shifting token " + YY.char + " (" + YY.table_dict.token_number_of_token[s.lookahead_token_number] + ")");
+      }
 
       // Discard the token being shifted unless it is eof.
       if (YY.char !== YY.end_of_file_reached) {
@@ -1507,7 +1518,7 @@
       if (s.shift_token_error_message_threshold) {
         s.shift_token_error_message_threshold--;
       }
-      current_state = YY.truc;
+      s.current_state = s.truc;
       context.newState();
     };
 
@@ -1520,7 +1531,7 @@
 
       // truc is the number of a rule to reduce with.
       s.right_hand_side_length =
-        YY.table_dict.rule_right_hand_side_symbol_length[YY.truc];
+        YY.table_dict.rule_right_hand_side_symbol_length[s.truc];
 
       // If YYLEN (s.right_hand_side_length) is nonzero, implement the default 
       // value of the action:
@@ -1546,18 +1557,18 @@
 
       if (YY.debug) {
         console.log(
-          "[info] - Reducing via rule " + YY.truc + " (line " +
-            YY.table_dict.rule_line_pointer[YY.truc] + ")"
+          "[info] - Reducing via rule " + s.truc + " (line " +
+            YY.table_dict.rule_line_pointer[s.truc] + ")"
         );
 
         // Print the symbols being reduced, and their result.
-        for (i = YY.table_dict.right_hand_side_index[YY.truc]; YY.table_dict.right_hand_side[i] > 0; i++) {
+        for (i = YY.table_dict.right_hand_side_index[s.truc]; YY.table_dict.right_hand_side[i] > 0; i++) {
           console.log("[info] " + YY.table_dict.token_number_of_token[YY.table_dict.right_hand_side[i]] + " ");
         }
-        console.log("[info] ->" + YY.table_dict.token_number_of_token[YY.table_dict.rule_left_hand_side_symbol_number[YY.truc]]);
+        console.log("[info] ->" + YY.table_dict.token_number_of_token[YY.table_dict.rule_left_hand_side_symbol_number[s.truc]]);
       }
   
-    switch (YY.truc) {
+    switch (s.truc) {
       case 7: //#line 59 "gram.y"
         context.errorAccept();
         break;
@@ -1653,12 +1664,12 @@
     // that goes to, based on the state we popped back to and the rule
     // number reduced by.
   
-    YY.truc = YY.table_dict.rule_left_hand_side_symbol_number[YY.truc];
-    current_state = YY.switch_dict.non_terminal_goto_method[YY.truc - YY.nt_base] + s.state_top;
-    if (current_state >= 0 && current_state <= YY.last && YY.table_dict.state_action_valid[current_state] === s.semantic_top) {
-      current_state = YY.table_dict.state_action[current_state];
+    s.truc = YY.table_dict.rule_left_hand_side_symbol_number[s.truc];
+    s.current_state = YY.table_dict.non_terminal_goto_method[s.truc - YY.nt_base] + s.state_top;
+    if (s.current_state >= 0 && s.current_state <= YY.last && YY.table_dict.state_action_valid[s.current_state] === s.semantic_top) {
+      s.current_state = YY.table_dict.state_action[s.current_state];
     } else {
-      current_state = YY.table_dict.default_goto_method[truc - YY.nt_base];
+      s.current_state = YY.table_dict.default_goto_method[truc - YY.nt_base];
     }
     context.newState();
    };
