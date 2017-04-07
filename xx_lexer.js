@@ -22,10 +22,20 @@
   // https://www.coin-or.org/Doxygen/OS/structyyguts__t.html
 
   var lex;
-  
+
   // as before single YY
   if (YY === undefined) {
     throw new Error("YY is not defined.");
+  }
+  
+  // (YY_SC_TO_UI)
+  // Promotes a possibly negative, possibly signed char to an unsigned
+  // integer for use as an array index.  If the signed char is negative,
+  // we want to instead treat it as an 8-bit unsigned char, hence the
+  // double cast.
+  // #define YY_SC_TO_UI(c) ((unsigned int) (unsigned char) c)
+  function doubleCast(my_c) {
+    return my_c;
   }
 
   YY.lexer_dict = {};
@@ -33,8 +43,68 @@
   // save some code
   lex = YY.lexer_dict;
 
+  // ----------------------------- Tables --------------------------------------
+
+  lex.table_dict = {
+
+    // (yy_ec) - ??
+    "ec": [
+      0,
+      1,    1,    1,    1,    1,    1,    1,    1,    2,    3,
+      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+      1,    2,    4,    1,    5,    1,    6,    1,    1,    1,
+      1,    7,    1,    1,    1,    1,    1,    8,    8,    8,
+      8,    8,    8,    8,    8,    8,    8,    9,    1,    1,
+      1,    1,    1,   10,   11,    8,    8,    8,   12,    8,
+     13,    8,   14,    8,    8,    8,    8,   15,   16,    8,
+      8,   17,   18,    8,    8,    8,    8,    8,    8,    8,
+      1,    1,    1,    1,    8,    1,    8,    8,    8,    8,
+  
+      8,    8,    8,    8,    8,    8,    8,    8,    8,    8,
+      8,    8,    8,    8,    8,    8,    8,    8,    8,    8,
+      8,    8,   19,    1,   20,    1,    1,    1,    1,    1,
+      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+  
+      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+      1,    1,    1,    1,    1
+    ],
+
+    // (yy_accept) - ??
+    "accept": [
+        0,
+        0,    0,   15,   13,   12,   10,    7,   13,   13,    8,
+        2,    9,   13,    3,    4,    0,   11,    0,    0,    2,
+        1,    0,    0,    0,    0,    0,    0,    0,    0,    5,
+        6,    0
+    ],
+    
+    // (yy_base)
+    "base": [
+      0,
+      0,    0,   39,   40,   40,   40,   40,   35,   10,   40,
+      0,   40,    0,   40,   40,   34,   40,   18,   22,    0,
+      0,   16,   18,   18,   15,   17,   12,   13,   15,   40,
+     40,   40,   24,   21,   20
+    ]
+
+  };
+
   // ------------------------------ Setup --------------------------------------
 
+  // (yy_c) character?
+  lex.character;
+  
   // (yyin) file input file
   lex.file_input;
 
@@ -47,8 +117,9 @@
   // (yytext) is a pointer to the matched string (NULL-terminated)
   lex.matched_string;
 
-  // #define yytext_ptr yytext
-  // XXXXXXyytext_ptr = 0;
+  // (yytext_ptr) => #define yytext_ptr yytext, a macro pointing to yytext
+  // why not use it directly?
+  lex.matched_string_pseudo_pointer = 0;
   
   // (yy_cp) int
   lex.current_run_character_position;
@@ -95,7 +166,7 @@
   // (yy_load_buffer_state)
   lex.loadBufferState = function () {
     lex.buffer_character_len = lex.current_buffer.buffer_state_character_len;
-    yytext_ptr = lex.current_run_buffer_character_position = lex.current_buffer.yy_buf_pos;
+    lex.matched_string_pseudo_pointer = lex.current_run_buffer_character_position = lex.current_buffer.buffer_state_current_position;
     lex.file_input = lex.current_buffer.buffer_state_input_file;
     lex.tmp_character_hold = lex.current_run_buffer_character_position;
   };
@@ -132,8 +203,8 @@
       // EOB characters.
       buffer_state_character_len: null,
 
-      // current position in input buffer
-      yy_buf_pos: null,
+      // (yy_buf_pos) current position in input buffer
+      buffer_state_current_position: null,
   
       // Whether we're considered to be at the beginning of a line.
       // If so, '^' rules will be active on the next match, otherwise not.
@@ -189,7 +260,31 @@
     return b;
   };
 
+  // (yy_match)
+  // not sure this is so easy to take out and the code is just executed 
+  // disregarding the goto
+  lex.match_text = function () {
+    do {
+      lex.character = lex.table_dict.ec[doubleCast(lex.current_run_character_position)];
 
+      if (lex.table_dict.accept[lexer_current_state]) {
+        yy_last_accepting_state = lexer_current_state;
+        yy_last_accepting_cpos = lex.current_run_character_position;
+      }
+
+      while (yy_chk[yy_base[lexer_current_state] + yy_c] !== lexer_current_state) {
+            lexer_current_state = yy_def[lexer_current_state];
+            if (lexer_current_state >= 33 ) {
+              lex.character = yy_meta[yy_c];
+            }
+          }
+          lexer_current_state = yy_nxt[yy_base[lexer_current_state] + yy_c];
+          ++lex.current_run_character_position;
+
+    } while (lex.table_dict.base[lexer_current_state] !== 40);
+    
+  };
+  
   // ------------------------------- Start -------------------------------------
   // Default declaration of scanner
   lex.lexer = function (my_ival, my_loco, my_param) {
@@ -219,257 +314,245 @@
     }
 
     // loop until end of file is reached
-    do {
+    while (1) {
       lex.current_run_character_position = lex.current_run_buffer_character_position;
-    
+
       // Support of yytext.
       lex.current_run_character_position = lex.tmp_character_hold;
 
-      /* yy_bp points to the position in yy_ch_buf of the start of
-		 * the current run.
-		 */
+      // yy_bp points to the position in yy_ch_buf of the start of current run.
+      // start position = character poistion
       lex.current_run_buffer_start_position = lex.current_run_character_position;
-      
-      lexer_current_state = yy_start;
 
-    } while (1);
+      lexer_current_state = lex.start_state;
 
-    function yy_match() { 
-      do {
-        // XXX ?
-        YY_CHAR = yy_c = yy_ec[YY_SC_TO_UI(lex.current_run_character_position)];
-        if (yy_accept[lexer_current_state]) {
-          yy_last_accepting_state = lexer_current_state;
-          yy_last_accepting_cpos = lex.current_run_character_position;
-        }
-        while (yy_chk[yy_base[lexer_current_state] + yy_c] !== lexer_current_state) {
-          lexer_current_state = yy_def[lexer_current_state];
-          if (lexer_current_state >= 33 ) {
-            yy_c = yy_meta[yy_c];
-          }
-        }
-        lexer_current_state = yy_nxt[yy_base[lexer_current_state] + yy_c];
-        ++lex.current_run_character_position;  
-      } while (yy_base[lexer_current_state] != 40);
-    }
-    
-    function yy_find_action() {
-      action_to_run = yy_accept[lexer_current_state];
+      // as functions should not be declared inside a loop
+      lex.match_text();
+      lex.find_action();
+      lex.do_action();
+
       
-      // have to back up
-      if (action_to_run === 0) {
-        lex.current_run_character_position = yy_last_accepting_cpos;
-        lexer_current_state = yy_last_accepting_state;
-        action_to_run = yy_accept[lexer_current_state];
-      }
-      YY_DO_BEFORE_ACTION;
-    }
     
-    // This label is used only to access EOF actions.
-    function do_action() {
-      
-      // beginning of action switch
-      switch (action_to_run) {
+      function yy_find_action() {
+        action_to_run = lex.table_dict.accept[lexer_current_state];
         
-        // must back up, undo the effects of YY_DO_BEFORE_ACTION
-        case 0:
-          lex.current_run_character_position = lex.tmp_character_hold;
+        // have to back up
+        if (action_to_run === 0) {
           lex.current_run_character_position = yy_last_accepting_cpos;
           lexer_current_state = yy_last_accepting_state;
-          return yy_find_action();
-        case 1:
-          YY_RULE_SETUP();
-          // #line 2 "gram.l"
-          //{
-          yylval = lex.matched_string + 1;
-          return("TAG");
-          //}
-          break;
-        case 2:
-          YY_RULE_SETUP();
-          //#line 7 "gram.l"
-          //{
-          yylval = lex.matched_string;
-          return("SYMBOL");
-          //}
-          break;
-        case 3:
-          YY_RULE_SETUP();
-          //#line 12 "gram.l"
-          //{
-          ModeBlock = 1;
-          return("OPEN");
-          //}
-          break;
-        case 4:
-          YY_RULE_SETUP();
-          //#line 17 "gram.l"
-          //{
-          ModeBlock = 0;
-          return("CLOSE");
-          //}
-          break;
-        case 5:
-          YY_RULE_SETUP();
-          //#line 22 "gram.l"
-          return("CTRL_ASSIGN");
-          break;
-        case 6:
-          YY_RULE_SETUP();
-          //#line 23 "gram.l"
-          return("CTRL_IGNORE");
-          break;
-        case 7:
-          YY_RULE_SETUP();
-          //#line 24 "gram.l"
-          return("REVERSE");
-          break;
-        case 8:
-          YY_RULE_SETUP();
-          //#line 25 "gram.l"
-          return("STARTCLASS");
-          break;
-        case 9:
-          YY_RULE_SETUP();
-          //#line 26 "gram.l"
-          return("LET");
-          break;
-        case 10:
-          YY_RULE_SETUP();
-          //#line 27 "gram.l"
-          return("NL");
-          break;
-        case 11:
-          YY_RULE_SETUP();
-          //#line 28 "gram.l"
-          return("REMARK");
-          break;
-        case 12:
-          YY_RULE_SETUP();
-          //#line 29 "gram.l"
-          //{};
-          break;
-        case 13:
-          YY_RULE_SETUP();
-          //#line 31 "gram.l"
-          //{
-          errMes("Lexical mistake \"+ lex.matched_string +\"");
-          return 1;
-          //}
-          break;
-        case 14:
-          YY_RULE_SETUP();
-          //#line 35 "gram.l"
-          ECHO();
-          break;
-        
-        //#line 723 "lex.yy.c"
-        case YY_STATE_EOF(INITIAL):
-          return yyterminate();
-        
-        case YY_END_OF_BUFFER:
+          action_to_run = lex.table_dict.accept[lexer_current_state];
+        }
+        YY_DO_BEFORE_ACTION;
+      }
     
-          // Amount of text matched not including the EOB char.
-          yy_amount_of_matched_text = (lex.current_run_character_position - yytext_ptr) - 1;
-
-          // Undo the effects of YY_DO_BEFORE_ACTION.
-          lex.current_run_character_position = lex.tmp_character_hold;
-          YY_RESTORE_YY_MORE_OFFSET();
-
-          if (lex.current_buffer.yy_buffer_status === YY_BUFFER_NEW ) {
-
-            // We're scanning a new file or input source.  It's
-            // possible that this happened because the user
-            // just pointed file input (yyin) at a new source and called
-            // yylex().  If so, then we have to assure
-            // consistency between lex.current_buffer and our
-            // globals.  Here is the right place to do so, because
-            // this is the first action (other than possibly a
-            // back-up) that will match for the new input source.
-            lex.buffer_character_len = lex.current_buffer.buffer_state_character_len;
-            lex.current_buffer.buffer_state_input_file = lex.file_input;
-            lex.current_buffer.yy_buffer_status = YY_BUFFER_NORMAL;
-          }
-
-          // Note that here we test for lex.current_run_buffer_character_position "<=" to the position
-          // of the first EOB in the buffer, since lex.current_run_buffer_character_position will
-          // already have been incremented past the NUL character
-          // (since all states make transitions on EOB to the
-          // end-of-buffer state).  Contrast this with the test
-          // in input().
+      // This label is used only to access EOF actions.
+      function do_action() {
+      
+        // beginning of action switch
+        switch (action_to_run) {
           
-          // XXX check getInt8 is correct ...len
-          if (lex.current_run_buffer_character_position <= lex.current_buffer.buffer_state_array_buffer.getInt8(lex.current_buffer.buffer_state_character_len)) {
-            // This was really a NUL.
-            yy_state_type = yy_next_state;
-            lex.current_run_buffer_character_position = yytext_ptr + yy_amount_of_matched_text;
-            lexer_current_state = yy_get_previous_state();
+          // must back up, undo the effects of YY_DO_BEFORE_ACTION
+          case 0:
+            lex.current_run_character_position = lex.tmp_character_hold;
+            lex.current_run_character_position = yy_last_accepting_cpos;
+            lexer_current_state = yy_last_accepting_state;
+            return yy_find_action();
+          case 1:
+            YY_RULE_SETUP();
+            // #line 2 "gram.l"
+            //{
+            yylval = lex.matched_string + 1;
+            return("TAG");
+            //}
+            break;
+          case 2:
+            YY_RULE_SETUP();
+            //#line 7 "gram.l"
+            //{
+            yylval = lex.matched_string;
+            return("SYMBOL");
+            //}
+            break;
+          case 3:
+            YY_RULE_SETUP();
+            //#line 12 "gram.l"
+            //{
+            ModeBlock = 1;
+            return("OPEN");
+            //}
+            break;
+          case 4:
+            YY_RULE_SETUP();
+            //#line 17 "gram.l"
+            //{
+            ModeBlock = 0;
+            return("CLOSE");
+            //}
+            break;
+          case 5:
+            YY_RULE_SETUP();
+            //#line 22 "gram.l"
+            return("CTRL_ASSIGN");
+            break;
+          case 6:
+            YY_RULE_SETUP();
+            //#line 23 "gram.l"
+            return("CTRL_IGNORE");
+            break;
+          case 7:
+            YY_RULE_SETUP();
+            //#line 24 "gram.l"
+            return("REVERSE");
+            break;
+          case 8:
+            YY_RULE_SETUP();
+            //#line 25 "gram.l"
+            return("STARTCLASS");
+            break;
+          case 9:
+            YY_RULE_SETUP();
+            //#line 26 "gram.l"
+            return("LET");
+            break;
+          case 10:
+            YY_RULE_SETUP();
+            //#line 27 "gram.l"
+            return("NL");
+            break;
+          case 11:
+            YY_RULE_SETUP();
+            //#line 28 "gram.l"
+            return("REMARK");
+            break;
+          case 12:
+            YY_RULE_SETUP();
+            //#line 29 "gram.l"
+            //{};
+            break;
+          case 13:
+            YY_RULE_SETUP();
+            //#line 31 "gram.l"
+            //{
+            errMes("Lexical mistake \"+ lex.matched_string +\"");
+            return 1;
+            //}
+            break;
+          case 14:
+            YY_RULE_SETUP();
+            //#line 35 "gram.l"
+            ECHO();
+            break;
+          
+          //#line 723 "lex.yy.c"
+          case YY_STATE_EOF(INITIAL):
+            return yyterminate();
+          
+          case YY_END_OF_BUFFER:
       
-            // Okay, we're now positioned to make the NUL
-            // transition.  We couldn't have
-            // yy_get_previous_state() go ahead and do it
-            // for us because it doesn't know how to deal
-            // with the possibility of jamming (and we don't
-            // want to build jamming into it because then it
-            // will run more slowly).
-            yy_next_state = yy_try_NUL_trans(lexer_current_state);
-            lex.current_run_buffer_start_position = yytext_ptr + YY_MORE_ADJ;
-
-            // Consume the NUL.
-            if (yy_next_state) {
-              lex.current_run_character_position = ++lex.current_run_buffer_character_position;
-              lexer_current_state = yy_next_state;
-              yy_match();
-            } else {
-              lex.current_run_character_position = lex.current_run_buffer_character_position;
-              yy_find_action();
+            // Amount of text matched not including the EOB char.
+            yy_amount_of_matched_text = (lex.current_run_character_position - lex.matched_string_pseudo_pointer) - 1;
+  
+            // Undo the effects of YY_DO_BEFORE_ACTION.
+            lex.current_run_character_position = lex.tmp_character_hold;
+            YY_RESTORE_YY_MORE_OFFSET();
+  
+            if (lex.current_buffer.yy_buffer_status === YY_BUFFER_NEW ) {
+  
+              // We're scanning a new file or input source.  It's
+              // possible that this happened because the user
+              // just pointed file input (yyin) at a new source and called
+              // yylex().  If so, then we have to assure
+              // consistency between lex.current_buffer and our
+              // globals.  Here is the right place to do so, because
+              // this is the first action (other than possibly a
+              // back-up) that will match for the new input source.
+              lex.buffer_character_len = lex.current_buffer.buffer_state_character_len;
+              lex.current_buffer.buffer_state_input_file = lex.file_input;
+              lex.current_buffer.yy_buffer_status = YY_BUFFER_NORMAL;
             }
-          } else switch (yy_get_next_buffer()) {
-      
-            case EOB_ACT_END_OF_FILE:
-              yy_did_buffer_switch_on_eof = 0;
-              if (yywrap()) {
-                
-                // Note: because we've taken care in
-                // yy_get_next_buffer() to have set up
-                // lex.matched_string (yytext), we can now set up
-                // lex.current_run_buffer_character_position so that if some total
-                // hoser (like flex itself) wants to
-                // call the scanner after we return the
-                // YY_NULL, it'll still work - another
-                // YY_NULL will get returned.
-                lex.current_run_buffer_character_position = yytext_ptr + YY_MORE_ADJ;
-                action_to_run = YY_STATE_EOF(lex.start_state_confusulation);
-                do_action();
-              } else {
-                if (yy_did_buffer_switch_on_eof === undefined) {
-                  YY_NEW_FILE;
-                }
-              }
-              break;
+  
+            // Note that here we test for lex.current_run_buffer_character_position "<=" to the position
+            // of the first EOB in the buffer, since lex.current_run_buffer_character_position will
+            // already have been incremented past the NUL character
+            // (since all states make transitions on EOB to the
+            // end-of-buffer state).  Contrast this with the test
+            // in input().
+            
+            // XXX check getInt8 is correct ...len
+            if (lex.current_run_buffer_character_position <= lex.current_buffer.buffer_state_array_buffer.getInt8(lex.current_buffer.buffer_state_character_len)) {
+              // This was really a NUL.
+              yy_state_type = yy_next_state;
+              lex.current_run_buffer_character_position = lex.matched_string_pseudo_pointer + yy_amount_of_matched_text;
+              lexer_current_state = yy_get_previous_state();
         
-            case EOB_ACT_CONTINUE_SCAN:
-              lex.current_run_buffer_character_position = yytext_ptr + yy_amount_of_matched_text;
-              lexer_current_state = yy_get_previous_state();
-      
-              lex.current_run_character_position = lex.current_run_buffer_character_position;
-              lex.current_run_buffer_start_position = yytext_ptr + YY_MORE_ADJ;
-              yy_match();
-              break;
-            case EOB_ACT_LAST_MATCH:
-              // XXX check getInt8 is correct ...len
-              lex.current_run_buffer_character_position = lex.current_buffer.buffer_state_array_buffer.getInt8(lex.current_buffer.buffer_state_character_len);
-              lexer_current_state = yy_get_previous_state();
-              lex.current_run_character_position = lex.current_run_buffer_character_position;
-              lex.current_run_buffer_start_position = yytext_ptr + YY_MORE_ADJ;
-              yy_find_action();
-          }
-        break;
-      
-      default:
-        YY_FATAL_ERROR("fatal flex scanner internal error--no action found");
-        break;
-      } // end of action switch
+              // Okay, we're now positioned to make the NUL
+              // transition.  We couldn't have
+              // yy_get_previous_state() go ahead and do it
+              // for us because it doesn't know how to deal
+              // with the possibility of jamming (and we don't
+              // want to build jamming into it because then it
+              // will run more slowly).
+              yy_next_state = yy_try_NUL_trans(lexer_current_state);
+              lex.current_run_buffer_start_position = lex.matched_string_pseudo_pointer + YY_MORE_ADJ;
+  
+              // Consume the NUL.
+              if (yy_next_state) {
+                lex.current_run_character_position = ++lex.current_run_buffer_character_position;
+                lexer_current_state = yy_next_state;
+                lex.match_texth();
+              } else {
+                lex.current_run_character_position = lex.current_run_buffer_character_position;
+                yy_find_action();
+              }
+            } else switch (yy_get_next_buffer()) {
+        
+              case EOB_ACT_END_OF_FILE:
+                yy_did_buffer_switch_on_eof = 0;
+                if (yywrap()) {
+                  
+                  // Note: because we've taken care in
+                  // yy_get_next_buffer() to have set up
+                  // lex.matched_string (yytext), we can now set up
+                  // lex.current_run_buffer_character_position so that if some total
+                  // hoser (like flex itself) wants to
+                  // call the scanner after we return the
+                  // YY_NULL, it'll still work - another
+                  // YY_NULL will get returned.
+                  lex.current_run_buffer_character_position = lex.matched_string_pseudo_pointer + YY_MORE_ADJ;
+                  action_to_run = YY_STATE_EOF(lex.start_state_confusulation);
+                  do_action();
+                } else {
+                  if (yy_did_buffer_switch_on_eof === undefined) {
+                    YY_NEW_FILE;
+                  }
+                }
+                break;
+          
+              case EOB_ACT_CONTINUE_SCAN:
+                lex.current_run_buffer_character_position = lex.matched_string_pseudo_pointer + yy_amount_of_matched_text;
+                lexer_current_state = yy_get_previous_state();
+        
+                lex.current_run_character_position = lex.current_run_buffer_character_position;
+                lex.current_run_buffer_start_position = lex.matched_string_pseudo_pointer + YY_MORE_ADJ;
+                lex.match_text();
+                break;
+              case EOB_ACT_LAST_MATCH:
+                // XXX check getInt8 is correct ...len
+                lex.current_run_buffer_character_position = lex.current_buffer.buffer_state_array_buffer.getInt8(lex.current_buffer.buffer_state_character_len);
+                lexer_current_state = yy_get_previous_state();
+                lex.current_run_character_position = lex.current_run_buffer_character_position;
+                lex.current_run_buffer_start_position = lex.matched_string_pseudo_pointer + YY_MORE_ADJ;
+                yy_find_action();
+            }
+            break; // end buffer
+          
+          default:
+            YY_FATAL_ERROR("fatal flex scanner internal error--no action found");
+            break;
+          } // end of action switch
+
+      }
+    
     } // end of scanning one token
   
   };
@@ -503,7 +586,6 @@
   var YY_SKIP_YYWRAP;
   var YY_NULL;
   var ECHO;
-  var YY_SC_TO_UI;
   var YY_BREAK;
   var YY_INPUT;
   var YY_READ_BUF_SIZE;
@@ -532,7 +614,6 @@
   var yy_flex_strle;
   var yyrestart;
   var yy_is_jam;
-  var yy_match;
   var getc;
   var stdin;
   var stdout;
@@ -566,10 +647,7 @@
   var msg;
   var frwrite;
   var buf_ptr;
-  var yy_accept;
-  var yy_ec;
   var yy_meta;
-  var yy_base;
   var yy_def;
   var yy_nxt;
   var yy_last_accepting_state;
@@ -661,15 +739,7 @@
   
   // Returned upon end-of-file.
   YY_NULL = 0;
-  
-  // Promotes a possibly negative, possibly signed char to an unsigned
-  // integer for use as an array index.  If the signed char is negative,
-  // we want to instead treat it as an 8-bit unsigned char, hence the
-  // double cast.
-  // #define YY_SC_TO_UI(c) ((unsigned int) (unsigned char) c)
-  YY_SC_TO_UI = function (c) {
-    return c;
-  };
+
   
   // Enter a start condition.  This macro really ought to take a parameter,
   // but we do it the disgusting crufty way forced on us by the ()-less
@@ -730,7 +800,7 @@
   };
 
   unput = function (c) {
-    yyunput(c, yytext_ptr);
+    yyunput(c, lex.matched_string_pseudo_pointer);
   };
 
   // The following is because we cannot portably get our hands on size_t
@@ -833,8 +903,8 @@
   // Done after the current pattern has been matched and before the
   // corresponding action - sets up lex.matched_string (yytext).
   YY_DO_BEFORE_ACTION = function () {
-    yytext_ptr = yy_bp;
-    lex.matched_string_len = lex.current_run_character_position - yy_bp;
+    lex.matched_string_pseudo_pointer = lex.current_run_buffer_start_position;
+    lex.matched_string_len = lex.current_run_character_position - lex.current_run_buffer_start_position;
     lex.tmp_character_hold = lex.current_run_character_position; // pointer to
     lex.current_run_buffer_character_position = lex.current_run_character_position;
   };
@@ -842,60 +912,15 @@
   YY_NUM_RULES = 14;
   YY_END_OF_BUFFER = 15;
 
-  yy_accept = [
-      0,
-      0,    0,   15,   13,   12,   10,    7,   13,   13,    8,
-      2,    9,   13,    3,    4,    0,   11,    0,    0,    2,
-      1,    0,    0,    0,    0,    0,    0,    0,    0,    5,
-      6,    0
-  ];
   
-  yy_ec = [
-    0,
-    1,    1,    1,    1,    1,    1,    1,    1,    2,    3,
-    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-    1,    2,    4,    1,    5,    1,    6,    1,    1,    1,
-    1,    7,    1,    1,    1,    1,    1,    8,    8,    8,
-    8,    8,    8,    8,    8,    8,    8,    9,    1,    1,
-    1,    1,    1,   10,   11,    8,    8,    8,   12,    8,
-   13,    8,   14,    8,    8,    8,    8,   15,   16,    8,
-    8,   17,   18,    8,    8,    8,    8,    8,    8,    8,
-    1,    1,    1,    1,    8,    1,    8,    8,    8,    8,
-
-    8,    8,    8,    8,    8,    8,    8,    8,    8,    8,
-    8,    8,    8,    8,    8,    8,    8,    8,    8,    8,
-    8,    8,   19,    1,   20,    1,    1,    1,    1,    1,
-    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-
-    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-    1,    1,    1,    1,    1
-  ];
-
+  
   yy_meta = [
     0,
     1,    1,    1,    1,    1,    1,    1,    2,    1,    1,
     2,    2,    2,    2,    2,    2,    2,    2,    1,    1
   ];
 
-  yy_base = [
-    0,
-    0,    0,   39,   40,   40,   40,   40,   35,   10,   40,
-    0,   40,    0,   40,   40,   34,   40,   18,   22,    0,
-    0,   16,   18,   18,   15,   17,   12,   13,   15,   40,
-   40,   40,   24,   21,   20
-  ];
-
+  
   yy_def = [
      0,
      32,    1,   32,   32,   32,   32,   32,   33,   32,   32,
@@ -957,7 +982,7 @@
     yyunput = YY_PROTO(c, buf_ptr);
   }
 
-  if (yytext_ptr === undefined) {
+  if (lex.matched_string_pseudo_pointer === undefined) {
     // static void yy_flex_strncpy YY_PROTO(( char *, yyconst char *, int ));
     yy_flex_strncpy = YY_PROTO(char, yyconst);
   }
@@ -1114,7 +1139,7 @@
   //  EOB_ACT_END_OF_FILE - end of file
   yy_get_next_buffer = function () {
     var dest = lex.current_buffer.buffer_state_array_buffer,
-      source = yytext_ptr,
+      source = lex.matched_string_pseudo_pointer,
       number_to_move,
       i,
       ret_val;
@@ -1128,7 +1153,7 @@
       
       // We matched a single character, the EOB, so
       // treat this as a final EOF.
-      if (lex.current_run_buffer_character_position - yytext_ptr - YY_MORE_ADJ === 1) {
+      if (lex.current_run_buffer_character_position - lex.matched_string_pseudo_pointer - YY_MORE_ADJ === 1) {
         return EOB_ACT_END_OF_FILE;
 
       // We matched some text prior to the EOB, first
@@ -1141,7 +1166,7 @@
     // Try to read more data.
 
     // First move last chars to start of buffer.
-    number_to_move = (lex.current_run_buffer_character_position - yytext_ptr) - 1;
+    number_to_move = (lex.current_run_buffer_character_position - lex.matched_string_pseudo_pointer) - 1;
 
     for (i = 0; i < number_to_move; ++i) {
       //XXX *(dest++) = *(source++);
@@ -1220,7 +1245,7 @@
       lex.current_buffer.buffer_state_array_buffer.setInt8(lex.current_buffer.buffer_state_character_len, YY_END_OF_BUFFER_CHAR);
       lex.current_buffer.buffer_state_array_buffer.setInt8(lex.current_buffer.buffer_state_character_len + 1, YY_END_OF_BUFFER_CHAR);
     
-      yytext_ptr = lex.current_buffer.buffer_state_array_buffer.getInt8(0);
+      lex.matched_string_pseudo_pointer = lex.current_buffer.buffer_state_array_buffer.getInt8(0);
       return ret_val;
     }
   };
@@ -1231,17 +1256,17 @@
 
     tmp_lexer_current_state = lex.start_state;
 
-    for (lex.current_run_character_position = yytext_ptr + YY_MORE_ADJ; lex.current_run_character_position < lex.current_run_buffer_character_position; ++lex.current_run_character_position) {
-      //YY_CHAR yy_c = (*lex.current_run_character_position ? yy_ec[YY_SC_TO_UI(*lex.current_run_character_position)] : 1);
-      yy_c = (lex.current_run_character_position ? yy_ec[YY_SC_TO_UI(lex.current_run_character_position)] : 1);
-      if (yy_accept[tmp_lexer_current_state]) {
+    for (lex.current_run_character_position = lex.matched_string_pseudo_pointer + YY_MORE_ADJ; lex.current_run_character_position < lex.current_run_buffer_character_position; ++lex.current_run_character_position) {
+      //YY_CHAR  (yy_c) = (*lex.current_run_character_position ? yy_ec[doubleCast(*lex.current_run_character_position)] : 1);
+      lex.character = (lex.current_run_character_position ? lex.table_dict.ec[doubleCast(lex.current_run_character_position)] : 1);
+      if (lex.table_dict.accept[tmp_lexer_current_state]) {
         yy_last_accepting_state = tmp_lexer_current_state;
         yy_last_accepting_cpos = lex.current_run_character_position;
       }
       while (yy_chk[yy_base[tmp_lexer_current_state] + yy_c] !== tmp_lexer_current_state) {
         tmp_lexer_current_state = yy_def[tmp_lexer_current_state];
         if (tmp_lexer_current_state >= 33) {
-          yy_c = yy_meta[yy_c];
+          lex.character = yy_meta[yy_c];
         }
       }
       tmp_lexer_current_state = yy_nxt[yy_base[tmp_lexer_current_state] + yy_c];
@@ -1258,15 +1283,15 @@
   yy_try_NUL_trans = function (my_lexer_current_state){
     yy_is_jam;
     lex.current_run_character_position = lex.current_run_buffer_character_position;
-    yy_c = 1;
-    if (yy_accept[my_lexer_current_state]) {
+    lex.character = 1;
+    if (lex.table_dict.accept[my_lexer_current_state]) {
       yy_last_accepting_state = my_lexer_current_state;
       yy_last_accepting_cpos = lex.current_run_character_position;
     }
     while (yy_chk[yy_base[my_lexer_current_state] + yy_c] !== my_lexer_current_state) {
       my_lexer_current_state = yy_def[my_lexer_current_state];
       if (my_lexer_current_state >= 33) {
-        yy_c = yy_meta[yy_c];
+        lex.character = yy_meta[lex.character];
       }
     }
     my_lexer_current_state = yy_nxt[yy_base[my_lexer_current_state] + yy_c];
@@ -1277,11 +1302,11 @@
 
   if (YY_NO_UNPUT === undefined) {
     if (YY_USE_PROTOS) {
-      //yyunput = function(c, yy_bp);
+      //yyunput = function(c, lex.current_run_buffer_start_position);
     } else {
-      //yyunput = function(c, yy_bp);
+      //yyunput = function(c, lex.current_run_buffer_start_position);
     }
-    yyunput = function (c, yy_bp) {
+    yyunput = function (c, lex.current_run_buffer_start_position) {
       lex.current_run_character_position = lex.current_run_buffer_character_position;
     
       // undo effects of setting up lex.matched_string (yytext)
@@ -1298,7 +1323,7 @@
           //XXX*--dest = *--source;
         }
         lex.current_run_character_position += (dest - source);
-        yy_bp += (dest - source);
+        lex.current_run_buffer_start_position += (dest - source);
         lex.current_buffer.buffer_state_character_len = lex.buffer_character_len = lex.current_buffer.buffer_state_size;
         if (lex.current_run_character_position < lex.current_buffer.buffer_state_array_buffer + 2 ) {
           YY_FATAL_ERROR("flex scanner push-back overflow");
@@ -1306,7 +1331,7 @@
       }
       // XXX? *--lex.current_run_character_position = (char) c;
       lex.current_run_character_position = c;
-      yytext_ptr = yy_bp;
+      lex.matched_string_pseudo_pointer = lex.current_run_buffer_start_position;
       lex.tmp_character_hold = lex.current_run_character_position;
       lex.current_run_buffer_character_position = lex.current_run_character_position;
     };
@@ -1334,7 +1359,7 @@
       
       // need more input
       } else {
-        offset = lex.current_run_buffer_character_position - yytext_ptr;
+        offset = lex.current_run_buffer_character_position - lex.matched_string_pseudo_pointer;
         ++lex.current_run_buffer_character_position;
 
         switch (yy_get_next_buffer()) {
@@ -1368,7 +1393,7 @@
             break;
 
           case EOB_ACT_CONTINUE_SCAN:
-            lex.current_run_buffer_character_position = yytext_ptr + offset;
+            lex.current_run_buffer_character_position = lex.matched_string_pseudo_pointer + offset;
             break;
         }
       }
@@ -1410,7 +1435,7 @@
     // Flush out information for old buffer.
     if (lex.current_buffer) {
       lex.current_run_buffer_character_position = lex.tmp_character_hold;
-      lex.current_buffer.yy_buf_pos = lex.current_run_buffer_character_position;
+      lex.current_buffer.buffer_state_current_position = lex.current_run_buffer_character_position;
       lex.current_buffer.buffer_state_character_len = lex.buffer_character_len;
     }
 
@@ -1464,7 +1489,7 @@
     b.buffer_state_array_buffer.setInt8(0, YY_END_OF_BUFFER_CHAR);
     b.buffer_state_array_buffer.setInt8(1, YY_END_OF_BUFFER_CHAR);
   
-    b.yy_buf_pos = b.yy_ch_buf[0];
+    b.buffer_state_current_position = b.yy_ch_buf[0];
   
     b.yy_at_bol = 1;
     b.yy_buffer_status = YY_BUFFER_NEW;
@@ -1493,7 +1518,7 @@
         YY_FATAL_ERROR("out of dynamic memory in yy_scan_buffer()");
       }
       b.buffer_state_size = size - 2;  // "- 2" to take care of EOB's/
-      b.yy_buf_pos = b.buffer_state_array_buffer = base;
+      b.buffer_state_current_position = b.buffer_state_array_buffer = base;
       b.buffer_is_ours = 0;
       b.buffer_state_input_file = 0;
       b.buffer_character_len = b.buffer_state_size;
@@ -1632,7 +1657,7 @@
 
   // Internal utility routines.
   
-  if (yytext_ptr === undefined) {
+  if (lex.matched_string_pseudo_pointer === undefined) {
     if (YY_USE_PROTOS) {
       // static void yy_flex_strncpy( char *s1, yyconst char *s2, int n )
     } else {
