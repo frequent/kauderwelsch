@@ -20,6 +20,8 @@
   // http://epaperpress.com/lexandyacc/prl.html
   // https://ds9a.nl/lex-yacc/cvs/lex-yacc-howto.html
   // https://www.coin-or.org/Doxygen/OS/structyyguts__t.html
+  // http://www.cs.man.ac.uk/~pjj/cs211/ho/node6.html
+  // https://jsperf.com/arraybuffer-string-conversion/4
 
   var lex;
 
@@ -27,7 +29,7 @@
   if (YY === undefined) {
     throw new Error("YY is not defined.");
   }
-  
+
   // (YY_SC_TO_UI)
   // Promotes a possibly negative, possibly signed char to an unsigned
   // integer for use as an array index.  If the signed char is negative,
@@ -96,15 +98,105 @@
       0,   40,    0,   40,   40,   34,   40,   18,   22,    0,
       0,   16,   18,   18,   15,   17,   12,   13,   15,   40,
      40,   40,   24,   21,   20
-    ]
+    ],
 
+    // (yy_meta)
+    "meta": [
+      0,
+      1,    1,    1,    1,    1,    1,    1,    2,    1,    1,
+      2,    2,    2,    2,    2,    2,    2,    2,    1,    1
+    ],
+
+    // (yy_def)
+    "def": [
+       0,
+       32,    1,   32,   32,   32,   32,   32,   33,   32,   32,
+       34,   32,   35,   32,   32,   33,   32,   32,   32,   34,
+       35,   32,   32,   32,   32,   32,   32,   32,   32,   32,
+       32,    0,   32,   32,   32
+    ],
+
+    // (yy_nxt)
+    "nxt": [
+      0,
+      4,    5,    6,    7,    8,    9,   10,   11,   12,   13,
+     11,   11,   11,   11,   11,   11,   11,   11,   14,   15,
+     18,   21,   20,   19,   16,   16,   31,   30,   29,   28,
+     27,   26,   25,   24,   23,   22,   17,   17,   32,    3,
+     32,   32,   32,   32,   32,   32,   32,   32,   32,   32,
+     32,   32,   32,   32,   32,   32,   32,   32,   32,   32
+    ],
+
+    // (yy_chk)
+    "check": [
+      0,
+      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+      9,   35,   34,    9,   33,   33,   29,   28,   27,   26,
+     25,   24,   23,   22,   19,   18,   16,    8,    3,   32,
+     32,   32,   32,   32,   32,   32,   32,   32,   32,   32,
+     32,   32,   32,   32,   32,   32,   32,   32,   32,   32
+    ]
   };
 
   // ------------------------------ Setup --------------------------------------
-
-  // (yy_c) character?
-  lex.character;
   
+  // (yy_c) character - only used as internal counter
+  // lex.character;
+  
+  // (YY_NULL) - returned upon end-of-file.
+  lex.nullinger = 0;
+  
+  // (INITIAL) - #line 1 "gram.l"
+  lex.initial = 0;
+
+  // (YY_MORE_ADJ)ust? this will never be set, useless?
+  lex.more_adjust = 0;
+  
+  // (YY_END_OF_BUFFER)
+  lex.buffer_end = 15;
+  
+  // (YY_READ_BUF_SIZE) - Amount of stuff to slurp up with each read.
+  lex.buffer_read_chunk_size = 8192;
+
+  // (YY_END_OF_BUFFER_CHAR)
+  lex.buffer_end_character = 0;
+
+  // (yy_did_buffer_switch_on_eof) Flag which is used to allow 
+  // lex.thatsAWrap()'s to do buffer switches instead of setting up a fresh 
+  // yyin.  A bit of a hack ...
+  lex.buffer_switched_on_end_of_file;
+
+  // (EOB_ACT_CONTINUE_SCAN)
+  lex.end_of_block_action_continue_scan = 0;
+
+  // (EOB_ACT_END_OF_FILE)
+  lex.end_of_block_action_end_of_file = 1;
+
+  // (EOB_ACT_LAST_MATCH)
+  lex.end_of_block_action_last_match = 2;
+
+  // (YY_BUFFER_EOF_PENDING)
+  // When an EOF's been seen but there's still some text to process
+  // then we mark the buffer as YY_EOF_PENDING, to indicate that we
+  // shouldn't try reading from the input source any more.  We might
+  // still have a bunch of tokens to match, though, because of
+  // possible backing-up.
+  //
+  // When we actually see the EOF, we change the status to "new"
+  // (via lex.restartLex()), so that the user can continue scanning by
+  // just pointing file input (yyin) at a new input file.
+  // declared inside buffer state dict, not sure this can be pulled out
+  lex.buffer_eof_pending = 2;
+  
+  // (YY_BUFFER_NEW) what elaborate way to say 0...
+  // declared inside buffer state dict, not sure this can be pulled out
+  lex.buffer_is_new = 0;
+
+  // (YY_BUFFER_NORMAL)
+  // declare inside buffer state dict,not sure this can be pulled out
+  lex.buffer_is_normal = 1;
+
   // (yyin) file input file
   lex.file_input;
 
@@ -113,6 +205,9 @@
 
   // (yyleng) is the length of the matched string
   lex.matched_string_len;
+  
+  // (yy_amount_of_matched_text)
+  lex.amount_of_matched_text;
     
   // (yytext) is a pointer to the matched string (NULL-terminated)
   lex.matched_string;
@@ -128,6 +223,9 @@
   // the current run.
   lex.current_run_buffer_start_position;
 
+  // (YY_USES_REJECT) - not defined, whether memory can be grown XXX REMOVE
+  lex.uses_reject = 0;
+
   // (yy_init) whether we need to initialize - XXX REMOVE
   lex.init = 1;
 
@@ -139,6 +237,12 @@
 
   // (YY_BUF_SIZE) Size of default input buffer.
   lex.buffer_size = 16384;
+
+  // (yy_last_accepting_cpos)
+  lex.last_accepting_character_position;
+  
+  // (yy_last_accepting_state)
+  lex.last_accepting_state;
 
   // (yy_current_buffer)
   lex.current_buffer;
@@ -152,6 +256,15 @@
 
   // (yy_start) Start state number
   lex.start_state = 0;
+  
+  // (yy_current_state) pulled out it is declared in parse but used elsewhere
+  lex.current_state;
+
+  // (yy_next_state) only used in do_action
+  lex.next_state;
+
+  // (action_to_run)
+  lex.action_to_run;
 
   // (YY_START) macro
   // Translate the current start state into a value that can be later handed
@@ -162,6 +275,11 @@
   // (yy_c_buf_p) int Points to current character [position] in buffer.
   // (char *) 0; => Not a null character. Pointer to a character at address 0.
   lex.current_run_buffer_character_position = 0;
+
+  // (yywrap) um, remove, too
+  lex.thatsAWrap = function () {
+    return 1;
+  };
 
   // (yy_load_buffer_state)
   lex.loadBufferState = function () {
@@ -205,31 +323,35 @@
 
       // (yy_buf_pos) current position in input buffer
       buffer_state_current_position: null,
-  
-      // Whether we're considered to be at the beginning of a line.
-      // If so, '^' rules will be active on the next match, otherwise not.
-      yy_at_bol: null,
 
-      yy_buffer_status: null,
-  
-      YY_BUFFER_NEW: 0,
-      YY_BUFFER_NORMAL: 1,
-    
-      // When an EOF's been seen but there's still some text to process
-      // then we mark the buffer as YY_EOF_PENDING, to indicate that we
-      // shouldn't try reading from the input source any more.  We might
-      // still have a bunch of tokens to match, though, because of
-      // possible backing-up.
-      //
-      // When we actually see the EOF, we change the status to "new"
-      // (via yyrestart()), so that the user can continue scanning by
-      // just pointing file input (yyin) at a new input file.
-      YY_BUFFER_EOF_PENDING: 2
+      // (yy_buffer_status)
+      buffer_status: null,
+
+      // (yy_at_bol) Whether we're considered to be at the beginning of a line.
+      // If so, '^' rules will be active on the next match, otherwise not.
+      input_line_start: null,
+
+      // added to reset whatever was #defined here, namely
+      resetPseudoGlobalsSetInBuffer: function () {
+        lex.buffer_eof_pending = 2;
+        lex.buffer_is_new = 0;
+        lex.buffer_is_normal = 1;
+      }
     };
   };
 
+  // (yy_set_interactive) not used REMOVE
+  lex.setLexterToInteractive = function (my_interactive) {
+    if (lex.current_buffer === undefined) {
+      lex.current_buffer = lex.createBuffer(lex.file_input, lex.default_buffer_size);
+      lex.current_buffer.buffer_state_interactive_input = my_interactive;
+    } else {
+      throw new Error("[error] - Don't switch interactive after creating buffer...");
+    }
+  };
+  
   // (yy_init_buffer) load file into buffer state
-  lex.init_buffer = function (my_buffer, my_file) {
+  lex.restoreOriginalOffset = function (my_buffer, my_file) {
     yy_flush_buffer(b);
 
     b.buffer_state_input_file = my_file;
@@ -239,8 +361,66 @@
     } else if (lex.never_interactive) {
       b.buffer_state_interactive_input = 0;
     } else {
+
+      // http://stackoverflow.com/questions/36258224/what-is-isatty-in-c-for      
       b.buffer_state_interactive_input = my_file ? /* (isatty( fileno(file) ) > 0) */ 1 : 0;
     }
+  };
+
+  // (YY_INPUT) Gets input and stuffs it into "buf". Number of characters read,
+  // or nullinger is returned in "result".
+  lex.readChunkFromInput = function (my_buffer_top, my_character_len, my_chunk_size) {
+    var input_len = lex.file_input.byteLength,
+      view = lex.current_buffer.buffer_state_array_buffer,
+      current_character_position,
+      n,
+      character;
+    
+    // XXX var c = '*'; why?
+
+    if (lex.current_buffer.buffer_state_interactive_input) {
+      for (n = 0; n < my_chunk_size && (my_buffer_top + n) < input_len; n += 1) {
+        current_character_position = my_buffer_top + n;
+        character = lex.file_input.charCodeAt(current_character_position);
+
+        // line break
+        if (character === '\n') {
+          if (n >= 1 && view.getInt8(current_character_position - 1) === '\r') {
+            view.setInt8(current_character_position - 1, character);
+          } else {
+            view.setInt8(current_character_position++, character);
+          }
+
+        // end of file, only here we set character_len?
+        } else if (current_character_position === input_len) {
+          lex.buffer_character_len = current_character_position;
+
+        // normal character
+        } else {
+          view.setInt8(current_character_position + character);
+        }
+      }
+    } else {
+      // XXX real time lexing?
+    }
+  };
+
+  // (yy_flex_realloc) move to a larger arraybuffer
+  lex.growCurrentBuffer = function (my_new_size) {
+    var new_buffer = new ArrayBuffer(my_new_size),
+      new_data_view = new DataView(new_buffer),
+      current_view = lex.current_buffer.buffer_state_array_buffer,
+      len = lex.current_buffer.buffer_state_array_buffer.byteLength,
+      i;
+    for (i = 0; i < len; i += 1) {
+      new_data_view.setInt8(i, current_view.getInt8(i));
+    }
+    lex.current_buffer.buffer_state_actual_buffer = new_buffer;
+    lex.current_buffer.buffer_state_array_buffer = new_data_view;
+  };
+
+  lex.setBuffer = function (my_size) {
+    return new ArrayBuffer(my_size);
   };
 
   // (yy_create_buffer)
@@ -249,52 +429,474 @@
 
     // removed out of dynamic memory test on createBuffer
 
+    b.resetPseudoGlobalsSetInBuffer();
     b.buffer_state_size = my_size;
 
     // yy_ch_buf has to be 2 characters longer than the size given because
     // we need to put in 2 end-of-buffer characters.
-    b.buffer_state_array_buffer = new ArrayBuffer(b.buffer_state_size + 2);
+    b.buffer_state_actual_buffer = lex.setBuffer(b.buffer_state_size + 2);
+    b.buffer_state_array_buffer = new DataView(b.buffer_state_actual_buffer);
 
     b.buffer_is_ours = 1;
-    lex.init_buffer(b, my_file);
+    lex.initBuffer(b, my_file);
     return b;
   };
 
-  // (yy_match)
+  // (YY_RESTORE_YY_MORE_OFFSET) - XXX not really sure what this is supposed
+  // to do.
+  lex.restoreOriginalOffset = function () {
+    lex.matched_string;
+  };
+
+  
+  // (YY_USER_ACTION)
+  // Code executed at the beginning of each rule, after lex.matched_string
+  // (yytext) and lex.matched_string_len (yyleng) have been set up.
+  // pass this into lexer, my_param?
+  if (lex.userAction === undefined) {
+    lex.userAction = function () {
+      return;
+    };
+  }
+
+  // (YY_STATE_EOF) Action number for EOF rule of a given start state.
+  lex.setEofState = function (my_state) {
+    return lex.buffer_end + my_state + 1;
+  };
+  
+  //(YY_RULE_SETUP = YY_USER_ACTION)
+  lex.ruleSetup = function () {
+    return lex.userAction();
+  };
+  
+  // (ECHO) Copy whatever the last rule matched to the standard output.
+  // This used to be an fputs(), but since the string might contain NUL's,
+  // we now use fwrite().
+  // write from array to stream, but where does it end up?
+  //XXX ECHO = fwrite(yytext, yyleng, 1, yyout);
+  lex.echo = function () {
+    console.log("[echo], but what to do with stdoutput:");
+    console.log(lex.matched_string, lex.matched_string_len, 1, lex.file_output);
+  };
+
+  // (yyterminate) No semi-colon after return; correct usage is to write 
+  // "yyterminate();" - we don't want an extra ';' after the "return" because 
+  // that will cause some compilers to complain about unreachable statements.
+  lex.terminate = function () {
+    return lex.nullinger;
+  };
+
+  // (GOTO yy_match)
   // not sure this is so easy to take out and the code is just executed 
   // disregarding the goto
-  lex.match_text = function () {
+  lex.matchText = function () {
+    var counter;
     do {
-      lex.character = lex.table_dict.ec[doubleCast(lex.current_run_character_position)];
+      counter = lex.table_dict.ec[doubleCast(lex.current_run_character_position)];
 
-      if (lex.table_dict.accept[lexer_current_state]) {
-        yy_last_accepting_state = lexer_current_state;
-        yy_last_accepting_cpos = lex.current_run_character_position;
+      if (lex.table_dict.accept[lex.current_state]) {
+        lex.last_accepting_state = lex.current_state;
+        lex.last_accepting_character_position = lex.current_run_character_position;
       }
 
-      while (yy_chk[yy_base[lexer_current_state] + yy_c] !== lexer_current_state) {
-            lexer_current_state = yy_def[lexer_current_state];
-            if (lexer_current_state >= 33 ) {
-              lex.character = yy_meta[yy_c];
-            }
-          }
-          lexer_current_state = yy_nxt[yy_base[lexer_current_state] + yy_c];
-          ++lex.current_run_character_position;
+      while (lex.table_dict.check[lex.table_dict.base[lex.current_state] + counter] !== lex.current_state) {
+        lex.current_state = lex.table_dict.def[lex.current_state];
+        if (lex.current_state >= 33 ) {
+          counter = lex.table_dict.meta[counter];
+        }
+      }
+      lex.current_state = lex.table_dict.nxt[lex.table_dict.base[lex.current_state] + counter];
+      lex.current_run_character_position = lex.current_run_character_position + 1;
 
-    } while (lex.table_dict.base[lexer_current_state] !== 40);
+    } while (lex.table_dict.base[lex.current_state] !== 40);
+  };
+
+  // (yy_try_NUL_trans) - try to make a transition on the NUL character
+  // synopsis: next_state = yy_try_NUL_trans( current_state );
+  lex.attemptNulTransition = function (my_lexer_current_state){
+    var counter = 1;
+      //is_jammed;
+
+    lex.current_run_character_position = lex.current_run_buffer_character_position;
+    if (lex.table_dict.accept[my_lexer_current_state]) {
+      lex.last_accepting_state = my_lexer_current_state;
+      lex.last_accepting_character_position = lex.current_run_character_position;
+    }
+    while (lex.table_dict.check[lex.table_dict.base[my_lexer_current_state] + counter] !== my_lexer_current_state) {
+      my_lexer_current_state = lex.table_dict.def[my_lexer_current_state];
+      if (my_lexer_current_state >= 33) {
+        counter = lex.table_dict.meta[counter];
+      }
+    }
+    my_lexer_current_state = lex.table_dict.nxt[lex.table_dict.base[my_lexer_current_state] + counter];
+    //is_jammed = (my_lexer_current_state === 32);
+
+    // if (is_jammed) {
+    if (my_lexer_current_state === 32) {
+      return 0;
+    }
+    return my_lexer_current_state;
+  };
+
+  // (yy_get_previous_state) - get state just before the EOB char was reached.
+  lex.getPreviousState = function () {
+    var tmp_lexer_current_state = lex.start_state,
+      counter;
+
+    // oulala
+    for (lex.current_run_character_position = lex.matched_string_pseudo_pointer + lex.more_adjust; lex.current_run_character_position < lex.current_run_buffer_character_position; ++lex.current_run_character_position) {
+
+      //YY_CHAR  (yy_c) = (*lex.current_run_character_position ? yy_ec[doubleCast(*lex.current_run_character_position)] : 1);
+      // counter = (lex.current_run_character_position ? lex.table_dict.ec[doubleCast(lex.current_run_character_position)] : 1);
+      if (lex.current_run_character_position) {
+        counter = lex.table_dict.ec[doubleCast(lex.current_run_character_position)];
+      } else {
+        counter = 1;
+      }
+      // never changes?
+      if (lex.table_dict.accept[tmp_lexer_current_state]) {
+        lex.last_accepting_state = tmp_lexer_current_state;
+        lex.last_accepting_character_position = lex.current_run_character_position;
+      }
+      while (lex.table_dict.check[lex.table_dict.base[tmp_lexer_current_state] + counter] !== tmp_lexer_current_state) {
+        tmp_lexer_current_state = lex.table_dict.def[tmp_lexer_current_state];
+        if (tmp_lexer_current_state >= 33) {
+          counter = lex.table_dict.meta[counter];
+        }
+      }
+      tmp_lexer_current_state = lex.table_dict.nxt[lex.table_dict.base[tmp_lexer_current_state] + counter];
+    }
+    return tmp_lexer_current_state;
+  };
+
+  // (YY_NEW_FILE) Special action meaning "start processing a new file".
+  lex.startProcessingNewFile = function () {
+    lex.restartLex(lex.file_input || YY.file_in);
+  };
+
+  // (yyrestart) - cutting corners, initBuffer is is called inside createBuffer
+  lex.restartLex = function (my_input_file) {
+    lex.current_buffer = lex.createBuffer(my_input_file, lex.default_buffer_size);
+    lex.loadBufferState();
+  };
+
+  // (yy_get_next_buffer) - try to read in a new buffer (or block??)
+  //  Returns a code representing an action:
+  //   end_of_block_action_last_match (2) = goto? last match
+  //   end_of_block_action_continue_scan (0) = continue scanning from current position
+  //   end_of_block_action_end_of_file (1) = end of file
+  lex.getNextBuffer = function () {
+    var current_buffer_view = lex.current_buffer.buffer_state_array_buffer,
+      current_buffer_len = current_buffer_view.byteLength,
+      content_pointer = lex.matched_string_pseudo_pointer,
+      current_buffer_offset,
+      number_to_move,
+      number_to_read,
+      return_value,
+      new_size,
+      i;
+
+    if (lex.current_run_buffer_character_position > lex.current_buffer.buffer_state_array_buffer.getInt8(lex.current_buffer.buffer_state_character_len + 1)) {
+      throw new Error("[Error] - Fatal flex scanner internal error - end of buffer missed");
+    }
+
+    // Don't try to fill the buffer, so this is an EOF (end of file).
+    if (lex.current_buffer.buffer_state_fill_if_full === 0) {
+
+      // We matched a single character, the EOB, so treat this as a final EOF.
+      if (lex.current_run_buffer_character_position - lex.matched_string_pseudo_pointer - lex.more_adjust === 1) {
+        return lex.end_of_block_action_end_of_file;
+      }
+
+      // We matched some text prior to the EOB, first process it.
+      return lex.end_of_block_action_last_match;
+    }
+
+    // Try to read more data.
+    // First move last chars to start of buffer.
+    // //XXX *(dest++) = *(source++); totally not sure
+    number_to_move = (lex.current_run_buffer_character_position - lex.matched_string_pseudo_pointer) - 1;
+    for (i = 0; i < number_to_move; i++) {
+      current_buffer_view.setInt8(current_buffer_len++, content_pointer++);
+    }
+
+    // don't read, it's not guaranteed to return an EOF, just force an EOF
+    if (lex.current_buffer.buffer_status === lex.buffer_eof_pending) {
+      lex.current_buffer.buffer_state_character_len = lex.buffer_character_len = 0;
+    } else {
+      number_to_read = lex.current_buffer.buffer_state_size - number_to_move - 1;
+
+      // Not enough room in the buffer - grow it, sigh....
+      while (number_to_read <= 0) {
+
+        // memory mongering
+        if (lex.uses_reject) {
+          throw new Error("[error] - input buffer overflow, can't enlarge buffer because scanner uses REJECT");
+        } else {
+          
+          // not sure I can use len here, but can't subtract the DataView
+          current_buffer_offset = lex.current_run_buffer_character_position - current_buffer_len;
+          if (lex.current_buffer.buffer_is_ours) {
+            new_size = lex.current_buffer.buffer_state_size * 2;
+
+            if (new_size <= 0) {
+              lex.current_buffer.buffer_state_size += lex.current_buffer.buffer_state_size / 8;
+            } else {
+              lex.current_buffer.buffer_state_size = 2;
+            }
+
+            // Include room in for 2 EOB chars (careful, we use ACTUAL here,
+            // not the array_buffer which is the data view to actual)
+            lex.growCurrentBuffer(lex.current_buffer.buffer_state_size + 2);
+          } else {
+            
+            // Can't grow it, we don't own it.
+            lex.current_buffer.buffer_state_array_buffer = 0;
+          }
+          if (lex.current_buffer.buffer_state_array_buffer === 0) {
+            throw new Error("[error] - fatal error, scanner input buffer overflow");
+          }
+          // XXX ditch the above
+          lex.current_run_buffer_character_position = lex.current_buffer.buffer_state_array_buffer.getInt8(current_buffer_offset);
+          number_to_read = lex.current_buffer.buffer_state_size - number_to_move - 1;
+        }
+
+        if (number_to_read > lex.buffer_read_chunk_size) {
+          number_to_read = lex.buffer_read_chunk_size;
+        }
+
+        // Read in more data.
+        // We have to pass in the correct position on the buffer, this should 
+        // return buffer_character_len or at least set it
+        lex.readChunkFromInput((lex.current_buffer.buffer_state_array_buffer.getInt8(number_to_move)), lex.buffer_character_len, number_to_read);
+        lex.current_buffer.buffer_state_character_len = lex.buffer_character_len;
+      }
     
+      if (lex.buffer_character_len === 0) {
+        if (number_to_move === lex.more_adjust) {
+          return_value = lex.end_of_block_action_end_of_file;
+          lex.restartLex(lex.file_input);
+        } else {
+          return_value = lex.end_of_block_action_last_match;
+          lex.current_buffer.buffer_status = lex.buffer_eof_pending;
+        }
+      } else {
+        return_value = lex.end_of_block_action_continue_scan;
+      }
+
+      lex.buffer_character_len += number_to_move;
+      lex.current_buffer.buffer_state_array_buffer.setInt8(lex.current_buffer.buffer_state_character_len, lex.buffer_end_character);
+      lex.current_buffer.buffer_state_array_buffer.setInt8(lex.current_buffer.buffer_state_character_len + 1, lex.buffer_end_character);
+      lex.matched_string_pseudo_pointer = lex.current_buffer.buffer_state_array_buffer.getInt8(0);
+      return return_value;
+    }
+  };
+  
+
+  // (YY_DO_BEFORE_ACTION) Done after the current pattern has been matched and 
+  // before the corresponding action - sets up lex.matched_string (yytext).
+  lex.doBeforeAction = function () {
+    lex.matched_string_pseudo_pointer = lex.current_run_buffer_start_position;
+    lex.matched_string_len = lex.current_run_character_position - lex.current_run_buffer_start_position;
+    lex.tmp_character_hold = lex.current_run_character_position; // pointer to
+    lex.current_run_buffer_character_position = lex.current_run_character_position;
+  };
+
+  // (GOTO yy_find_action)
+  lex.findAction = function () {
+
+    // (yy_act) int only used within lexer
+    lex.action_to_run = lex.table_dict.accept[lex.current_state];
+        
+    // have to back up
+    if (lex.action_to_run === 0) {
+      lex.current_run_character_position = lex.last_accepting_character_position;
+      lex.current_state = lex.last_accepting_state;
+      lex.action_to_run = lex.table_dict.accept[lex.current_state];
+    }
+    lex.doBeforeAction();
+  };
+
+  // (GOTO yy_do_action)
+  // also called to access EOF actions.
+  lex.doAction = function () {
+    switch (lex.action_to_run) {
+
+      case 0:
+        // must back up, undo the effects of lex.doBeforeAction
+        //XXX what? *lex.current_run_character_position = lex.tmp_character_hold;
+        lex.current_run_character_position = lex.last_accepting_character_position;
+        lex.current_state = lex.last_accepting_state;
+        return lex.findAction();
+      case 1: // #line 2 "gram.l"
+        lex.ruleSetup();
+        //{
+        YY.scope.match_string = lex.matched_string + 1;
+        return("TAG");
+        //}
+      case 2: //#line 7 "gram.l"
+        lex.ruleSetup();
+        //{
+        YY.scope.match_string = lex.matched_string;
+        return "SYMBOL";
+        //}
+      case 3: //#line 12 "gram.l"
+        lex.ruleSetup();
+        //{
+        YY.custom_dict.is_block_start_or_end = 1;
+        return("OPEN");
+        //}
+      case 4: //#line 17 "gram.l"
+        lex.ruleSetup();
+        //{
+        YY.custom_dict.is_block_start_or_end = 0;
+        return("CLOSE");
+        //}
+      case 5: //#line 22 "gram.l"
+        lex.ruleSetup();
+        return("CTRL_ASSIGN");
+      case 6: //#line 23 "gram.l"
+        lex.ruleSetup();
+        return("CTRL_IGNORE");
+      case 7: //#line 24 "gram.l"
+        lex.ruleSetup();
+        return("REVERSE");
+      case 8: //#line 25 "gram.l"
+        lex.ruleSetup();
+        return("STARTCLASS");
+      case 9: //#line 26 "gram.l"
+        lex.ruleSetup();
+        return("LET");
+      case 10: //#line 27 "gram.l"
+        lex.ruleSetup();
+        return("NL");
+      case 11: //#line 28 "gram.l"
+        lex.ruleSetup();
+        return("REMARK");
+      case 12: //#line 29 "gram.l"
+        lex.ruleSetup();
+        //{
+        return;
+        //};
+      case 13: //#line 31 "gram.l"
+        lex.ruleSetup();
+        //{
+        throw new Error("Lexical mistake: " + lex.matched_string);
+        //return 1;
+        //}
+      case 14: //#line 35 "gram.l"
+        lex.ruleSetup();
+        lex.echo();
+        break;
+      case lex.setEofState(lex.initial): //#line 723 "lex.yy.c" ~ 15 + 1 + state
+        return lex.terminate();
+      case lex.buffer_end: // 15
+
+        // Amount of text matched not including the EOB char.
+        lex.amount_of_matched_text = (lex.current_run_character_position - lex.matched_string_pseudo_pointer) - 1;
+  
+        // Undo the effects of lex.doBeforeAction.
+        lex.current_run_character_position = lex.tmp_character_hold;
+        lex.restoreOriginalOffset();
+
+        if (lex.current_buffer.buffer_status === lex.buffer_is_new) {
+  
+          // We're scanning a new file or input source.  It's possible that 
+          // this happened because the user just pointed file input (yyin) at 
+          // a new source and called yylex().  If so, then we have to assure
+          // consistency between lex.current_buffer and our
+          // globals.  Here is the right place to do so, because this is the 
+          // first action (other than possibly a back-up) that will match for 
+          // the new input source.
+          lex.buffer_character_len = lex.current_buffer.buffer_state_character_len;
+          lex.current_buffer.buffer_state_input_file = lex.file_input;
+          lex.current_buffer.buffer_status = lex.buffer_is_normal;
+        }
+  
+        // Note that here we test for lex.current_run_buffer_character_position 
+        // "<=" to the position of the first EOB (end of block!) in the buffer, 
+        // since lex.current_run_buffer_character_position will already have been 
+        // incremented past the NUL character (since all states make 
+        // transitions on EOB to the end-of-buffer state).  Contrast this with 
+        // the test in input().
+            
+        // XXX check getInt8 is correct ...len
+        if (lex.current_run_buffer_character_position <= lex.current_buffer.buffer_state_array_buffer.getInt8(lex.current_buffer.buffer_state_character_len)) {
+
+          // This was really a NUL.
+          lex.current_run_buffer_character_position = lex.matched_string_pseudo_pointer + lex.amount_of_matched_text;
+          lex.current_state = lex.getPreviousState();
+
+          // Okay, we're now positioned to make the NUL transition.  We couldn't
+          // have lex.getPreviousState() go ahead and do it for us because it 
+          // doesn't know how to deal with the possibility of jamming (and we 
+          // don't want to build jamming into it because then it will run more 
+          // slowly).
+          lex.next_state = lex.attemptNulTransition(lex.current_state);
+          lex.current_run_buffer_start_position = lex.matched_string_pseudo_pointer + lex.more_adjust;
+  
+          // Consume the NUL.
+          if (lex.next_state) {
+            lex.current_run_character_position = ++lex.current_run_buffer_character_position;
+            lex.current_state = lex.next_state;
+            lex.matchText();
+          } else {
+            lex.current_run_character_position = lex.current_run_buffer_character_position;
+            lex.findAction();
+          }
+        } else {
+
+          // reading in input file handling
+          switch (lex.getNextBuffer()) {
+            case lex.end_of_block_action_end_of_file:
+              lex.buffer_switched_on_end_of_file = 0;
+              if (lex.thatsAWrap()) {
+
+                // Note: because we've taken care in getNextBuffer() to have 
+                // set up matched_string (yytext), we can now set up
+                // current_run_buffer_character_position so that if some total
+                // hoser (like flex itself) wants to call the scanner after we 
+                // return the nullinger, it'll still work - another nullinger 
+                // will get returned.
+                lex.current_run_buffer_character_position = lex.matched_string_pseudo_pointer + lex.more_adjust;
+                lex.action_to_run = lex.setEofState(lex.start_state_confusulation);
+                lex.doAction();
+              } else {
+
+                // infinity?
+                if (lex.buffer_switched_on_end_of_file === 0) {
+                  lex.startProcessingNewFile();
+                }
+              }
+              break;
+            case lex.end_of_block_action_continue_scan:
+              lex.current_run_buffer_character_position = lex.matched_string_pseudo_pointer + lex.amount_of_matched_text;
+              lex.current_state = lex.getPreviousState();
+        
+              lex.current_run_character_position = lex.current_run_buffer_character_position;
+              lex.current_run_buffer_start_position = lex.matched_string_pseudo_pointer + lex.more_adjust;
+              lex.matchText();
+              break;
+            case lex.end_of_block_action_last_match:
+
+              // XXX this return the character, not the buffer?
+              lex.current_run_buffer_character_position = lex.current_buffer.buffer_state_array_buffer.getInt8(lex.current_buffer.buffer_state_character_len);
+              lex.current_state = lex.getPreviousState();
+              lex.current_run_character_position = lex.current_run_buffer_character_position;
+              lex.current_run_buffer_start_position = lex.matched_string_pseudo_pointer + lex.more_adjust;
+              lex.findAction();
+              break;
+          }
+        }
+        break; // end buffer
+      default:
+        throw new Error("[error] - Fatal flex scanner internal error - no action found");
+      } // end of action switch
   };
   
   // ------------------------------- Start -------------------------------------
   // Default declaration of scanner
   lex.lexer = function (my_ival, my_loco, my_param) {
-
-    // (yy_act) int only used within lexer
-    var action_to_run,
-
-      // (yy_current_state) int, it is declared in parse but used elsewhere      
-      lexer_current_state;
-
     if (lex.init) {
       lex.init = 0;
 
@@ -327,454 +929,43 @@
       lexer_current_state = lex.start_state;
 
       // as functions should not be declared inside a loop
-      lex.match_text();
-      lex.find_action();
-      lex.do_action();
-
-      
-    
-      function yy_find_action() {
-        action_to_run = lex.table_dict.accept[lexer_current_state];
-        
-        // have to back up
-        if (action_to_run === 0) {
-          lex.current_run_character_position = yy_last_accepting_cpos;
-          lexer_current_state = yy_last_accepting_state;
-          action_to_run = lex.table_dict.accept[lexer_current_state];
-        }
-        YY_DO_BEFORE_ACTION;
-      }
-    
-      // This label is used only to access EOF actions.
-      function do_action() {
-      
-        // beginning of action switch
-        switch (action_to_run) {
-          
-          // must back up, undo the effects of YY_DO_BEFORE_ACTION
-          case 0:
-            lex.current_run_character_position = lex.tmp_character_hold;
-            lex.current_run_character_position = yy_last_accepting_cpos;
-            lexer_current_state = yy_last_accepting_state;
-            return yy_find_action();
-          case 1:
-            YY_RULE_SETUP();
-            // #line 2 "gram.l"
-            //{
-            yylval = lex.matched_string + 1;
-            return("TAG");
-            //}
-            break;
-          case 2:
-            YY_RULE_SETUP();
-            //#line 7 "gram.l"
-            //{
-            yylval = lex.matched_string;
-            return("SYMBOL");
-            //}
-            break;
-          case 3:
-            YY_RULE_SETUP();
-            //#line 12 "gram.l"
-            //{
-            ModeBlock = 1;
-            return("OPEN");
-            //}
-            break;
-          case 4:
-            YY_RULE_SETUP();
-            //#line 17 "gram.l"
-            //{
-            ModeBlock = 0;
-            return("CLOSE");
-            //}
-            break;
-          case 5:
-            YY_RULE_SETUP();
-            //#line 22 "gram.l"
-            return("CTRL_ASSIGN");
-            break;
-          case 6:
-            YY_RULE_SETUP();
-            //#line 23 "gram.l"
-            return("CTRL_IGNORE");
-            break;
-          case 7:
-            YY_RULE_SETUP();
-            //#line 24 "gram.l"
-            return("REVERSE");
-            break;
-          case 8:
-            YY_RULE_SETUP();
-            //#line 25 "gram.l"
-            return("STARTCLASS");
-            break;
-          case 9:
-            YY_RULE_SETUP();
-            //#line 26 "gram.l"
-            return("LET");
-            break;
-          case 10:
-            YY_RULE_SETUP();
-            //#line 27 "gram.l"
-            return("NL");
-            break;
-          case 11:
-            YY_RULE_SETUP();
-            //#line 28 "gram.l"
-            return("REMARK");
-            break;
-          case 12:
-            YY_RULE_SETUP();
-            //#line 29 "gram.l"
-            //{};
-            break;
-          case 13:
-            YY_RULE_SETUP();
-            //#line 31 "gram.l"
-            //{
-            errMes("Lexical mistake \"+ lex.matched_string +\"");
-            return 1;
-            //}
-            break;
-          case 14:
-            YY_RULE_SETUP();
-            //#line 35 "gram.l"
-            ECHO();
-            break;
-          
-          //#line 723 "lex.yy.c"
-          case YY_STATE_EOF(INITIAL):
-            return yyterminate();
-          
-          case YY_END_OF_BUFFER:
-      
-            // Amount of text matched not including the EOB char.
-            yy_amount_of_matched_text = (lex.current_run_character_position - lex.matched_string_pseudo_pointer) - 1;
-  
-            // Undo the effects of YY_DO_BEFORE_ACTION.
-            lex.current_run_character_position = lex.tmp_character_hold;
-            YY_RESTORE_YY_MORE_OFFSET();
-  
-            if (lex.current_buffer.yy_buffer_status === YY_BUFFER_NEW ) {
-  
-              // We're scanning a new file or input source.  It's
-              // possible that this happened because the user
-              // just pointed file input (yyin) at a new source and called
-              // yylex().  If so, then we have to assure
-              // consistency between lex.current_buffer and our
-              // globals.  Here is the right place to do so, because
-              // this is the first action (other than possibly a
-              // back-up) that will match for the new input source.
-              lex.buffer_character_len = lex.current_buffer.buffer_state_character_len;
-              lex.current_buffer.buffer_state_input_file = lex.file_input;
-              lex.current_buffer.yy_buffer_status = YY_BUFFER_NORMAL;
-            }
-  
-            // Note that here we test for lex.current_run_buffer_character_position "<=" to the position
-            // of the first EOB in the buffer, since lex.current_run_buffer_character_position will
-            // already have been incremented past the NUL character
-            // (since all states make transitions on EOB to the
-            // end-of-buffer state).  Contrast this with the test
-            // in input().
-            
-            // XXX check getInt8 is correct ...len
-            if (lex.current_run_buffer_character_position <= lex.current_buffer.buffer_state_array_buffer.getInt8(lex.current_buffer.buffer_state_character_len)) {
-              // This was really a NUL.
-              yy_state_type = yy_next_state;
-              lex.current_run_buffer_character_position = lex.matched_string_pseudo_pointer + yy_amount_of_matched_text;
-              lexer_current_state = yy_get_previous_state();
-        
-              // Okay, we're now positioned to make the NUL
-              // transition.  We couldn't have
-              // yy_get_previous_state() go ahead and do it
-              // for us because it doesn't know how to deal
-              // with the possibility of jamming (and we don't
-              // want to build jamming into it because then it
-              // will run more slowly).
-              yy_next_state = yy_try_NUL_trans(lexer_current_state);
-              lex.current_run_buffer_start_position = lex.matched_string_pseudo_pointer + YY_MORE_ADJ;
-  
-              // Consume the NUL.
-              if (yy_next_state) {
-                lex.current_run_character_position = ++lex.current_run_buffer_character_position;
-                lexer_current_state = yy_next_state;
-                lex.match_texth();
-              } else {
-                lex.current_run_character_position = lex.current_run_buffer_character_position;
-                yy_find_action();
-              }
-            } else switch (yy_get_next_buffer()) {
-        
-              case EOB_ACT_END_OF_FILE:
-                yy_did_buffer_switch_on_eof = 0;
-                if (yywrap()) {
-                  
-                  // Note: because we've taken care in
-                  // yy_get_next_buffer() to have set up
-                  // lex.matched_string (yytext), we can now set up
-                  // lex.current_run_buffer_character_position so that if some total
-                  // hoser (like flex itself) wants to
-                  // call the scanner after we return the
-                  // YY_NULL, it'll still work - another
-                  // YY_NULL will get returned.
-                  lex.current_run_buffer_character_position = lex.matched_string_pseudo_pointer + YY_MORE_ADJ;
-                  action_to_run = YY_STATE_EOF(lex.start_state_confusulation);
-                  do_action();
-                } else {
-                  if (yy_did_buffer_switch_on_eof === undefined) {
-                    YY_NEW_FILE;
-                  }
-                }
-                break;
-          
-              case EOB_ACT_CONTINUE_SCAN:
-                lex.current_run_buffer_character_position = lex.matched_string_pseudo_pointer + yy_amount_of_matched_text;
-                lexer_current_state = yy_get_previous_state();
-        
-                lex.current_run_character_position = lex.current_run_buffer_character_position;
-                lex.current_run_buffer_start_position = lex.matched_string_pseudo_pointer + YY_MORE_ADJ;
-                lex.match_text();
-                break;
-              case EOB_ACT_LAST_MATCH:
-                // XXX check getInt8 is correct ...len
-                lex.current_run_buffer_character_position = lex.current_buffer.buffer_state_array_buffer.getInt8(lex.current_buffer.buffer_state_character_len);
-                lexer_current_state = yy_get_previous_state();
-                lex.current_run_character_position = lex.current_run_buffer_character_position;
-                lex.current_run_buffer_start_position = lex.matched_string_pseudo_pointer + YY_MORE_ADJ;
-                yy_find_action();
-            }
-            break; // end buffer
-          
-          default:
-            YY_FATAL_ERROR("fatal flex scanner internal error--no action found");
-            break;
-          } // end of action switch
-
-      }
-    
+      lex.matchText();
+      lex.findAction();
+      lex.doAction();
     } // end of scanning one token
-  
   };
 
-  
-  
+  // ------------------------- Stuff not called --------------------------------
+  // remove if not used, weird stuff included, not fixed up
 
-
-  
-  // ==========================================================================
-  // ==========================================================================
-  // ==========================================================================    
-
-
-  // #include <stdio.h>
-  // #include <errno.h>
-  
-  var FLEX_SCANNER;
-  var REJECT;
-  var EOB_ACT_CONTINUE_SCAN;
-  var EOB_ACT_END_OF_FILE;
-  var EOB_ACT_LAST_MATCH;
-
-  var YY_FLEX_MAJOR_VERSION = 2;
-  var YY_FLEX_MINOR_VERSION = 5;
-  var YY_USER_ACTION;
-  var YY_PROTO;
-  var YY_USE_PROTOS;
-  var YY_USE_CONST;
-  var YY_MALLOC_DECL;
-  var YY_SKIP_YYWRAP;
-  var YY_NULL;
-  var ECHO;
-  var YY_BREAK;
-  var YY_INPUT;
-  var YY_READ_BUF_SIZE;
-  var YY_END_OF_BUFFER;
-  var YY_STATE_EOF;
-  var YY_END_OF_BUFFER_CHAR;
-  var YY_RESTORE_YY_MORE_OFFSET;
-  var YY_MORE_ADJ;
-  var YY_DO_BEFORE_ACTION;
-  var YY_FLUSH_BUFFER;
-  var YY_AT_BOL;
-  var YY_CHAR;
-  var YY_RULE_SETUP;
-  var YY_NUM_RULES;
-  var YY_NEED_STRLEN;
-  var YY_NO_PUSH_STATE;
-  var YY_NO_POP_STATE;
-  var YY_NO_TOP_STATE;
-  var YY_START_STACK_INCR;
-  var YY_FATAL_ERROR;
-
-  var yy_set_interactive;
-  var yy_did_buffer_switch_on_eof;
-  var yy_const;
-  var yywrap;
-  var yy_flex_strle;
-  var yyrestart;
-  var yy_is_jam;
-  var getc;
-  var stdin;
-  var stdout;
-  var yyunput;
-  var unput;
-  var input;
-  var yy_size_t;
-  var yy_switch_to_buffer;
-  var yy_flush_buffer;
-  var yy_delete_buffer;
-  var yy_scan_buffer;
-  var yy_scan_string;
-  var yy_scan_bytes;
-  var new_state;
-  var yy_flex_alloc;
-  var yy_flex_realloc;
-  var yy_flex_free;
-  var yy_new_buffer;
-  var yy_top_state;
-  var yy_pop_state;
-  var yy_push_state;
-  var yy_start_stack_ptr;
-  var yy_start_stack_depth;
-  var yy_start_stack;
-  var yy_set_bol;
-  var yy_state_type;
-  var yy_flex_strncpy;
-  var yy_try_NUL_trans;
-  var yy_get_next_buffer;
-  var yy_fatal_error;
-  var msg;
-  var frwrite;
-  var buf_ptr;
-  var yy_meta;
-  var yy_def;
-  var yy_nxt;
-  var yy_last_accepting_state;
-  var yy_last_accepting_cpos;
-  var yymore;
-  var yymore_used_but_not_detected;
-  var errno;
-  var buf;
-  var EOF;
-  var EINTR;
-  var clearerr;
-  var fread;
-  var ferror;
-  var yyterminate;
-
-  var file;
-  var size;
-
-  // cfront 1.2 defines "c_plusplus" instead of "__cplusplus"
-  var c_plusplus;
-  var __cplusplus;
-  var _WIN32;
-  var __STDC__;
-  var __TURBOC__;
-
-  if (c_plusplus) {
-    if (__cplusplus === undefined) {
-      __cplusplus;
-    }
-  }
-  if (__cplusplus) {
-    // #include <stdlib.h>
-    if (_WIN32 === undefined) {
-      // #include <unistd.h>
-    } else {
-      if (lex.always_interactive === undefined) {
-        if (lex.never_interactive === undefined) {
-          // extern int isatty YY_PROTO(( int ));
-          // XXX integer, which returns 1 if file descriptor refers to terminal?
-          // http://stackoverflow.com/questions/36258224/what-is-isatty-in-c-for
-          YY_PROTO();
-        }
-      }
-    }
-
-    // Use prototypes in function declarations.
-    YY_USE_PROTOS = 1;
-  
-    // The "const" storage-class-modifier is valid.
-    YY_USE_CONST = 1;
-  } else {
-    if (__STDC__) {
-      YY_USE_PROTOS = 1;
-      YY_USE_CONST = 1;  
-    }    
-  }
-  
-  if (__TURBOC__) {
-    // #pragma warn -rch
-    // #pragma warn -use
-    // #include <io.h>
-    // #include <stdlib.h>
-    YY_USE_PROTOS = 1;
-    YY_USE_CONST = 1;
-  }
-  
-  if (YY_USE_CONST) {
-    yyconst;
-  } else {
-    yyconst;
-  }
-
-  // XXX just skip proto
-  //if (YY_USE_PROTOS) {
-  //  // XXX YY_PROTO(proto) proto
-  //  YY_PROTO = function (proto) {
-  //    return proto;
-  //  };
-  //} else {
-  //  // XXX YY_PROTO(proto) ()
-    YY_PROTO = function (proto) {
-      return proto;
-    };
-  //}
-
-  yywrap = function () {
-    return 1;
-  };
-  
-  // Returned upon end-of-file.
-  YY_NULL = 0;
-
-  
+  // (BEGIN)
   // Enter a start condition.  This macro really ought to take a parameter,
   // but we do it the disgusting crufty way forced on us by the ()-less
   // definition of BEGIN.
   // XXX #define BEGIN lex.start_state = 1 + 2 *
-  BEGIN = function () {
+  // XXX calls always pass a state, to do ?
+  lex.xxx_begin = function (my_state) {
     lex.start_state = 1 + 2;
   };
 
-  // XXX moved down
-  //YY_BUFFER_STATE = function () {
-  //  yy_current_buffer = 0;
-  //};
+  // (YY_NUM_RULES)
+  lex.xxx_number_of_rules = 14;
 
-  // Action number for EOF rule of a given start state.
-  YY_STATE_EOF = function (state) {
-    return YY_END_OF_BUFFER + state + 1;
-  };
-  
-  // Special action meaning "start processing a new file".
-  YY_NEW_FILE = yyrestart(lex.file_input);
-  YY_END_OF_BUFFER_CHAR = 0;
-  
-  
-  // XXX typdef struct ?
-  YY_BUFFER_STAGE = yy_buffer_state();
-
+  // (yyleng)
   // externals => http://epaperpress.com/lexandyacc/prl.html
-  yyleng;
+  // this should be passed in echo, no?
+  lex.xxx_leng;
+  
+  // (EOF)
+  lex.xxx_eof = -1;
 
+  // (yy_size_t)
+  // The following is because we cannot portably get our hands on size_t
+  // (without autoconf's help, which isn't available because we want
+  // flex-generated scanners to compile on their own).
+  lex.xxx_size;
 
-  EOB_ACT_CONTINUE_SCAN = 0;
-  EOB_ACT_END_OF_FILE = 1;
-  EOB_ACT_LAST_MATCH = 2;
-
+  // (yyless)
   // The funky do-while in the following #define is used to turn the definition
   // int a single C statement (which needs a semi-colon terminator).  This
   // avoids problems with code like:
@@ -787,612 +978,111 @@
   // Prior to using the do-while the compiler would get upset at the
   // "else" because it interpreted the "if" statement as being all
   // done when it reached the ';' after the yyless() call.
-  
+  // XXX Used elsewhere
   // Return all but the first 'n' matched characters back to the input stream.
-  yyless = function (n) {
-    // do {
-      // Undo effects of setting up lex.matched_string (yytext).
-      lex.current_run_buffer_start_position = lex.tmp_character_hold;
-      YY_RESTORE_YY_MORE_OFFSET();
-      lex.current_run_buffer_character_position = lex.current_run_character_position = lex.current_run_buffer_start_position + n - YY_MORE_ADJ;
-      YY_DO_BEFORE_ACTION(); // set up lex.matched_string (yytext) again
-    // } while (0)
-  };
+  lex.xxx_less = function (my_n) {
 
-  unput = function (c) {
-    yyunput(c, lex.matched_string_pseudo_pointer);
-  };
-
-  // The following is because we cannot portably get our hands on size_t
-  // (without autoconf's help, which isn't available because we want
-  // flex-generated scanners to compile on their own).
-  yy_size_t;
-
-  // Flag which is used to allow yywrap()'s to do buffer switches
-  // instead of setting up a fresh yyin.  A bit of a hack ...
-  yy_did_buffer_switch_on_eof;
-
-  // XXX what does proto do? nothing
-  yyrestart = function (input_file) {
-    FILE = YY_PROTO(input_file);
-  };
-
-  yy_switch_to_buffer = function(new_buffer) {
-    YY_BUFFER_STATE(YY_PROTO(new_buffer)); 
-  };
-
-  // XXX hm... create a new buffer?
-  // XXX arrayBuffer here!
-  YY_BUFFER_STATE = function (input_file) {
-    lex.current_buffer = 0;
-    lex.createBuffer(YY_PROTO(input_file), YY_PROTO(input_file.length));
-  };
-
-  yy_delete_buffer = function (b) {
-    lex.current_buffer = YY_PROTO(0);    
-  };
-
-  
-  // XXX I imagine resetting the buffer to initial state?
-  yy_flush_buffer = function (current_buffer) {
-    // XXX => YY_PROTO(( YY_BUFFER_STATE b )
+    // Undo effects of setting up lex.matched_string (yytext).
+    lex.current_run_buffer_start_position = lex.tmp_character_hold;
+    lex.restoreOriginalOffset();
+    lex.current_run_buffer_character_position = lex.current_run_character_position = lex.current_run_buffer_start_position + my_n - lex.more_adjust;
+    lex.doBeforeAction(); // set up lex.matched_string (yytext) again
   };
   
-  YY_FLUSH_BUFFER = function (current_buffer) {
-    yy_flush_buffer(current_buffer);
-  };
-  
-  // XXX does what?
-  yy_scan_buffer = function (base, size) {
-    // XXX? YY_BUFFER_STATE yy_scan_buffer YY_PROTO(( char *base, yy_size_t size ));
-  };
-  
-  // XXX find a string?
-  yy_scan_string = function (yy_str) {
-    // XXX? YY_BUFFER_STATE yy_scan_string YY_PROTO(( yyconst char *yy_str ));
+  // (yyless)
+  // Redefine yyless() so it works in section 3 code.
+  // XXX who's bad? what is section 3?
+  lex.xxx_less = function (my_n) {
+
+    // Undo effects of setting up yytext.
+    lex.matched_string[lex.matched_string_len] = lex.tmp_character_hold;
+    lex.current_run_buffer_character_position = lex.matched_string + my_n;
+    lex.tmp_character_hold = lex.current_run_buffer_character_position;
+    lex.current_run_buffer_character_position = '\0';
+    lex.matched_string_len = my_n;
   };
 
-  // XXX scan ?
-  yy_scan_bytes = function (bytes, len) {
-    // XXX ?YY_BUFFER_STATE yy_scan_bytes YY_PROTO(( yyconst char *bytes, int len ));
-  };
+  // (unput)
+  // yyunput = function (c, lex.current_run_buffer_start_position) {
+  lex.xxx_unput = function (my_c, my_matched_string_pseudo_pointer) {
+    var number_to_move,
+      dest,
+      source;
 
-  yy_flex_alloc = function (yy_size_t) {
-    // mhmh
-  };
-  
-  yy_flex_realloc = function (yy_size_t) {
-    // XXX *yy_flex_realloc YY_PROTO(( void *, yy_size_t ));
-  };
-  
-  yy_flex_free = function () {
-    // XXX free like a bird
-  };
+    lex.current_run_character_position = lex.current_run_buffer_character_position;
 
-  yy_new_buffer = lex.createBuffer;
-  
-  yy_set_interactive = function (is_interactive) {
-    if (!lex.current_buffer) {
-      lex.current_buffer = lex.createBuffer(lex.file_input, lex.default_buffer_size);
-      lex.current_buffer.buffer_state_interactive_input = is_interactive;
+    // undo effects of setting up lex.matched_string (yytext)
+    lex.current_run_character_position = lex.tmp_character_hold;
+
+    // need to shift things up to make room
+    if (lex.current_run_character_position < lex.current_buffer.buffer_state_array_buffer + 2) { 
+
+      // +2 for EOB chars.
+      number_to_move = lex.buffer_character_len + 2;
+      dest = lex.current_buffer.buffer_state_array_buffer.getInt8(lex.current_buffer.buffer_state_size + 2);
+      source = lex.current_buffer.buffer_state_array_buffer.getInt8(number_to_move);
+      while (source > lex.current_buffer.buffer_state_array_buffer) {
+        //XXX*--dest = *--source;
+      }
+      lex.current_run_character_position += (dest - source);
+      lex.current_run_buffer_start_position += (dest - source);
+      lex.current_buffer.buffer_state_character_len = lex.buffer_character_len = lex.current_buffer.buffer_state_size;
+      if (lex.current_run_character_position < lex.current_buffer.buffer_state_array_buffer + 2 ) {
+        throw new Error("[error] - Flex scanner push-back overflow");
+      }
     }
-  };
-  
-  yy_set_bol = function(at_bol) {
-    if (!lex.current_buffer) {
-      lex.current_buffer = lex.createBuffer(lex.file_input, lex.default_buffer_size);
-      lex.current_buffer.yy_at_bol = at_bol;
-    }
-  };
-
-  YY_AT_BOL = function () {
-    return lex.current_buffer.yy_at_bol;
-  };
-
-  
-  // => this is a type int => yy_state_type;
-
-  yy_state_type = yy_get_previous_state() || 0;
-  // XXX hm...
-  yy_state_type = yy_try_NUL_trans() || YY_PROTO(current_state);
-  yy_get_next_buffer;
-  yy_fatal_error = function (msg) {
-    return msg;
-  };
-
-  // Done after the current pattern has been matched and before the
-  // corresponding action - sets up lex.matched_string (yytext).
-  YY_DO_BEFORE_ACTION = function () {
+    // XXX? *--lex.current_run_character_position = (char) c;
+    lex.current_run_character_position = my_c;
     lex.matched_string_pseudo_pointer = lex.current_run_buffer_start_position;
-    lex.matched_string_len = lex.current_run_character_position - lex.current_run_buffer_start_position;
-    lex.tmp_character_hold = lex.current_run_character_position; // pointer to
+    lex.tmp_character_hold = lex.current_run_character_position;
     lex.current_run_buffer_character_position = lex.current_run_character_position;
   };
 
-  YY_NUM_RULES = 14;
-  YY_END_OF_BUFFER = 15;
-
-  
-  
-  yy_meta = [
-    0,
-    1,    1,    1,    1,    1,    1,    1,    2,    1,    1,
-    2,    2,    2,    2,    2,    2,    2,    2,    1,    1
-  ];
-
-  
-  yy_def = [
-     0,
-     32,    1,   32,   32,   32,   32,   32,   33,   32,   32,
-     34,   32,   35,   32,   32,   33,   32,   32,   32,   34,
-     35,   32,   32,   32,   32,   32,   32,   32,   32,   32,
-     32,    0,   32,   32,   32
-  ];
-
-  yy_nxt = [
-    0,
-    4,    5,    6,    7,    8,    9,   10,   11,   12,   13,
-   11,   11,   11,   11,   11,   11,   11,   11,   14,   15,
-   18,   21,   20,   19,   16,   16,   31,   30,   29,   28,
-   27,   26,   25,   24,   23,   22,   17,   17,   32,    3,
-   32,   32,   32,   32,   32,   32,   32,   32,   32,   32,
-   32,   32,   32,   32,   32,   32,   32,   32,   32,   32
-  ];
-
-  yy_chk = [
-    0,
-    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-    9,   35,   34,    9,   33,   33,   29,   28,   27,   26,
-   25,   24,   23,   22,   19,   18,   16,    8,    3,   32,
-   32,   32,   32,   32,   32,   32,   32,   32,   32,   32,
-   32,   32,   32,   32,   32,   32,   32,   32,   32,   32
-  ];
-
-  yy_state_type = yy_last_accepting_state;
-  yy_last_accepting_cpos;
-
-  // The intent behind this definition is that it'll catch
-  // any uses of REJECT which flex missed.
-  REJECT = function () {
-    return reject_used_but_not_detected;
-  };
-  yymore = function () {
-    return yymore_used_but_not_detected;
-  };
-  YY_MORE_ADJ = 0;
-  YY_RESTORE_YY_MORE_OFFSET();
-  
-  // #line 1 "gram.l"
-  INITIAL = 0;
-  // #line 391 "lex.yy.c"
-
-  // Macros after this point can all be overridden by user definitions in 
-  // section 1.
-  if (YY_SKIP_YYWRAP === undefined) {
-    if (__cplusplus) {
-      yywrap = YY_PROTO();
-    } else {
-      yywrap = YY_PROTO();
-    }
-  }
-
-  if (YY_NO_UNPUT === undefined) {
-    // XXX 2 params
-    yyunput = YY_PROTO(c, buf_ptr);
-  }
-
-  if (lex.matched_string_pseudo_pointer === undefined) {
-    // static void yy_flex_strncpy YY_PROTO(( char *, yyconst char *, int ));
-    yy_flex_strncpy = YY_PROTO(char, yyconst);
-  }
-
-  if (YY_NEED_STRLEN) {
-    yy_flex_strlen = YY_PROTO(yyconst_char);
-  }
-
-  if (YY_NO_INPUT === undefined) {
-    if (__cplusplus) {
-      yy_input = YY_PROTO();
-    } else {
-      input = YY_PROTO();
-    }
-  }
-  
-  if (YY_STACK_USED) {
-    yy_start_stack_ptr = 0;
-    yy_start_stack_depth = 0;
-    yy_start_stack = 0; // pointer
-    if (YY_NO_PUSH_STATE === undefined) {
-      yy_push_state = YY_PROTO(new_state);
-    }
-    if (YY_NO_POP_STATE === undefined) {
-      yy_pop_state = YY_PROTO();
-    }
-    if (YY_NO_TOP_STATE === undefined) {
-      yy_top_state = YY_PROTO();
-    }
-  } else {
-    YY_NO_PUSH_STATE = 1;
-    YY_NO_POP_STATE = 1;
-    YY_NO_TOP_STATE = 1;
-  }
-  
-  if (YY_MALLOC_DECL) {
-    YY_MALLOC_DECL;
-  } else {
-    if (__STDC__) {
-      if (__cplusplus === undefined) {
-        // #include <stdlib.h> 
-      }
-    } else {
-      // Just try to get by without declaring the routines.  This will fail
-      // miserably on non-ANSI systems for which sizeof(size_t) != sizeof(int)
-      //* or sizeof(void*) != sizeof(int).
-    }
-  }
-
-  // Amount of stuff to slurp up with each read.
-  if (YY_READ_BUF_SIZE === undefined) {
-    YY_READ_BUF_SIZE = 8192;
-  }
-
-  // Copy whatever the last rule matched to the standard output.
-  if (ECHO === undefined) {
-    // This used to be an fputs(), but since the string might contain NUL's,
-    // we now use fwrite().
-    // write from array to stream, but where does it end up?
-    //XXX ECHO = fwrite(yytext, yyleng, 1, yyout);
-    ECHO = console.log(lex.matched_string, lex.matched_string_len, 1, lex.file_output);
-  }
-
-  // Gets input and stuffs it into "buf".  number of characters read, or 
-  // YY_NULL, is returned in "result".
-  if (YY_INPUT === undefined) {
-    YY_INPUT = function (buffer, result, max_size) {
-      var c, n;
-      if (lex.current_buffer.buffer_state_interactive_input) {
-        c = '*';
-        
-        // loop over character line by line and add characters to buffer
-        for (n = 0; n < max_size && (c = getc(lex.file_input) !== EOF && c !== '\n'); n++) {
-          buf[n] = c;
-        }
-        if (c === '\n') {
-          if (n >= 1 && buf[n - 1] === '\r') {
-            buf[n - 1] = c;
-          } else {
-            buf[n++] = c;
-          }
-        }
-        if (c === EOF && ferror(lex.file_input)) {
-          YY_FATAL_ERROR("input in flex scanner failed");
-          result = n;
-        }
-      } else {
-        errno = 0;
-        while (result = fread(buf, 1, max_size, lex.file_input) === 0 && ferror(lex.file_input)) {
-          if (errno !== EINTR) {
-            YY_FATAL_ERROR( "input in flex scanner failed" );
-            break;
-          }
-          errno = 0;
-          clearerr(lex.file_input);
-        }
-        for (n = 0; n < result; n += 1) {
-          if (buf[n] === '\n') {
-            if (n >= 1 && buf[n - 1] === '\r') {
-              buf[n - 1] = '\n';
-            }
-          }
-        }
-      }
-    };
-  }
-
-  // No semi-colon after return; correct usage is to write "yyterminate();" -
-  // we don't want an extra ';' after the "return" because that will cause
-  // some compilers to complain about unreachable statements.
-  if (yyterminate === undefined) {
-    yyterminate = function () {
-      return YY_NULL;
-    };
-  }
-
-  // Number of entries by which start-condition stack grows.
-  if (YY_START_STACK_INCR === undefined) {
-    YY_START_STACK_INCR = 25;
-  }
-
-  // Report a fatal error.
-  if (YY_FATAL_ERROR === undefined) {
-    YY_FATAL_ERROR = function(msg) {
-      return yy_fatal_error(msg);
-    };
-  }
-  
-  // Code executed at the beginning of each rule, after lex.matched_string (yytext) and lex.matched_string_len (yyleng)
-  // have been set up.
-  if (YY_USER_ACTION === undefined) {
-    YY_USER_ACTION;
-  }
-
-  if (YY_BREAK === undefined) {
-    // nah... YY_BREAK = break;
-  }
-
-  YY_RULE_SETUP = YY_USER_ACTION;
-  
-  // We provide macros for accessing buffer states in case in the
-  // future we want to put the buffer states in a more general
-  // "scanner state".
-  YY_CURRENT_BUFFER = function () {
-    return lex.current_buffer;
-  };
-  
-
-  // yy_get_next_buffer - try to read in a new buffer
-  //
-  // Returns a code representing an action:
-  //  EOB_ACT_LAST_MATCH -
-  //  EOB_ACT_CONTINUE_SCAN - continue scanning from current position
-  //  EOB_ACT_END_OF_FILE - end of file
-  yy_get_next_buffer = function () {
-    var dest = lex.current_buffer.buffer_state_array_buffer,
-      source = lex.matched_string_pseudo_pointer,
-      number_to_move,
-      i,
-      ret_val;
-    
-    if (lex.current_run_buffer_character_position > lex.current_buffer.buffer_state_array_buffer.getInt8(lex.current_buffer.buffer_state_character_len + 1)) {
-      YY_FATAL_ERROR("fatal flex scanner internal error--end of buffer missed");
-    }
-    
-    // Don't try to fill the buffer, so this is an EOF.
-    if (lex.current_buffer.buffer_state_fill_if_full === 0) {
-      
-      // We matched a single character, the EOB, so
-      // treat this as a final EOF.
-      if (lex.current_run_buffer_character_position - lex.matched_string_pseudo_pointer - YY_MORE_ADJ === 1) {
-        return EOB_ACT_END_OF_FILE;
-
-      // We matched some text prior to the EOB, first
-      // process it.
-      } else {
-        return EOB_ACT_LAST_MATCH;
-      }
-    }
-    
-    // Try to read more data.
-
-    // First move last chars to start of buffer.
-    number_to_move = (lex.current_run_buffer_character_position - lex.matched_string_pseudo_pointer) - 1;
-
-    for (i = 0; i < number_to_move; ++i) {
-      //XXX *(dest++) = *(source++);
-      dest[i] = source[i];
-    }
-
-    // don't do the read, it's not guaranteed to return an EOF,
-    // just force an EOF
-    if (lex.current_buffer.yy_buffer_status === YY_BUFFER_EOF_PENDING) {
-      lex.current_buffer.buffer_state_character_len = lex.buffer_character_len = 0;
-
-    } else {
-      num_to_read = lex.current_buffer.buffer_state_size - number_to_move - 1;
-
-      // Not enough room in the buffer - grow it.
-      while (num_to_read <= 0) {
-        
-        if (YY_USES_REJECT) {
-          YY_FATAL_ERROR("input buffer overflow, can't enlarge buffer because scanner uses REJECT");
-        } else {
-
-          // just a shorter name for the current buffer
-          b = lex.current_buffer;
-          yy_c_buf_p_offset = (lex.current_run_buffer_character_position - b.buffer_state_array_buffer);
-
-          if (b.buffer_is_ours) {
-            new_size = b.buffer_state_size * 2;
-
-            if (new_size <= 0) {
-              b.buffer_state_size += b.buffer_state_size / 8;
-            } else {
-              b.buffer_state_size = 2;
-            }
-        
-            b.buffer_state_array_buffer;
-          
-            // Include room in for 2 EOB chars.
-            yy_flex_realloc(b.buffer_state_array_buffer, b.buffer_state_size + 2);
-          
-          } else {
-            
-            // Can't grow it, we don't own it.
-            b.buffer_state_array_buffer = 0;
-          }
-      
-          if (b.buffer_state_array_buffer === undefined) {
-            YY_FATAL_ERROR("fatal error - scanner input buffer overflow");
-          }
-
-          lex.current_run_buffer_character_position = b.buffer_state_array_buffer.getInt8(yy_c_buf_p_offset);
-          num_to_read = lex.current_buffer.buffer_state_size - number_to_move - 1;
-        }
-
-        if (num_to_read > YY_READ_BUF_SIZE) {
-          num_to_read = YY_READ_BUF_SIZE;
-        }
-        
-        // Read in more data.
-        YY_INPUT((lex.current_buffer.buffer_state_array_buffer.getInt8(number_to_move)), lex.buffer_character_len, num_to_read);
-        lex.current_buffer.buffer_state_character_len = lex.buffer_character_len;
-      }
-    
-      if (lex.buffer_character_len === 0) {
-        if (number_to_move === YY_MORE_ADJ ) {
-          ret_val = EOB_ACT_END_OF_FILE;
-          yyrestart(lex.file_input);
-        } else {
-          ret_val = EOB_ACT_LAST_MATCH;
-          lex.current_buffer.yy_buffer_status = YY_BUFFER_EOF_PENDING;
-        }
-      } else {
-        ret_val = EOB_ACT_CONTINUE_SCAN;
-      }
-    
-      lex.buffer_character_len += number_to_move;
-      lex.current_buffer.buffer_state_array_buffer.setInt8(lex.current_buffer.buffer_state_character_len, YY_END_OF_BUFFER_CHAR);
-      lex.current_buffer.buffer_state_array_buffer.setInt8(lex.current_buffer.buffer_state_character_len + 1, YY_END_OF_BUFFER_CHAR);
-    
-      lex.matched_string_pseudo_pointer = lex.current_buffer.buffer_state_array_buffer.getInt8(0);
-      return ret_val;
-    }
-  };
-
-  // yy_get_previous_state - get the state just before the EOB char was reached.
-  yy_state_type = function yy_get_previous_state() {
-    var tmp_lexer_current_state; // int
-
-    tmp_lexer_current_state = lex.start_state;
-
-    for (lex.current_run_character_position = lex.matched_string_pseudo_pointer + YY_MORE_ADJ; lex.current_run_character_position < lex.current_run_buffer_character_position; ++lex.current_run_character_position) {
-      //YY_CHAR  (yy_c) = (*lex.current_run_character_position ? yy_ec[doubleCast(*lex.current_run_character_position)] : 1);
-      lex.character = (lex.current_run_character_position ? lex.table_dict.ec[doubleCast(lex.current_run_character_position)] : 1);
-      if (lex.table_dict.accept[tmp_lexer_current_state]) {
-        yy_last_accepting_state = tmp_lexer_current_state;
-        yy_last_accepting_cpos = lex.current_run_character_position;
-      }
-      while (yy_chk[yy_base[tmp_lexer_current_state] + yy_c] !== tmp_lexer_current_state) {
-        tmp_lexer_current_state = yy_def[tmp_lexer_current_state];
-        if (tmp_lexer_current_state >= 33) {
-          lex.character = yy_meta[yy_c];
-        }
-      }
-      tmp_lexer_current_state = yy_nxt[yy_base[tmp_lexer_current_state] + yy_c];
-    }
-    return tmp_lexer_current_state;
-  };
-
-
-  // yy_try_NUL_trans - try to make a transition on the NUL character
-  //
-  // synopsis
-  //  next_state = yy_try_NUL_trans( current_state );
-
-  yy_try_NUL_trans = function (my_lexer_current_state){
-    yy_is_jam;
-    lex.current_run_character_position = lex.current_run_buffer_character_position;
-    lex.character = 1;
-    if (lex.table_dict.accept[my_lexer_current_state]) {
-      yy_last_accepting_state = my_lexer_current_state;
-      yy_last_accepting_cpos = lex.current_run_character_position;
-    }
-    while (yy_chk[yy_base[my_lexer_current_state] + yy_c] !== my_lexer_current_state) {
-      my_lexer_current_state = yy_def[my_lexer_current_state];
-      if (my_lexer_current_state >= 33) {
-        lex.character = yy_meta[lex.character];
-      }
-    }
-    my_lexer_current_state = yy_nxt[yy_base[my_lexer_current_state] + yy_c];
-    yy_is_jam = (my_lexer_current_state == 32);
-  
-    return yy_is_jam ? 0 : my_lexer_current_state;
-  };
-
-  if (YY_NO_UNPUT === undefined) {
-    if (YY_USE_PROTOS) {
-      //yyunput = function(c, lex.current_run_buffer_start_position);
-    } else {
-      //yyunput = function(c, lex.current_run_buffer_start_position);
-    }
-    yyunput = function (c, lex.current_run_buffer_start_position) {
-      lex.current_run_character_position = lex.current_run_buffer_character_position;
-    
-      // undo effects of setting up lex.matched_string (yytext)
-      lex.current_run_character_position = lex.tmp_character_hold;
-    
-      // need to shift things up to make room
-      if (lex.current_run_character_position < lex.current_buffer.buffer_state_array_buffer + 2) { 
-
-        // +2 for EOB chars.
-        number_to_move = lex.buffer_character_len + 2;
-        dest = lex.current_buffer.buffer_state_array_buffer.getInt8(lex.current_buffer.buffer_state_size + 2);
-        source = lex.current_buffer.buffer_state_array_buffer.getInt8(number_to_move);
-        while (source > lex.current_buffer.buffer_state_array_buffer) {
-          //XXX*--dest = *--source;
-        }
-        lex.current_run_character_position += (dest - source);
-        lex.current_run_buffer_start_position += (dest - source);
-        lex.current_buffer.buffer_state_character_len = lex.buffer_character_len = lex.current_buffer.buffer_state_size;
-        if (lex.current_run_character_position < lex.current_buffer.buffer_state_array_buffer + 2 ) {
-          YY_FATAL_ERROR("flex scanner push-back overflow");
-        }
-      }
-      // XXX? *--lex.current_run_character_position = (char) c;
-      lex.current_run_character_position = c;
-      lex.matched_string_pseudo_pointer = lex.current_run_buffer_start_position;
-      lex.tmp_character_hold = lex.current_run_character_position;
-      lex.current_run_buffer_character_position = lex.current_run_character_position;
-    };
-  }
-
-  if (__cplusplus) {
-    //yyinput();
-  } else {
-    //input();
-  }
-
-  input = function()  {
-    var c;
+  // (input)
+  lex.xxx_input = function() {
+    var character,
+      offset;
 
     lex.current_run_buffer_character_position = lex.tmp_character_hold;
 
-    // lex.current_run_buffer_character_position now points to the character we want to return.
-    // If this occurs *before* the EOB characters, then it's a
+    // lex.current_run_buffer_character_position now points to the character we 
+    // want to return. If this occurs *before* the EOB characters, then it's a
     // valid NUL; if not, then we've hit the end of the buffer.
-    if (lex.current_run_buffer_character_position === YY_END_OF_BUFFER_CHAR) {
+    if (lex.current_run_buffer_character_position === lex.buffer_end_character) {
     
       // This was really a NUL.
       if (lex.current_run_buffer_character_position < lex.current_buffer.buffer_state_array_buffer.getInt8(lex.current_buffer.buffer_state_character_len)) {
         lex.current_run_buffer_character_position = '\0';
-      
+
       // need more input
       } else {
         offset = lex.current_run_buffer_character_position - lex.matched_string_pseudo_pointer;
-        ++lex.current_run_buffer_character_position;
+        lex.current_run_buffer_character_position++;
 
-        switch (yy_get_next_buffer()) {
-          
-          // This happens because yy_g_n_b()
-          // sees that we've accumulated a
-          // token and flags that we need to
-          // try matching the token before
-          // proceeding.  But for input(),
-          // there's no matching to consider.
-          // So convert the EOB_ACT_LAST_MATCH
-          // to EOB_ACT_END_OF_FILE.
-          case EOB_ACT_LAST_MATCH:
+        switch (lex.getNextBuffer()) {
+
+          // This happens because yy_g_n_b() sees that we've accumulated a
+          // token and flags that we need to try matching the token before
+          // proceeding. But for input(), there's no matching to consider.
+          // So convert the lex.end_of_block_action_last_match
+          // to end_of_block_action_end_of_file.
+          case lex.end_of_block_action_last_match:
           
             // Reset buffer status.
-            return yyrestart(lex.file_input);
+            return lex.restartLex(lex.file_input);
   
           //fall through
-          case EOB_ACT_END_OF_FILE:
-            if (yywrap()) {
-              return EOF;
+          case lex.end_of_block_action_end_of_file:
+            if (lex.thatsAWrap()) {
+              return lex.xxx_eof;
             }
-            if (yy_did_buffer_switch_on_eof === undefined) {
-              YY_NEW_FILE;
-              if (__cplusplus) {
-                return yyinput();
-              } else {
-                return input();
-              }
+            if (lex.buffer_switched_on_end_of_file === 0) {
+              lex.startProcessingNewFile();
+              return input();
             }
             break;
 
-          case EOB_ACT_CONTINUE_SCAN:
+          case lex.end_of_block_action_continue_scan:
             lex.current_run_buffer_character_position = lex.matched_string_pseudo_pointer + offset;
             break;
         }
@@ -1400,35 +1090,36 @@
     }
 
     // cast for 8-bit char's
-    c = lex.current_run_buffer_character_position;
-    
+    character = lex.current_run_buffer_character_position;
+
     // preserve lex.matched_string (yytext) 
     lex.current_run_buffer_character_position = '\0';  
     lex.tmp_character_hold = ++lex.current_run_buffer_character_position;
-    return c;
+    return character;
   };
 
-  if (YY_USE_PROTOS) {
-    // yyrestart();
-  } else {
-    // yyrestart();
-  }
-  yyrestart = function (input_file) {
-    if (lex.current_buffer === undefined) {
+  // (yy_set_bol)
+  // set beginning of line ^ to be active
+  lex.xxx_set_bol = function (my_at_bol) {
+    if (!lex.current_buffer) {
       lex.current_buffer = lex.createBuffer(lex.file_input, lex.default_buffer_size);
+      lex.current_buffer.input_line_start = my_at_bol;
     }
-    lex.init_buffer(lex.current_buffer, input_file);
-    lex.loadBufferState();
   };
 
-  if (YY_USE_PROTOS) {
-    // yy_switch_to_buffer( YY_BUFFER_STATE new_buffer )
-  } else {
-    // yy_switch_to_buffer( new_buffer ) 
-    YY_BUFFER_STATE = new_buffer;
-  }
-  yy_switch_to_buffer = function () {
-    if (lex.current_buffer === new_buffer) {
+  // (YY_AT_BOL) - duplicate?
+  lex.xxx_is_at_bol = function () {
+    return lex.current_buffer.input_line_start;
+  };
+  
+  // (yy_flex_free)
+  lex.xxx_freeBuffer = function (my_buffer) {
+    my_buffer = null;
+  };
+
+  // (yy_switch_to_buffer)
+  lex.xxx_switchToBuffer = function (my_buffer) {
+    if (lex.current_buffer === my_buffer) {
       return;
     }
 
@@ -1438,303 +1129,198 @@
       lex.current_buffer.buffer_state_current_position = lex.current_run_buffer_character_position;
       lex.current_buffer.buffer_state_character_len = lex.buffer_character_len;
     }
-
-    lex.current_buffer = new_buffer;
+    lex.current_buffer = my_buffer;
     lex.loadBufferState();
 
     // We don't actually know whether we did this switch during
-    // EOF (yywrap()) processing, but the only time this flag
-    // is looked at is after yywrap() is called, so it's safe
+    // EOF (lex.thatsAWrap) processing, but the only time this flag
+    // is looked at is after lex.thatsAWrap() is called, so it's safe
     // to go ahead and always set it.
-    yy_did_buffer_switch_on_eof = 1;
+    lex.buffer_switched_on_end_of_file = 1;
   };
 
-
-  if (YY_USE_PROTOS) {
-    // yy_delete_buffer( YY_BUFFER_STATE b )
-  } else {
-    // yy_delete_buffer( b )
-  }
-
-  yy_delete_buffer = function (b) {
-    if (b === undefined) {
+  // (yy_delete_buffer)
+  lex.xxx_deleteBuffer = function (my_buffer) {
+    if (my_buffer === undefined) {
       return;
     }
-    if (b === lex.current_buffer) {
+    if (my_buffer === lex.current_buffer) {
       lex.current_buffer = 0;
     }
-    if (b.buffer_is_ours) {
-      yy_flex_free(b.buffer_state_array_buffer);
+    if (my_buffer.buffer_is_ours) {
+      lex.freeBuffer(my_buffer.buffer_state_array_buffer);
     }
-    yy_flex_free(b);
+    lex.freeBuffer(my_buffer);
   };
 
-  if (YY_USE_PRoTOS) {
-    // void yy_flush_buffer( YY_BUFFER_STATE b )
-  } else {
-    // void yy_flush_buffer( b )
-    // YY_BUFFER_STATE b;
-  }
-  
-  yy_flush_buffer = function (b) {
-    if (b === undefined) {
+  // (yy_flush_buffer)
+  lex.xxx_flushBuffer = function (my_buffer) {
+    if (my_buffer === undefined) {
       return;
     }
 
-    b.buffer_state_character_len = 0;
+    my_buffer.buffer_state_character_len = 0;
 
-    // We always need two end-of-buffer characters.  The first causes
-    // a transition to the end-of-buffer state.  The second causes
+    // We always need two end-of-buffer characters. The first causes
+    // a transition to the end-of-buffer state. The second causes
     // a jam in that state.
-    b.buffer_state_array_buffer.setInt8(0, YY_END_OF_BUFFER_CHAR);
-    b.buffer_state_array_buffer.setInt8(1, YY_END_OF_BUFFER_CHAR);
+    my_buffer.buffer_state_array_buffer.setInt8(0, lex.buffer_end_character);
+    my_buffer.buffer_state_array_buffer.setInt8(1, lex.buffer_end_character);
+
+    my_buffer.buffer_state_current_position = my_buffer.buffer_state_array_buffer.getInt8(0);
   
-    b.buffer_state_current_position = b.yy_ch_buf[0];
+    my_buffer.input_line_start = 1;
+    my_buffer.buffer_status = lex.buffer_is_new;
   
-    b.yy_at_bol = 1;
-    b.yy_buffer_status = YY_BUFFER_NEW;
-  
-    if (b === lex.current_buffer) {
+    if (my_buffer === lex.current_buffer) {
       lex.loadBufferState();
     }
   };
 
-  if (YY_NO_SCAN_BUFFER === undefined) {
-    if (YY_USE_PROTOS === undefined) {
-      // YY_BUFFER_STATE yy_scan_buffer( char *base, yy_size_t size )
-    } else {
-      // YY_BUFFER_STATE yy_scan_buffer( base, size )      
-    }
-    yy_scan_buffer = function (base, size) {
-      YY_BUFFER_STATE = b;
+  // (yy_scan_buffer)
+  lex.xxx_scanBuffer = function (my_base, my_size) {
+    var buffer;
 
-      // They forgot to leave room for the EOB's.
-      if (size < 2 || base[size - 2] !== YY_END_OF_BUFFER_CHAR || base[size - 1] !== YY_END_OF_BUFFER_CHAR) {
-        return 0;
-      }
-
-      b = yy_flex_alloc(sizeof(yy_buffer_state));
-      if (b === undefined) {
-        YY_FATAL_ERROR("out of dynamic memory in yy_scan_buffer()");
-      }
-      b.buffer_state_size = size - 2;  // "- 2" to take care of EOB's/
-      b.buffer_state_current_position = b.buffer_state_array_buffer = base;
-      b.buffer_is_ours = 0;
-      b.buffer_state_input_file = 0;
-      b.buffer_character_len = b.buffer_state_size;
-      b.buffer_state_interactive_input = 0;
-      b.yy_at_bol = 1;
-      b.buffer_state_fill_if_full = 0;
-      b.yy_buffer_status = YY_BUFFER_NEW;
-      yy_switch_to_buffer(b);
-      return b; 
-    };
-  }
-
-  if (YY_NO_SCAN_STRING === undefined) {
-    if (YY_NO_PROTOS) {
-      // YY_BUFFER_STATE yy_scan_string( yyconst char *yy_str )
-    } else {
-      // YY_BUFFER_STATE yy_scan_string( yy_str )
-      // yyconst char *yy_str;
-    }
-    yy_scan_string = function (yy_str) {
-      var len;
-      for (len = 0; yy_str[len]; ++len) {
-        ;
-      }
-
-      return yy_scan_bytes(yy_str, len);
-    };
-  }
-
-  if (YY_NO_SCAN_BYTES) {
-    if (YY_USE_PROTOS) {
-      // YY_BUFFER_STATE yy_scan_bytes( yyconst char *bytes, int len )
-    } else {
-      // YY_BUFFER_STATE yy_scan_bytes( bytes, len )
-      // yyconst char *bytes;
-      // int len;      
-    }
-    yy_scan_bytes = function (bytes, len) {
-      var buf,
-        i,
-        b = YY_BUFFER_STATE,
-        n = yy_size_t;
-
-      // Get memory for full buffer, including space for trailing EOB's.
-      n = len + 2;
-      buf = yy_flex_alloc( n );
-      if (buf === undefined) {
-        YY_FATAL_ERROR("out of dynamic memory in yy_scan_bytes()");
-      }
-      for (i = 0; i < len; ++i) {
-        buf[i] = bytes[i];
-      }
-      buf[len] = buf[len+1] = YY_END_OF_BUFFER_CHAR;
-    
-      b = yy_scan_buffer(buf, n);
-      if (b === undefined) {
-        YY_FATAL_ERROR( "bad buffer in yy_scan_bytes()" );
-      }
-      // It's okay to grow etc. this buffer, and we should throw it
-      // away when we're done.
-      b.buffer_is_ours = 1;
-
-      return b;
-    };
-  }
-  
-  if (YY_NO_PUSH_STATE === undefined) {
-    if (YY_NO_PROTOS) {
-      // static void yy_push_state( int new_state )
-    } else {
-      // static void yy_push_state( new_state )
-      // int new_state;      
-    }
-    yy_push_state = function (new_state) {
-      if (yy_start_stack_ptr >= yy_start_stack_depth) {
-        yy_size_t = new_size;
-  
-        yy_start_stack_depth += YY_START_STACK_INCR;
-        new_size = yy_start_stack_depth * sizeof(int);
-  
-        if (yy_start_stack === undefined) {
-          yy_start_stack = yy_flex_alloc(new_size);
-        } else {
-          yy_start_stack = yy_flex_realloc(yy_start_stack, new_size);
-        }
-        if (yy_start_stack === undefined) {
-          YY_FATAL_ERROR("out of memory expanding start-condition stack");
-        }
-      }
-      yy_start_stack[yy_start_stack_ptr++] = lex.start_state_confusulation;
-      BEGIN(new_state);
-    };
-  }
-
-  if (YY_NO_POP_STATE === undefined) {
-    yy_pop_state = function () {
-      if (--yy_start_stack_ptr < 0) {
-        YY_FATAL_ERROR( "start-condition stack underflow" );
-      }
-      BEGIN(yy_start_stack[yy_start_stack_ptr]);
-    };
-  }
-  if (YY_NO_TOP_STATE === undefined) {
-    yy_no_top_state = function () {
-      return yy_start_stack[yy_start_stack_ptr - 1];
-    };
-  }
-
-  if (YY_EXIT_FAILURE === undefined) {
-    YY_EXIT_FAILURE = 2;
-  }
-
-  if (YY_USE_PROTOS) {
-    // static void yy_fatal_error( yyconst char msg[] )
-  } else {
-    // static void yy_fatal_error( msg )
-    // char msg[];
-  }
-  yy_fatal_error = function (msg) {
-    console.log("stderr", msg + "\n");
-    exit(YY_EXIT_FAILURE);
-  };
-
-  // Redefine yyless() so it works in section 3 code.
-  yyless = null;
-  yyless = function (n) {
-    // do {
-    // Undo effects of setting up yytext.
-    lex.matched_string[lex.matched_string_len] = lex.tmp_character_hold;
-    lex.current_run_buffer_character_position = lex.matched_string + n;
-    lex.tmp_character_hold = lex.current_run_buffer_character_position;
-    lex.current_run_buffer_character_position = '\0';
-    lex.matched_string_len = n;
-    // } while (0);
-  };
-
-  // Internal utility routines.
-  
-  if (lex.matched_string_pseudo_pointer === undefined) {
-    if (YY_USE_PROTOS) {
-      // static void yy_flex_strncpy( char *s1, yyconst char *s2, int n )
-    } else {
-      // static void yy_flex_strncpy( s1, s2, n )
-      // char *s1;
-      // yyconst char *s2;
-      // int n;
-    }
-    yy_flex_strncpy = function (s1, s2, n) {
-      var i;
-      for (i = 0; i < n; ++i) {
-        s1[i] = s2[i];
-      }
-    };  
-  }
-
-  if (YY_NEED_STRLEN) {
-    if (YY_USE_PROTOS) {
-      // static int yy_flex_strlen( yyconst char *s )
-    } else {
-      // static int yy_flex_strlen( s )
-      // yyconst char *s; 
-    }
-    yy_flex_strlen = function (s) {
-      for (n = 0; s[n]; ++n) {
-        ;
-      }
-      return n;
-    };
-  }
-
-  if (YY_USE_PROTOS) {
-    // static void *yy_flex_alloc( yy_size_t size )
-  } else {
-    // static void *yy_flex_alloc( size )
-    // yy_size_t size;    
-  }
-  yy_flex_alloc = function (size) {
-    // return (void *) malloc( size );
-    return new ArrayBuffer(size);
-  };
-
-  if (YY_USE_PROTOS) {
-    // static void *yy_flex_realloc( void *ptr, yy_size_t size )
-  } else {
-    // static void *yy_flex_realloc( ptr, size )
-    // void *ptr;
-    // yy_size_t size;
-  }
-  yy_flex_realloc = function (ptr, size) {
-    // The cast to (char *) in the following accommodates both
-    // implementations that use char* generic pointers, and those
-    // that use void* generic pointers.  It works with the latter
-    // because both ANSI C and C++ allow castless assignment from
-    // any pointer type to void*, and deal with argument conversions
-    // as though doing an assignment.
-    // return (void *) realloc( (char *) ptr, size );
-    // XXX hm
-  };
-
-  if (YY_USE_PROTOS) {
-    // static void yy_flex_free( void *ptr )    
-  } else {
-    // static void yy_flex_free( ptr )
-    // void *ptr;    
-  }
-  yy_flex_free = function (ptr) {
-    // XXX ? free(ptr);
-  };
-
-  if (YY_MAIN) {
-    main = function () {
-      yylex();
+    // They forgot to leave room for the EOB's.
+    if (my_size < 2 || my_base.getInt8(my_size - 2) !== lex.buffer_end_character || my_base.getInt8(my_size - 1) !== lex.buffer_end_character) {
       return 0;
+    }
+
+    buffer = lex.setBuffer(sizeof(yy_buffer_state));
+    if (buffer === undefined) {
+      throw new Error("[error] out of dynamic memory in scanBuffer()");
+    }
+    buffer.buffer_state_size = my_size - 2;  // "- 2" to take care of EOB's/
+    buffer.buffer_state_current_position = b.buffer_state_array_buffer = my_base;
+    buffer.buffer_is_ours = 0;
+    buffer.buffer_state_input_file = 0;
+    buffer.buffer_character_len = b.buffer_state_size;
+    buffer.buffer_state_interactive_input = 0;
+    buffer.input_line_start = 1;
+    buffer.buffer_state_fill_if_full = 0;
+    buffer.buffer_status = lex.buffer_is_new;
+    lex.switchToBuffer(buffer);
+    return buffer; 
+  };
+
+  // (YY_STACK_USED) stacks
+  lex.xxx_stack_used = 0;
+  
+  if (lex.stack_used) {
+
+    // (YY_START_STACK_INCR)
+    // Number of entries by which start-condition stack grows.
+    lex.xxx_start_stack_increment = 25;
+
+    // (YY_NO_PUSH_STATE)
+    lex.xxx_no_push_state = 0;
+    
+    // (YY_NO_POP_STATE)
+    lex.xxx_no_pop_state = 0;
+
+    // (YY_NO_TOP_STATE)
+    lex.xxx_no_top_state = 0; 
+
+    // (yy_start_stack_ptr)
+    lex.xxx_start_stack_pointer = 0;
+
+    // (yy_start_stack_depth)
+    lex.xxx_start_stack_depth = 0;
+
+    // (yy_start_stack)
+    lex.xxx_start_stack = 0;
+
+  } else {
+
+    // (YY_NO_PUSH_STATE)
+    lex.xxx_no_push_state = 1;
+    
+    // (YY_NO_POP_STATE)
+    lex.xxx_no_pop_state = 1;
+
+    // (YY_NO_TOP_STATE)
+    lex.xxx_no_top_state = 1;
+  }
+
+  // (yy_push_state)
+  if (lex.no_push_state === 0) {
+    lex.xxx_pushState = function (my_new_state) {
+      var new_size;
+      if (lex.start_stack_pointer >= lex.start_stack_depth) {
+        lex.start_stack_depth += lex.start_stack_increment;
+        // XXX sizeof
+        new_size = lex.start_stack_depth * sizeof(int);
+
+        if (lex.start_stack === 0) {
+          lex.start_stack = lex.setBuffer(new_size);
+        } else {
+          lex.start_stack = lex.growCurrentBuffer(lex.start_stack, new_size);
+        }
+        if (lex.start_stack === undefined) {
+          throw new Error("[error] - Out of memory expanding start-condition stack");
+        }
+      }
+      lex.start_stack[lex.start_stack_pointer++] = lex.start_state_confusulation;
+      lex.begin(new_state);
     };
   }
-  // #line 35 "gram.l"
+
+  // (yy_pop_state)
+  if (lex.no_pop_state === 0) {
+    lex.xxx_popState = function () {
+      if (--lex.start_stack_pointer < 0) {
+        throw new Error("[error] - start-condition stack underflow" );
+      }
+      lex.begin(lex.start_stack[lex.start_stack_pointer]);
+    };
+  }
+
+  // (yy_top_state)
+  if (lex.no_top_state === 0) {
+    lex.xxx_topState = function () {
+      return lex.start_stack[lex.start_stack_pointer - 1];
+    };
+  }
+
+  // (yy_scan_string) 
+  lex.xxx_scanString = function (my_string) {
+    var len;
+      for (len = 0; my_string[len]; ++len) {
+        ;
+      }
+      return lex.scanBytes(my_string, len);
+  };
+
+  // (yy_scan_bytes)
+  lex.xxx_scanBytes = function (my_bytes, my_len) {
+    var buffer,
+      scanned_buffer,
+      i,
+      n;
+
+    // Get memory for full buffer, including space for trailing EOB's.
+    n = len + 2;
+    buffer = lex.setBuffer(n);
+    if (buffer === undefined) {
+      throw new Error("[[error] - out of dynamic memory in scanBytes()");
+    }
+    for (i = 0; i < len; ++i) {
+      buffer.setInt8(i, bytes.charCodeAt(i));
+    }
+    buffer.setInt8(len, lex.buffer_end_character);
+    buffer.setInt8(len + 1, lex.buffer_end_character);
+    
+    scanned_buffer = lex.scanBuffer(buffer, n);
+    if (scanned_buffer === undefined) {
+      throw new Error("[error] - bad buffer in scanBytes()" );
+    }
+    
+    // It's okay to grow etc. this buffer, and we should throw it
+    // away when we're done.
+    scanned_buffer.buffer_is_ours = 1;
+
+    return scanned_buffer;
+  };
 
   window.lexer = lex.lexer;
 
