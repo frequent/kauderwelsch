@@ -8,6 +8,7 @@
   "use strict";
 
   // http://www.cs.man.ac.uk/~pjj/complang/usinglex.html
+  // // http://westes.github.io/flex/manual/FAQ.html#FAQ
 
 }(window));
 
@@ -71,141 +72,14 @@
   // https://www.cs.uic.edu/~spopuri/cparser.html
   // https://en.wikipedia.org/wiki/Shift-reduce_parser
   // https://en.wikipedia.org/wiki/Terminal_and_nonterminal_symbols
+  
 
   // ------------------------------ setup --------------------------------------
 
   // behold the one YY to yyuck them all
   var YY = {};
 
-  // ---------------------------- memory ---------------------------------------
-
-  // (YYSTACK_BYTES) Size of array large to enough for all stacks, each with 
-  // stack_size elements.
-  // 2/3 stacks = 1/2 gaps plus byte size of all 2/3 types * number of elements
-  //function getStackTotalBytes(my_stack_size) {
-  //  var size_one_of_each,
-  //    gaps_needed;
-  //  if (YY.overflow !== undefined && (YY.ltype_trivial && YY.stype_trivial)) {
-  //    gaps_needed = 1;
-  //    size_one_of_each = YY.short_size + YY.stype_size;
-  //    if (YY.lsp_needed) {
-  //      gaps_needed = 2;
-  //      size_one_of_each += YY.ltype_size;
-  //    }
-  //    return gaps_needed * YY.stack_gap_max + my_stack_size * size_one_of_each;
-  //  } else {
-  //    throw new Error("Seems overflow and trivial things have not been set.");
-  //  }
-  //}
-
-  // A type that is properly aligned for any stack member
-  // This was a union yyalloc struct only used in overflow handler, so now it's
-  // a setter for a property. Could also look at this:
-  // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays
-  //function getMaxStackGap() {
-  //  if (YY.lsp_needed) {
-  //    return YY.short_size + YY.stype_size + YY.ltype.size - 1;
-  //  } else {
-  //    return YY.short_size + YY.stype_size - 1;
-  //  }
-  //}
-
-  // (YYSTACK_RELOCATE)
-  // Relocate STACK from its old location to the new one. The local variables 
-  // (have been local to .parse()!!) YYSIZE) and YYSTACKSIZE give the old and 
-  // new number of elements in the stack, and YYPTR gives the new location of 
-  // the stack. Advance YYPTR to a properly aligned location for the next stack.
-  // https://opensource.apple.com/source/cc/cc-798/bison/bison.hairy.auto.html
-  // Mozilla has an arrayBuffer tranfer which extends without copying but not 
-  // supported anywhere else
-  // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer/transfer
-  function relocateStack(my_old_view, my_new_view, my_len) {
-    var new_bytes;
-
-    // Copy STACK COUNT objects FROM to TO. source and destination don't overlap
-    function copyStack(my_to, my_from, my_count) {
-      var i,
-        value;
-      for (i = 0; i < my_count; i += 1) {
-        value = my_to.getInt8(i);
-        my_from.getInt8(i, value); 
-      }
-    }
-
-    copyStack(my_old_view, my_new_view, my_len);
-
-    // no need for caluclating yynewbytes and finding the position of stack in 
-    // memory yyptr defined in setState because this was a macro
-  }
-  
-  // Stack is an area of memory that holds all local variables and parameters 
-  // used by any function, and remembers the order in which functions are called
-  // so that function returns occur correctly.
-  // Refer to the stacks through separate pointers to allow overflow to
-  // reallocate them elsewhere.
-  // using ArrayBuffer http://www.javascripture.com/ArrayBuffer
-  function setParserStackList(my_context, my_depth, my_init) {
-    
-    function setStack(my_param) {
-      var stack = my_param + "_stack",
-        view = my_param + "_view",
-        top = my_param + "_top",
-        bottom = my_param + "_bottom",
-        tmp,
-        len,
-        few;
-
-      // initialize new or move existing arraybuffer to new (larger) one
-      if (my_context[stack] === undefined) {
-        my_context[stack] = new ArrayBuffer(my_depth);
-      } else {
-        tmp = new ArrayBuffer(my_depth);
-        len = my_context.state_stack.byteLength;
-        few = new DataView(tmp);
-        my_context[stack] = relocateStack(my_context[view], few, len);
-      }
-      
-      // (yyssa/yyvsa/yylsa)
-      my_context[view] = new DataView(my_context[stack]);
-      
-      // (yyss/yyvs/yyls)
-      my_context[bottom] = 0;
-      
-      // (yyssp/yyvsp/yylsp)
-      my_context[top] = my_context.stack_size - 1;
-    }
-
-    // The state stack: Does not shift symbols on to the stack. 
-    // Only a stack of states is maintained.
-    setStack("state");
-    
-    // This semantic stack: Grows parallel to the state stack. At 
-    // each reduction, semantic values are popped off this stack and the 
-    // semantic action is executed.
-    setStack("semantic");
-    
-    // The location stack: only used when lsp_needed is set and I'm 
-    // not sure at this moment how it behaves.
-    if (YY.lsp_needed) {
-      setStack("location");
-    }
-
-    // no need to redefine on updates
-    if (my_init === true) {
-
-      // will also be overwritten externally, no need to update on relocates
-      my_context.stack_size = YY.stack_initial_depth;
-
-      // (YYPOPSTACK)
-      my_context.popStack = function (n) {
-        my_context.semantic_top = my_context.semantic_top - n || 1;
-        my_context.state_top = my_context.state_top - n || 1;
-        if (YY.lsp_needed) {
-          my_context.location_top = my_context.location_top - n || 1;
-        }
-      };
-    }
-  }
+  // &&&&&&&&&&
 
   // --------------------------- configure -------------------------------------
 
@@ -214,21 +88,6 @@
 
   // (YYLEX)
   YY.lexer = window.lexer;
-
-  // (YYDEBUG)
-  YY.debug = 0;
-
-  // (YYINITDEPTH) Initial size of the parser's stacks.
-  YY.stack_initial_depth = 200;
-
-  // maximum size the stacks can grow to (effective only if the built-in stack 
-  // extension method is used). Do not make this value too large, as results
-  // may be undefined if size_max < getStackTotalBytes(stack_list_max_depth) is 
-  // called.
-  YY.stack_list_max_depth = 10000;
-
-  // (YY.empty)
-  YY.empty = -2;
 
   YY.nt_base = 14;
 
@@ -259,40 +118,17 @@
   // the next => sizeof(union yyalloc) - 1;
   // YY.stack_gap_max = getMaxStackGap();
 
-  // (YYLAST) highest index in lookup table yytable/state_action
-  YY.last = 53;
-
-  // /YYFINAL (rule?)
-  YY.final = 43;
-
-  // (YYFLAG) flag rerouting to default action in backup	
-  YY.flag = -32768;
-
   // (YYTERROR) the audacity... just write 1 no?
   YY.terror = 1;
 
   // (YYERROR_VERBOSE)
   YY.error_verbose = 0;
 
-  // (YYEOF) end of file
-  YY.end_of_file_reached = 0;
-
   // (yyerror) this only reports, it used to increase error_count++
   YY.error = function (my_error_count, my_message) {
     console.log("[error] (#:" + my_error_count + "): " + my_message);
   };
 
-  // https://opensource.apple.com/source/yacc/yacc-8/skeleton.c
-  YY.overflow = function () {
-    parameter_list = arguments;
-    console.log(parameter_list.join(""));    
-  };
-
-  // dump all ArrayBuffers
-  YY.purge = function (my_param, my_context) {
-    my_context[my_param + "_stack"] = my_context[my_param + "_view"] =
-      my_context[my_param + "_top"] = my_context[my_param + "_bottom"] = null;
-  };
   
   
   // (YYLLOC_DEFAULT) -- Compute the default location (before the actions are run).
@@ -592,7 +428,7 @@
 
     if (body_class === null) {
       if (my_member) {
-        context.scope.error_count++;
+        dict.current_error_count++;
         console.log("[error] - Accepted fla of class is reassigned:", YY.custom_dict.head_name);
       }
     } else {
@@ -631,7 +467,7 @@
         if (YY.custom_dict.start_symbol === null) {
           YY.custom_dict.start_symbol = body_class;
         } else {
-          context.scope.error_count++;
+          dict.current_error_count++;
           console.log("[error] - Start symbol is redefined: ", body_class.name);
         }
       }
@@ -651,53 +487,12 @@
     YY.custom_dict.body_count = 0;
   };
 
-  // -------------------------- lookup tables ----------------------------------
 
-  // YYTRANSLATE() -- Bison token number corresponding to YYLEX.
-  YY.translate = function (my_x) {
-    if (my_x <= 267) {
-      return YY.table_dict.translate[my_x];
-    }
-    return 27;
-  };
+
 
   YY.table_dict = {
       
-    // (yytranslate)
-    // This table maps lexical token numbers to their symbol numbers. If you 
-    // have %token declarations in your grammar, Bison assigns token numbers to 
-    // the different tokens; If you just use character representations, Bison 
-    // just maps their ASCII values to the symbol numbers. Example of the latter
-    // is yytranslate[97] = 5 which is 'a'. Full listing of yytranslate is below.
-    "translate": [
-       0,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     1,     3,     4,     5,
-       6,     7,     8,     9,    10,    11,    12,    13
-    ],
+    
     
     // (yyr1) - Symbol number of symbol that rule yyn derives.
     // Symbol number of lhs of each rule. Used at the time of a 
@@ -739,29 +534,6 @@
     // be popped off the stack is same as the number of symbols on the right 
     // hand side of the reducing rule.
 
-    // (yydefact) - default reduction rules for each state = default rule to 
-    // reduce with in state S when YYTABLE doesn't specify something else to do.
-    "default_reduction_rule": [
-       0,    0,    0,   25,    0,    0,    9,   21,   26,   27,
-       0,    3,    0,    4,   16,    0,    5,    6,    7,   24,
-      10,   17,   22,    2,    0,    0,    0,   23,    0,   19,
-       0,   11,   13,    0,   15,   18,   20,    0,   12,   14,
-       8,    0,    0,    0
-    ],
-
-    // This table lists default reductions for each state. yydefact[state] = 
-    // rule number to use for a default reduction in that state. Here is the 
-    // yydefact table produced for our a sample grammar:
-    // {
-    // 0,     6,     8,     0,     3,     5,     9,     0,     1,     0,
-    // 0,     7,     2,     4
-    // };
-    // Note that a rule number 0 in this table means error. Rule number 0 is 
-    // not used internally by Bison because of some limitations of the internal
-    // representation of the input grammar. One important observation here -
-    // rule numbers are incremented by 1 in this table because of the additional 
-    // rule ($accept â L $end). So what was really r5 for state 1, has become 
-    // r6 in yydefact.
 
     // (yydefgoto) - lists default GOTOs for each non-terminal symbol. It is 
     // only used after checking with yypgoto.
@@ -791,34 +563,7 @@
     // As a final note observe that the entry for the zeroth non-terminal
     // ($accept) is -1. The stack will never be reduced with the $accept rule.
     
-    // (yypact) - Directory into yytable indexed by state number. Ddisplacements 
-    // in yytable are indexed by symbol number.
-    "set_state_action": [
-          29,    14,     5,-32768,    36,     0,-32768,-32768,-32768,-32768,
-           2,-32768,    20,-32768,-32768,    25,-32768,-32768,-32768,-32768,
-      -32768,-32768,-32768,-32768,     5,    34,     8,-32768,     5,    34,
-          42,     8,-32768,    -5,-32768,-32768,-32768,     5,-32768,-32768,
-      -32768,    49,    50,-32768
-    ],
     
-    // This table specifies the portion of yytable that describes what to do 
-    // in state S. It is indexed by the symbol number of the token symbols. This
-    // is like the directory table D that was described in the previous section 
-    // on compressing parsing tables. It is the first table consulted by the 
-    // parsing loop. If yypact[cur-state] = YYPACT_NINF, its time for a 
-    // default reduction using yydefact. This means that the state has only 
-    // reductions as in state 1 (r5); otherwise the entry in yypact[cur-state] 
-    // is to be added to the symbol number of the current look-ahead token and 
-    // the resulting number is used as an index into yytable to get the next
-    // action (see comments in yytable code).An example:
-    
-    // Suppose we are in state zero and the look-ahead token is 'a' (symbol 
-    // number 5). Now yypact[0] is -4, so the index into yytable is 5-4 = 1. 
-    // yytable[1] is 1 which means "shift this symbol and go to state 1". See 
-    // yycheck below for some more checking information. If the yytable entry 
-    // specifies a negative value say -3, it means that we should be reducing 
-    // the stack with rule #3.
-
     // (yypgoto) - accounts for non-default GOTOs for all non-terminal symbols.
     "non_terminal_goto_method": [
       51,-32768,-32768,-32768,   21,-32768,-32768,   -3,   24,   12,
@@ -853,68 +598,10 @@
     // after checking with this table that a proper pick is made. We will see 
     // this operation in the section describing the parsing routine yyparse().
 
-    // (yytable) - a highly compressed representation of the actions in each 
-    // state. Negative entries represent reductions. There is a negative 
-    // infinity to detect errors.
-    "state_action": [
-      19,   21,   -1,    1,   25,    2,    3,    8,    9,    4,
-       5,   22,    6,    7,    8,    9,    5,    8,    9,    7,
-       8,    9,   26,   32,   34,   24,   35,   18,   32,   34,
-       1,   39,    2,    3,   25,   40,    4,    5,   33,    6,
-       7,    8,    9,   33,    5,   27,   20,    7,   37,   42,
-      43,   41,   38,   36
-    ],
 
-    // This table is a mixed bag of state numbers and rule numbers in some 
-    // pre-calculated order. This is the table T we discussed in the previous 
-    // section. yytable works closely with yycheck, yypact and yypgoto tables 
-    // to indicate to the parser either the state to pushed next on to the 
-    // parse stack or a rule to use for reduction.
-    // One thing worth noting here is the definition of YYTABLE_NINF - the 
-    // "negative infinity" value for yytable is the highest negative entry 
-    // which in our case is -1 (since there are no negative values in yytable). 
-    // This value is used to determine explicit error situations.
-
-    // (yycheck) - guard used to check legal bounds within portions yytable 
-    "state_action_valid": [
-       2,    4,    0,    1,    9,    3,    4,   12,   13,    7,
-       8,   11,   10,   11,   12,   13,    8,   12,   13,   11,
-      12,   13,   24,   26,   26,    5,   28,   13,   31,   31,
-       1,   33,    3,    4,    9,   37,    7,    8,   26,   10,
-      11,   12,   13,   31,    8,   11,   10,   11,    6,    0,
-       0,    0,   31,   29
-    ]
-
-    // This is like a guard table. This table is used for various checks. Again 
-    // this table is another mixed bag - of symbol numbers and state numbers. 
-    // There is a very good explanation for this table inside Bison source
-    // code (src/tables.h): YYCHECK = a vector indexed in parallel with YYTABLE.  
-    // It indicates, in a roundabout way, the bounds of the portion you are 
-    // trying to examine.
-    // Suppose that the portion of YYTABLE starts at index P and the index to 
-    // be examined within the portion is I. Then if YYCHECK[P+I] != I,
-    // I is outside the bounds of what is actually allocated, and the 
-    // default (from YYDEFACT or YYDEFGOTO) should be used. Otherwise,
-    // YYTABLE[P+I] should be used.
-    // Example: Suppose we are in state 0 and the look-ahead token in 'a'. 
-    // yypact[0] = -4 and this, added to symbol number of 'a' (5) gives the
-    // index in yytable as we have seen before. Before accessing yytable[1] and
-    // proceeding to shift the token, the parser must check that yycheck[1] has 
-    // the symbol number for the current token. If the test fails, it is time
-    // for a default reduction! But in our case, yycheck[1] contains 5 which 
-    // really is the symbol number 'a', so we can safely consult yytable for
-    // what to do next.
-    // yycheck also helps with special case reductions where the GOTO on a
-    // non-terminal for the current state is not the most common state 
-    // (specified by yydefgoto); Consider the same example given in the yypgoto 
-    // section: we were in state #10 and the reduction rule was rule #5 (P â a). 
-    // We added yypgoto[P]=2 to current state number (10) to get 12. Before 
-    // consulting yytable the parser checks with yycheck[12]. If this value 
-    // is 10, then we know that state# 10 is a special case, otherwise, we use 
-    // yydefgoto to decide the transition.
   };
 
-  if (YY.debug) {
+  if (dict.debug) {
 
     // (yyrhs) - A -1 separated list of RHS (right hand side/key) symbol
     // numbers of all rules. yyrhs[n] is first symbol on the RHS (right hand 
@@ -947,19 +634,335 @@
     ];
   }
 
-  //if (YY.debug || YY.verbose) {
-  // (yytname[n]) - A string specifying the symbol for symbol number n. 
-  // ~ yytoknum[n] - Token number of token n (String name of token TOKEN_NUM)
-  YY.table_dict.token_number_of_token = [
-    "$", "error", "$undefined.", "CTRL_ASSIGN", "CTRL_IGNORE", "OPEN", 
-    "CLOSE", "REVERSE", "STARTCLASS", "LET", "TAG", "SYMBOL", "REMARK", 
-    "NL", "src", "statement", "block", "tag", "members", "member", "single", 
-    "define", "bodies", "head", "body", "contol", "remark", 0  
-  ];
-  //}
+  // &&&&&&&&&&
 
   // ===========================================================================
   // ===========================================================================
+
+  // -------------------------- lookup tables ----------------------------------
+  YY.table_dict = {
+
+    // (yytranslate)
+    // This table maps lexical token numbers to their symbol numbers. If you 
+    // have %token declarations in your grammar, Bison assigns token numbers to 
+    // the different tokens; If you just use character representations, Bison 
+    // just maps their ASCII values to the symbol numbers. Example of the latter
+    // is yytranslate[97] = 5 which is 'a'. Full listing of yytranslate is below.
+    "translate": [
+       0,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     1,     3,     4,     5,
+       6,     7,     8,     9,    10,    11,    12,    13
+    ],
+
+    // (yydefact) - default reduction rules for each state = default rule to 
+    // reduce with in state S when YYTABLE doesn't specify something else to do.
+    "default_reduction_rule": [
+       0,    0,    0,   25,    0,    0,    9,   21,   26,   27,
+       0,    3,    0,    4,   16,    0,    5,    6,    7,   24,
+      10,   17,   22,    2,    0,    0,    0,   23,    0,   19,
+       0,   11,   13,    0,   15,   18,   20,    0,   12,   14,
+       8,    0,    0,    0
+    ],
+
+    // This table lists default reductions for each state. yydefact[state] = 
+    // rule number to use for a default reduction in that state. Here is the 
+    // yydefact table produced for our a sample grammar:
+    // {
+    // 0,     6,     8,     0,     3,     5,     9,     0,     1,     0,
+    // 0,     7,     2,     4
+    // };
+    // Note that a rule number 0 in this table means error. Rule number 0 is 
+    // not used internally by Bison because of some limitations of the internal
+    // representation of the input grammar. One important observation here -
+    // rule numbers are incremented by 1 in this table because of the additional 
+    // rule ($accept â L $end). So what was really r5 for state 1, has become 
+    // r6 in yydefact.
+
+    // (yypact) - Directory into yytable indexed by state number. Ddisplacements 
+    // in yytable are indexed by symbol number.
+    "set_state_action": [
+          29,    14,     5,-32768,    36,     0,-32768,-32768,-32768,-32768,
+           2,-32768,    20,-32768,-32768,    25,-32768,-32768,-32768,-32768,
+      -32768,-32768,-32768,-32768,     5,    34,     8,-32768,     5,    34,
+          42,     8,-32768,    -5,-32768,-32768,-32768,     5,-32768,-32768,
+      -32768,    49,    50,-32768
+    ],
+    
+    // This table specifies the portion of yytable that describes what to do 
+    // in state S. It is indexed by the symbol number of the token symbols. This
+    // is like the directory table D that was described in the previous section 
+    // on compressing parsing tables. It is the first table consulted by the 
+    // parsing loop. If yypact[cur-state] = YYPACT_NINF, its time for a 
+    // default reduction using yydefact. This means that the state has only 
+    // reductions as in state 1 (r5); otherwise the entry in yypact[cur-state] 
+    // is to be added to the symbol number of the current look-ahead token and 
+    // the resulting number is used as an index into yytable to get the next
+    // action (see comments in yytable code).An example:
+    
+    // Suppose we are in state zero and the look-ahead token is 'a' (symbol 
+    // number 5). Now yypact[0] is -4, so the index into yytable is 5-4 = 1. 
+    // yytable[1] is 1 which means "shift this symbol and go to state 1". See 
+    // yycheck below for some more checking information. If the yytable entry 
+    // specifies a negative value say -3, it means that we should be reducing 
+    // the stack with rule #3.
+
+    // (yycheck) - guard used to check legal bounds within portions yytable 
+    "state_action_valid": [
+       2,    4,    0,    1,    9,    3,    4,   12,   13,    7,
+       8,   11,   10,   11,   12,   13,    8,   12,   13,   11,
+      12,   13,   24,   26,   26,    5,   28,   13,   31,   31,
+       1,   33,    3,    4,    9,   37,    7,    8,   26,   10,
+      11,   12,   13,   31,    8,   11,   10,   11,    6,    0,
+       0,    0,   31,   29
+    ],
+
+    // This is like a guard table. This table is used for various checks. Again 
+    // this table is another mixed bag - of symbol numbers and state numbers. 
+    // There is a very good explanation for this table inside Bison source
+    // code (src/tables.h): YYCHECK = a vector indexed in parallel with YYTABLE.  
+    // It indicates, in a roundabout way, the bounds of the portion you are 
+    // trying to examine.
+    // Suppose that the portion of YYTABLE starts at index P and the index to 
+    // be examined within the portion is I. Then if YYCHECK[P+I] != I,
+    // I is outside the bounds of what is actually allocated, and the 
+    // default (from YYDEFACT or YYDEFGOTO) should be used. Otherwise,
+    // YYTABLE[P+I] should be used.
+    // Example: Suppose we are in state 0 and the look-ahead token in 'a'. 
+    // yypact[0] = -4 and this, added to symbol number of 'a' (5) gives the
+    // index in yytable as we have seen before. Before accessing yytable[1] and
+    // proceeding to shift the token, the parser must check that yycheck[1] has 
+    // the symbol number for the current token. If the test fails, it is time
+    // for a default reduction! But in our case, yycheck[1] contains 5 which 
+    // really is the symbol number 'a', so we can safely consult yytable for
+    // what to do next.
+    // yycheck also helps with special case reductions where the GOTO on a
+    // non-terminal for the current state is not the most common state 
+    // (specified by yydefgoto); Consider the same example given in the yypgoto 
+    // section: we were in state #10 and the reduction rule was rule #5 (P â a). 
+    // We added yypgoto[P]=2 to current state number (10) to get 12. Before 
+    // consulting yytable the parser checks with yycheck[12]. If this value 
+    // is 10, then we know that state# 10 is a special case, otherwise, we use 
+    // yydefgoto to decide the transition.
+
+    // (yytable) - a highly compressed representation of the actions in each 
+    // state. Negative entries represent reductions. There is a negative 
+    // infinity to detect errors.
+    "state_action": [
+      19,   21,   -1,    1,   25,    2,    3,    8,    9,    4,
+       5,   22,    6,    7,    8,    9,    5,    8,    9,    7,
+       8,    9,   26,   32,   34,   24,   35,   18,   32,   34,
+       1,   39,    2,    3,   25,   40,    4,    5,   33,    6,
+       7,    8,    9,   33,    5,   27,   20,    7,   37,   42,
+      43,   41,   38,   36
+    ],
+
+    // This table is a mixed bag of state numbers and rule numbers in some 
+    // pre-calculated order. This is the table T we discussed in the previous 
+    // section. yytable works closely with yycheck, yypact and yypgoto tables 
+    // to indicate to the parser either the state to pushed next on to the 
+    // parse stack or a rule to use for reduction.
+    // One thing worth noting here is the definition of YYTABLE_NINF - the 
+    // "negative infinity" value for yytable is the highest negative entry 
+    // which in our case is -1 (since there are no negative values in yytable). 
+    // This value is used to determine explicit error situations.
+
+    //if (dict.debug || dict.verbose) {
+    // (yytname[n]) - A string specifying the symbol for symbol number n. 
+    // ~ yytoknum[n] - Token number of token n (String name of token TOKEN_NUM)
+    "token_number_of_token": [
+      "$", "error", "$undefined.", "CTRL_ASSIGN", "CTRL_IGNORE", "OPEN", 
+      "CLOSE", "REVERSE", "STARTCLASS", "LET", "TAG", "SYMBOL", "REMARK", 
+      "NL", "src", "statement", "block", "tag", "members", "member", "single", 
+      "define", "bodies", "head", "body", "contol", "remark", 0  
+    ],
+    //}
+  };
+
+  // YYucky options all go here
+  YY.parser_dict = extendDict(YY.parser_dict || {}, {
+
+    // (YYPURE) [gram.tab.c]
+    // Hardcoded. Pure parser = reeentrant = can be called during modification
+    // https://www.gnu.org/software/bison/manual/html_node/Pure-Decl.html
+    "is_pure": 0,
+
+    // (lsp_needed) [gram.tab.c] Use locations, as in: 
+    // https://fbb-git.github.io/bisoncpp/bisonc++api.html
+    // LTYPE__ d_loc__ The location type value associated with a terminal token.
+    // It can be used by, e.g., lexical scanners to pass location information
+    // of a matched token to the parser in parallel with a returned token.
+    // It is available only when %lsp-needed, %ltype or %locationstruct is set.
+
+    // Bonus: http://acronymsmeanings.com/full-meaning-of/yylsp/
+    "is_location_type_needed": 0,
+
+    // (YYINITDEPTH) [gram.tab.c] Initial size of the parser's stacks.
+    "stack_initial_depth": 200,
+
+    // (YYEMPTY) [gram.tab.c] empty flag
+    "empty_token": -2,
+
+    // (yyoverflow) [gram.tab.c] memory overflow handling, we don't want
+    "is_overflow_possible": 0,
+    
+    // (YYMAXDEPTH) maximum size the stacks can grow to (effective only if the 
+    // built-in stack extension method is used). Do not make this value too 
+    // large, as results may be undefined if 
+    // size_max < getStackTotalBytes(stack_list_max_depth) is called.
+    "stack_list_max_depth": 10000,
+
+    // (YYFLAG) flag rerouting to default action in backup	
+    "is_state_default_action": -32768,
+    
+    // (YYEOF) end of file
+    "end_of_file_reached": 0,
+
+    // (YYDEBUG)
+    "debug": 0,
+
+    // (YYLAST)
+    "index_last_state_action": 53,
+
+    // /YYFINAL (rule?)
+    "final_rule": 43,
+
+
+  });
+
+  // ---------------------------- stacks ---------------------------------------
+
+  // A stack is an area of memory that holds all local variables and parameters 
+  // used by any function and remembers the order in which functions are called
+  // so that function returns occur correctly. Refer to the stacks through 
+  // separate pointers to allow overflow to reallocate them elsewhere.
+
+  // quick reference:
+  // state_view         yyssa
+  // state_top          yyssp
+  // state_bottom       yyss
+  // semantic_view      yyvsa
+  // semantic_top       yyvsp
+  // semantic_bottom    yyvs
+  // location_view      yylsa
+  // location_top       yylsp
+  // location_bottom    yyls
+
+  // (YYSTACK_RELOCATE)
+  // Relocate STACK from its old location to the new one. The local variables 
+  // (have been local to .parse()!!) YYSIZE) and YYSTACKSIZE give the old and 
+  // new number of elements in the stack, and YYPTR gives the new location of 
+  // the stack. Advance YYPTR to a properly aligned location for the next stack.
+  // https://opensource.apple.com/source/cc/cc-798/bison/bison.hairy.auto.html
+  // Mozilla has an arrayBuffer tranfer which extends without copying but not 
+  // supported anywhere else
+  // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer/transfer
+  // Copy STACK COUNT objects FROM to TO. source and destination don't overlap
+  function relocateStack(my_old_view, my_new_view, my_len) {
+    var i;
+    for (i = 0; i < my_len; i += 1) {
+      my_from.setInt8(i, my_to.getInt8(i)); 
+    }
+
+    // no need for caluclating yynewbytes and finding the position of stack in 
+    // memory yyptr defined in setState because this was a macro
+  }
+
+  // using ArrayBuffer http://www.javascripture.com/ArrayBuffer
+  function setParserStackList(my_dict, my_depth, my_init) {
+    
+    function setStack(my_param) {
+      var stack = my_param + "_stack",
+        view = my_param + "_view",
+        top = my_param + "_top",
+        bottom = my_param + "_bottom",
+        tmp,
+        len,
+        few;
+
+      // initialize new or move existing arraybuffer to new (larger) one
+      if (my_dict[stack] === undefined) {
+        my_dict[stack] = new ArrayBuffer(my_depth);
+      } else {
+        tmp = new ArrayBuffer(my_depth);
+        len = my_dict.state_stack.byteLength;
+        few = new DataView(tmp);
+        my_dict[stack] = relocateStack(my_dict[view], few, len);
+      }
+      
+      // (yyssa/yyvsa/yylsa)
+      my_dict[view] = new DataView(my_dict[stack]);
+      
+      // (yyss/yyvs/yyls)
+      my_dict[bottom] = 0;
+      
+      // (yyssp/yyvsp/yylsp)
+      my_dict[top] = my_dict.stack_size - 1;
+    }
+
+    // The state stack: Does not shift symbols on to the stack. 
+    // Only a stack of states is maintained.
+    setStack("state");
+    
+    // This semantic stack: Grows parallel to the state stack. At 
+    // each reduction, semantic values are popped off this stack and the 
+    // semantic action is executed.
+    setStack("semantic");
+    
+    // The location stack: only used when dict.is_location_type_needed is set 
+    // and I'm not sure at this moment how it behaves.
+    if (my_dict.is_location_type_needed) {
+      setStack("location");
+    }
+
+    // no need to redefine on updates
+    if (my_init === true) {
+
+      // (yystacksize) will also be overwritten externally, no need to update 
+      // on relocates
+      my_dict.stack_size = dict.stack_initial_depth;
+
+      // (YYPOPSTACK)
+      my_dict.popStack = function (n) {
+        my_dict.semantic_top = my_dict.semantic_top - n || 1;
+        my_dict.state_top = my_dict.state_top - n || 1;
+        if (dict.is_location_type_needed) {
+          my_dict.location_top = my_dict.location_top - n || 1;
+        }
+      };
+    }
+  }
+
+  // YYTRANSLATE() - fetch Bison token number corresponding to YYLEX.
+  translate = function (my_x) {
+    if (my_x <= 267) {
+      return YY.table_dict.translate[my_x];
+    }
+    return 27;
+  };
 
   function extendDict(my_existing_dict, my_new_dict) {
     var key;
@@ -975,203 +978,53 @@
     return my_existingdict;
   }
 
-  // YYucky options all go here
-  YY.parser_dict = extendDict(YY.parser_dict || {}, {
+  // dump all ArrayBuffers
+  function purge (my_param, my_dict) {
+    my_dict[my_param + "_stack"] = my_dict[my_param + "_view"] =
+    my_dict[my_param + "_top"] = my_dict[my_param + "_bottom"] = null;
+  }
 
-    // (YYPURE) [gram.tab.c]
-    // Hardcoded. Pure parser = reeentrant = can be called during modification
-    // https://www.gnu.org/software/bison/manual/html_node/Pure-Decl.html
-    "is_pure": 0,
+  // ----------------------------- gotos ---------------------------------------
+  // (yyoverflowlab) [gram.tab.c] - flag error and "fall through" meaning
+  function overflowLab(my_dict) {
+    console.log("[error] - Parser stack overflow");
+    dict.parse_result = 2;
+    //XXX fall through?
+  }
 
-    // (yylsp) Use locations, as in: 
-    // https://fbb-git.github.io/bisoncpp/bisonc++api.html
-    // LTYPE__ d_loc__ The location type value associated with a terminal token.
-    // It can be used by, e.g., lexical scanners to pass location information
-    // of a matched token to the parser in parallel with a returned token.
-    // It is available only when %lsp-needed, %ltype or %locationstruct is set.
+  // (yyabortlab) - end too soon
+  function abortLab(my_dict) {
+    my_dict.parse_result = 1;
+    returnResult(dict);
+  }
 
-    // Bonus: http://acronymsmeanings.com/full-meaning-of/yylsp/
-    "is_location_type_value_needed": 0
-
-  });
-
-
-  // ----------------------------- PARSE ---------------------------------------
-
-  // #line 315 "/usr/share/bison/bison.simple"
-  // The user can define "my_unused_param" as name of an argument to be passed
-  // into parse. It should actually point to an object. Grammar actions can 
-  // access the variable by casting it to the proper pointer type.
-  // https://en.wikipedia.org/wiki/Liskov_substitution_principle
-
-  YY.parse = function (my_unused_param) {
-    var opts = YY.parser_dict,
-      dict;
-
-    // differentiate between reentrant non reentrant parser. Reentrant means
-    // it can be called again while processing (anything real time?), therefore
-    // all variables should only be locally set. If this is not the case, 
-    // variables can go onto the global option dict.
-    if (opts.is_pure) {
-      dict = extendDict({}, opts);
-    } else {
-      dict = YY.parser_dict;
-    }
-
-    dict = extendDict(dict, {
-    
-      // (yychar) [gram.tab.c] Lookahead symbol, upcoming token, this should be
-      // the right hand side = value
-      "lookahead_symbol": null,
-
-      // (yylval) [gram.tab.c] Semantic value of lookahead symbol, l/rval stands
-      // for left/right side value of a key/value pair, so this is left = key
-      // Note: Careful: this is not yyval!
-      "lookahead_symbol_semantic_value": null,
-      // XXX s.lval;
-
-      // (yylloc) [gram.tab.c] - Location data for the lookahead symbol. CAREFUL: not yyloc!
-      "lookahead_symbol_location": null,
-      // XXX s.lloc;
-    
-      // (yynerrs) [gram.tab.c] - Error counter
-      "current_error_count": 0
-      // XXX s.error_count;
-
-    });
-    
-    if (dict.is_location_type_value_needed) {
-      delete dict.lookahead_symbol_location;
-    }
-
-
-    // (yyresult) What eventually will be returned    
-    s.result;
-
-    // (yystate) Flex uses as alias for YY_START (that's used by AT&T lex) :)
-    s.current_state;
-
-    // (yyerrstatus) Number of tokens to shift before error messages enabled.
-    s.shift_token_error_message_threshold;
-
-    // (yychar1) Lookahead token as an internal (translated) token number.
-    s.lookahead_token_number = 0;
-
-    // (yyn) An all purpose variable! May represent state, rule or ... truc 
-    s.truc;
-    
-    // (yyval) Variable used to return result of semantic evaluation 
-    // from action routine, let's call that eval :)
-    s.ival;
-    
-    // (yylen) When reducing, the number of symbols on the RHS (right hand 
-    // side) of the reduced rule (length of RHS of a rule).
-    s.right_hand_side_length;
-
-    });
-
-    // (yyloc) Variable used to return result of location evaluation 
-    // from action routine, loco. 
-    if (YY.lsp_needed) {
-      s.loco;
-    }
-
-    setParserStackList(s.scope, YY.stack_initial_depth, true);
-
-    // Ok done declaring variables. Set the ball rolling!
-    console.log("Starting parse.");
-
-    // Initial state
-    s.current_state = 0;
-    s.shift_token_error_message_threshold = 0;
-    s.errorcount = 0;
-
-    // Cause a token to be read.
-    dict.lookahead_symbol = YY.empty;
-
-    // Initialize stack pointers.
-    // Waste one element of value and location stack so that they stay on the 
-    // same level as the state stack. The wasted elements are never initialized.
-
-    // yyssp = yyss; Top = bottom for state stack
-    s.state_view.setInt8(s.state_bottom, "");
-    s.state_top = s.state_bottom;
-
-    // yyvsp = yyvs; Top = bottom for semantic stack
-    s.semantic_view.setInt8(s.semantic_bottom, "");
-    s.semantic_top = s.semantic_bottom;
-
-    // yylsp = yyls; Top = bottom for location stack
-    if (YY.lsp_needed) {
-      s.location_view.setInt8(s.semantic_bottom, "");
-      s.location_top = s.location_bottom;
-    }
-
-    // --------------------------------------------------------------
-    // unused -- XXX remove
-    // --------------------------------------------------------------
-    // (yyerrok) - not used
-    context.errorAccept = function () {
-      s.shift_token_error_message_threshold = 0;
-    };
-
-    // (yyclearin)
-    context.clearChar = function () {
-      dict.lookahead_symbol = YY.empty;
-    };
-
-    // (YYFAIL) - from transition of new meaning of YYERROR when moving from
-    // GCC v2 from v1, remove this
-    context.fail = function () {
-      console.log("FAILING")
-      context.errorLab();
-    };
-
-    // (YYRECOVERING)
-    context.recover = function () {
-      return !!s.shift_token_error_message_threshold;
-    };
-
-    // (YYBACKUP)
-    context.oldBackup = function (my_token, my_value) {
-      if (dict.lookahead_symbol === YY.empty && s.right_hand_side_length === 1) {
-        dict.lookahead_symbol = my_token;
-        s.lval = my_value;
-        s.lookahead_token_number = YY.translate(dict.lookahead_symbol);
-        my_context.popStack();
-        context.backup();
-      } else {
-        YY.error("Syntax error: Cannot back up.");
-        context.errorLabExtended();
+  function returnResult(my_dict) {
+    if (my_dict.is_overflow_possible === 0) {
+      purge("state", my_dict);
+      purge("semantic", my_dict);
+      if (my_dict.is_location_type_needed) {
+        purge("location", my_dict);
       }
-    };
+    }
+    // pass back 0, 1, 2 
+    return my_dict.parse_result;
+  }
 
-    //---------------------------------------------------------------
-    // overflow -- flag error and "fall through" meaning ?
-    //---------------------------------------------------------------
-    context.overflowLab = function() {
-      console.log("error: parser stack overflow");
-      context.result = 2;
-      throw new Error("Falling through...");
-    };
+  // (yynewstate) Push a new state, which is found in parse_current_state.
+  function newState(my_dict) {
 
-    //----------------------------------
-    // abortlab -- end too soon
-    //----------------------------------
-    context.abortLab = function() {
-      context.result = 1;
-      console.log("RESULINTG")
-      context.returnResult();
-    };
+    // In all cases, when you get here, the value and location stacks
+    // have just been pushed. so pushing a state here evens the stacks.
+    my_dict.state_top = my_dict.state_top + 1;  
+  }
 
-    //------------------------------------
-    // yyacceptlab -- YYACCEPT comes here.
-    //------------------------------------
-    context.acceptLab = function () {
-      context.result = 0;
-      context.returnResult();
-    };
+  // (yyacceptlab) - YYACCEPT comes here
+  function acceptLab(my_dict) {
+    my_dict.parse_result = 0;
+    returnResult(my_dict);
+  }
 
+    
     //-------------------------------------
     // errorLab -- here on detecting error
     // ------------------------------------
@@ -1185,7 +1038,7 @@
       // Start i at -truc if negative, avoid negative indexes in YYCHECK
       function setCounter(my_truc) {
         if (my_truc < 0) {
-          return -s.truc;
+          return -dict.truc;
         }
         return 0;
       }
@@ -1201,12 +1054,12 @@
       }
 
       // If not already recovering from an error, report this error.
-      if (s.shift_token_error_message_threshold === undefined) {
-        s.error_count += 1;
+      if (dict.shift_token_error_message_threshold === undefined) {
+        dict.current_error_count += 1;
 
         if (YY.error_verbose) {
-          s.truc = YY.table_dict.set_state_action[s.current_state];
-          if (truc > YY.flag && truc > YY.last) {
+          dict.truc = YY.table_dict.set_state_action[dict.parse_current_state];
+          if (truc > dict.is_state_default_action && truc > dict.index_last_state_action) {
             count = 0;
 
             // sizeof(YY.table_dict.token_number_of_token)/YY.char_pointer_size
@@ -1215,7 +1068,7 @@
             );
 
             for (i = setCounter(Y.truc); i < len; i += 1) {
-              if (YY.table_dict.state_action_valid[i + s.truc] === i) {
+              if (YY.table_dict.state_action_valid[i + dict.truc] === i) {
                 count += 1;
               }
             }
@@ -1224,7 +1077,7 @@
             if (count < 5) {
               count = 0;
               for (i = setCounter(Y.truc); i < len; i += 1) {
-                if (YY.table_dict.state_action_valid[i + s.truc] === i) {
+                if (YY.table_dict.state_action_valid[i + dict.truc] === i) {
                   if (count === 0) {
                     message += "expecting ";
                   } else {
@@ -1238,346 +1091,10 @@
             YY.error(message);
           }
         } else {
-          YY.error("parse error", s.error_count);
+          YY.error("parse error", dict.current_error_count);
         }
       }
       context.errorLabExtended();
-    };
-
-    //----------------------------------------------------
-    // errorLabExtended -- error raised explicitly by an action
-    //----------------------------------------------------
-    context.errorLabExtended = function () {
-      var s = context.scope;
-
-      // If just tried and failed to reuse lookahead token after error, discard
-      if (s.shift_token_error_message_threshold === 3) {
-        if (dict.lookahead_symbol == YY.end_of_file_reached) {
-          context.abortLab();
-        }
-        
-        // return failure if at the end of input
-        console.log("[info] Discarding token " + dict.lookahead_symbol + " (" + 
-          YY.table_dict.token_number_of_token[s.lookahead_token_number] + ").");
-        dict.lookahead_symbol = YY.empty;
-      }
-  
-      // Else will try to reuse lookahead token after shifting the error token.
-      // Each real token shifted decrements this
-      s.shift_token_error_message_threshold = 3;
-      context.errorHandle();
-    };
-    
-    //--------------------------------------------------------------------------
-    // errorDefault - current state does not do anything special for error token                                     |
-    //--------------------------------------------------------------------------
-    context.errorDefault = function () {
-      //if (0) {
-      //  // This is wrong; only states that explicitly want error tokens
-      //  // should shift them.
-      //  truc = YY.table_dict.default_reduction_rule[s.current_state];
-      //  if (truc) {
-      //   yydefault();
-      //  }
-      //}
-      return;
-    };
-
-    //--------------------------------------------------------------------------
-    // errorPop -- pop current state because it cannot handle the error token                                   |
-    //--------------------------------------------------------------------------
-    context.errorPop = function () {
-      var s = context.scope,
-        temp_state_top;
-      if (s.state_top === s.state_bottom) {
-        context.abortLab();
-      }
-      s.semantic_top = s.semantic_top - 1;
-
-      // XXX *--yyssp?
-      s.current_state = s.state_top - 1;
-      if (YY.lsp_needed) {
-        s.location_top = s.location_top - 1;
-      }
-      
-      if (YY.debug) {
-       temp_state_bottom = s.state_bottom - 1;
-       console.log("[error] state stack now");
-       while (temp_state_bottom !== s.state_top) {
-         console.log("[error]" + temp_state_bottom);
-         temp_state_bottom += 1;
-       }
-      }
-    };
-
-    //----------------------------------------------------
-    // errorHandle 
-    //----------------------------------------------------
-    context.errorHandle = function () {
-      var s = context.scope;
-
-      s.truc = YY.table_dict.set_state_action[s.current_state];
-      if (s.truc === YY.flag) {
-        context.errorDefault();
-      }
-
-      s.truc = s.truc + YY.terror;
-      if (s.truc < 0 || s.truc > YY.last ||
-        YY.table_dict.state_action_valid[s.truc] !== YY.terror) {
-        context.errorDefault();
-      }
-      s.truc = YY.table_dict.state_action[s.truc];
-      if (s.truc < 0) {
-        if (s.truc == YY.flag) {
-          context.errorPop();
-        }
-        s.truc = -s.truc;
-        context.reduceState();
-      } else if (s.truc === 0) {
-        context.errorPop();
-      }
-      if (s.truc == YY.final) {
-        context.acceptLab();
-      }
-
-      console.log("[info] - Shifting error token.");
-      console.log(s)
-      console.log(s.truc)
-      console.log(s.lval)
-      console.log(s.loco)
-      
-      // XXX ? set new entries as top of the stack
-      s.semantic_view[s.semantic_top] = s.lval; // yylval
-      if (YY.lsp_needed) {
-        s.location_view[s.semantic_top] = s.loco; // yyloc;
-      }
-      s.current_state = s.truc;
-      context.newState();
-    };
-
-    //--------------------------------------------
-    // return -- done
-    //--------------------------------------------
-    context.returnResult = function() {
-      if (YY.overflow === undefined) {
-        YY.purge("state", context.scope);
-        YY.purge("semantic", context.scope);
-        if (YY.lsp_needed) {
-          YY.purge("location", context.scope);
-        }
-      }
-      return context.result;
-    };
-
-    //--------------------------------------------------------------------------
-    // defaultAction -- do the default reduction (action) for the current state.
-    //--------------------------------------------------------------------------
-    context.defaultAction = function () {
-      s.truc = YY.table_dict.default_reduction_rule[s.current_state];
-      if (s.truc === 0) {
-        context.errorLab();
-      }
-      context.reduceState();
-    };
-    
-    //------------------------------------------------------------
-    // newState -- Push a new state, which is found in current_state.
-    //------------------------------------------------------------
-    context.newState = function () {
-      
-      // In all cases, when you get here, the value and location stacks
-      // have just been pushed. so pushing a state here evens the stacks.
-      context.scope.state_top = context.state_top + 1;
-    };
-
-    //------------------------------------------------------------
-    // setstate -- set a new state
-    //------------------------------------------------------------
-    context.setState = function () {
-      var s = context.scope,
-        overflow_info_list,
-        current_stack_size,
-        copy_state_view,
-        copy_semantic_view,
-        copy_location_view;
-
-      s.state_top = s.current_state;
-
-      // Introduce a pile of code for handlinge memory overflow
-      if (s.state_top >= s.state_bottom + s.stack_size - 1) {
-
-        // Get the current used size of the three stacks, in elements.
-        current_stack_size = s.state_top - s.state_bottom + 1;
-        if (YY.overflow !== undefined) {
-
-          // Give user a chance to reallocate the stack. Use copies of
-          // these so that the &'s don't force the real ones into memory.
-          copy_state_view = s.state_view;           // yyss1 = yyss
-          copy_semantic_view = s.semantic_view;     // yyvs1 = yyvs
-
-          // Each stack pointer address is followed by the size of the
-          // data in use in that stack, in bytes.
-          s.state_bottom = copy_state_view;         // yyss = yyss1
-          s.semantic_bottom = copy_semantic_view;   // yyvs = yyvs1;
-
-          if (YY.lsp_needed) {
-            copy_location_view = s.location_view;   // yyls1 = yyls;
-            s.location_bottom = copy_location_view; //yyls = yyls1;
-          }
-
-          overflow_info_list = [];
-          overflow_info_list.push("parser stack overflow");
-          
-          // &yyss1, yysize * sizeof (*yyssp) => &we don't have address
-          overflow_info_list.push("no &adress, " + current_stack_size *
-            s.semantic_view.getInt8(s.semantic_stack_top).byteLength);
-          overflow_info_list.push("no &adress, " + current_stack_size *
-            s.state_view.getInt8(s.state_stack).byteLength);
-          if (YY.lsp_needed) {
-            overflow_info_list.push("no &address, " + current_stack_size *
-              s.location_view.getInt8(s.location_stack).byteLength);
-          }
-          overflow_info_list.push(s.stack_size);
-          
-          // rrring!
-          YY.overflow.apply(YY, overflow_info_list);
-        } else {
-
-          if (relocateStack === undefined) {
-            context.overflowLab();
-           } else {
-      
-            // Extend the stack our own way.
-
-            // honor or succumb to max_depth
-            if (s.stack_size >= YY.stack_list_max_depth) {
-              context.overflowLab();
-            }
-            s.stack_size = s.stack_size * 2;
-            if (s.stack_size > YY.stack_list_max_depth) {
-              s.stack_size = YY.stack_list_max_depth;
-            }
-            
-            // we don't really need alloc(getStackTotalBytes(s.stack_size))...
-            // we just copy the old arrays into new ones with the larger stack 
-            // size. This replaces calls to YYSTACK_RELOCATE and YYSTACK_FREE.
-            setParserStackList(context.scope, s.stack_size);
-          }
-        }
-
-        s.state_top = s.state_bottom + current_stack_size - 1;
-        s.semantic_top = s.semantic_bottom + current_stack_size - 1;
-        if (YY.lsp_needed) {
-         s.location_top = s.location_bottom + current_stack_size - 1;
-        }
-        console.log("Stack size increased to " + s.stack_size);
-
-        if (s.state_top >= s.state_bottom + s.stack_size - 1) {
-         s.abortLab();
-        }
-      }
-
-      console.log("Entering state: " + s.current_state);
-      s.backup();
-    };
-
-    //------------------------------------------------------------
-    // backup --  the main parsing code starts here
-    //------------------------------------------------------------
-    context.backup = function () {
-      var s = context.scope;
-
-      // Do appropriate processing given the current state. Read a lookahead 
-      // token if we need one and don't already have one.
-
-      // First try to decide what to do without reference to lookahead token.
-      // Refer to what yypact is saying about the current state
-      s.truc = YY.table_dict.set_state_action[s.current_state];
-      if (s.truc == YY.flag) {
-        context.defaultAction();
-      }
-
-      // Not known => get a lookahead token if don't already have one.
-
-      // dict.lookahead_symbol  is either YY.empty or YY.end_of_file_reached or a valid token 
-      // in external form. Note, lexer will also set YY.lval(!)
-      if (dict.lookahead_symbol === YY.empty) {
-        console.log("[info] - Reading a token: ");
-        dict.lookahead_symbol = YY.lexer(YY.ival, YY.loco, "YYLEX_PARAM");
-        console.log("XXX CHAR =", dict.lookahead_symbol);
-        console.log("XXX LVAL =", YY.lval);
-      }
-
-      // Convert token to internal form (in s.lookahead_token_number) for 
-      // indexing tables with
-
-      // This is the end of the input.
-      if (dict.lookahead_symbol <= 0) {
-        s.lookahead_token_number = 0;
-
-        // Don't call YYLEX any more.
-        dict.lookahead_symbol = YY.end_of_file_reached;
-        console.log("[info] - Now at end of input.");
-      } else {
-        s.lookahead_token_number = YY.translate(dict.lookahead_symbol);
-
-        if (YY.debug) {
-          console.log("[info] - Next token is " + dict.lookahead_symbol + " (" +
-            YY.table_dict.token_number_of_token[s.lookahead_token_number]);
-
-          // Give the individual parser a way to print the precise meaning 
-          // of a token, for further debugging info.
-          console.log("[info] " + dict.lookahead_symbol + " " + YY.lval);
-        }
-      }
-
-      // add character to s.truc. ah, math...
-      s.truc += s.lookahead_token_number;
-      if (s.truc < 0 || s.truc > YY.last || YY.table_dict.state_action_valid[s.truc] !== s.lookahead_token_number) {
-        context.defaultAction();
-      }
-      s.truc = YY.table_dict.state_action[s.truc];
-
-      // s.truc can be rule or state, now it is what to do for this token type 
-      // in this current state.
-      //  Negative => reduce, -s.truc is rule number.
-      //  Positive => shift, s.truc is new state.
-      //  if new state is final state => don't bother shift, just return success
-      //  if 0 or most negative number => error.
-      if (s.truc < 0) {
-         if (s.truc == YY.flag) {
-          context.errorLab();
-         }
-         s.truc = -s.truc;
-         context.reduceState();
-      } else if (s.truc === 0) {
-        context.errorLab();
-      }
-
-      if (s.truc === YY.final) {
-        context.acceptLab();
-      }
-
-      // Shift the lookahead token.
-      if (YY.verbose) {
-        console.log("[info] - Shifting token " + dict.lookahead_symbol + " (" + YY.table_dict.token_number_of_token[s.lookahead_token_number] + ")");
-      }
-
-      // Discard the token being shifted unless it is eof.
-      if (dict.lookahead_symbol !== YY.end_of_file_reached) {
-        dict.lookahead_symbol = YY.empty;
-      }
-      s.semantic_view.setInt8(s.semantic_top, s.lval);
-      if (YY.lsp_needed) {
-        s.location_view.setInt8(s.location_top, s.lloc);
-      }
-
-      // Count tokens shifted since error; after three, turn off error status.
-      if (s.shift_token_error_message_threshold) {
-        s.shift_token_error_message_threshold--;
-      }
-      s.current_state = s.truc;
-      context.newState();
     };
 
     //----------------------------------------------------------
@@ -1588,10 +1105,10 @@
         tmp_semantic_top;
 
       // truc is the number of a rule to reduce with.
-      s.right_hand_side_length =
-        YY.table_dict.rule_right_hand_side_symbol_length[s.truc];
+      dict.reduced_rule_right_hand_side_symbol_len =
+        YY.table_dict.rule_right_hand_side_symbol_length[dict.truc];
 
-      // If YYLEN (s.right_hand_side_length) is nonzero, implement the default 
+      // If YYLEN (right_hand_side_length) is nonzero, implement the default 
       // value of the action:
       // $$ = $1
       // Otherwise, the following line sets YYVAL to the semantic value of
@@ -1599,34 +1116,34 @@
       // users should not rely upon it.  Assigning to YYVAL
       // unconditionally makes the parser a bit smaller, and it avoids a
       // GCC warning that YYVAL may be used uninitialized.
-      s.ival = s.semantic_view.getInt8(1 - s.right_hand_side_length);
+      semantic_evaluation_result = s.semantic_view.getInt8(1 - dict.reduced_rule_right_hand_side_symbol_len);
 
-      if (YY.lsp_needed) {
+      if (dict.is_location_type_needed) {
 
         // Similarly for the default location.  Let the user run additional
         // commands if for instance locations are ranges.
-        s.loco = s.location_view.getInt8(1 - s.right_hand_side_length);
+        location_evaluation_result = s.location_view.getInt8(1 - dict.reduced_rule_right_hand_side_symbol_len);
         YY.loco_default(
-          s.loco,
-          (s.location_top - s.right_hand_side_length),
-          s.right_hand_side_length
+          location_evaluation_result,
+          (s.location_top - dict.reduced_rule_right_hand_side_symbol_len),
+          dict.reduced_rule_right_hand_side_symbol_len
         );   
       }
 
-      if (YY.debug) {
+      if (dict.debug) {
         console.log(
-          "[info] - Reducing via rule " + s.truc + " (line " +
-            YY.table_dict.rule_line_pointer[s.truc] + ")"
+          "[info] - Reducing via rule " + dict.truc + " (line " +
+            YY.table_dict.rule_line_pointer[dict.truc] + ")"
         );
 
         // Print the symbols being reduced, and their result.
-        for (i = YY.table_dict.right_hand_side_index[s.truc]; YY.table_dict.right_hand_side[i] > 0; i++) {
+        for (i = YY.table_dict.right_hand_side_index[dict.truc]; YY.table_dict.right_hand_side[i] > 0; i++) {
           console.log("[info] " + YY.table_dict.token_number_of_token[YY.table_dict.right_hand_side[i]] + " ");
         }
-        console.log("[info] ->" + YY.table_dict.token_number_of_token[YY.table_dict.rule_left_hand_side_symbol_number[s.truc]]);
+        console.log("[info] ->" + YY.table_dict.token_number_of_token[YY.table_dict.rule_left_hand_side_symbol_number[dict.truc]]);
       }
   
-    switch (s.truc) {
+    switch (dict.truc) {
       case 7: //#line 59 "gram.y"
         context.errorAccept();
         break;
@@ -1694,13 +1211,14 @@
       }
   
       //#line 705 "/usr/share/bison/bison.simple"
-      s.semantic_top -= s.right_hand_side_length;
-      s.state_top -= s.right_hand_side_length;
-      if (YY.lsp_needed) {
-        s.location_top -= s.right_hand_side_length;   
+      // XXX?
+      s.semantic_top -= dict.reduced_rule_right_hand_side_symbol_len;
+      s.state_top -= dict.reduced_rule_right_hand_side_symbol_len;
+      if (dict.is_location_type_needed) {
+        s.location_top -= dict.reduced_rule_right_hand_side_symbol_len;   
       }
 
-    if (YY.debug) {
+    if (dict.debug) {
        tmp_semantic_top = s.semantic_bottom - 1;
        console.log("[info] - State stack now");
        while (tmp_semantic_top != s.semantic_top) {
@@ -1709,45 +1227,482 @@
        }
     }
 
-    // XXX *++yyvsp => *p = arr, *(++p) => arr[0] = 10, arr[1] = 20, *p = 20
-    // XXX *++yylsp = yyval
     s.semantic_top = s.semantic_top + 1;
-    s.semantic_view.setInt8(s.semantic_top, s.ival);
-    if (YY.lsp_needed) {
+    s.semantic_view.setInt8(s.semantic_top, semantic_evaluation_result);
+    if (dict.is_location_type_needed) {
       s.location_top = s.location_top + 1;
-      s.location_view.setInt8(s.location-top, s.loco);
+      s.location_view.setInt8(s.location-top, location_evaluation_result);
     }
   
     // Now `shift' the result of the reduction.  Determine what state
     // that goes to, based on the state we popped back to and the rule
     // number reduced by.
   
-    s.truc = YY.table_dict.rule_left_hand_side_symbol_number[s.truc];
-    s.current_state = YY.table_dict.non_terminal_goto_method[s.truc - YY.nt_base] + s.state_top;
-    if (s.current_state >= 0 && s.current_state <= YY.last && YY.table_dict.state_action_valid[s.current_state] === s.semantic_top) {
-      s.current_state = YY.table_dict.state_action[s.current_state];
+    dict.truc = YY.table_dict.rule_left_hand_side_symbol_number[dict.truc];
+    dict.parse_current_state = YY.table_dict.non_terminal_goto_method[dict.truc - YY.nt_base] + s.state_top;
+    if (dict.parse_current_state >= 0 && dict.parse_current_state <= dict.index_last_state_action && YY.table_dict.state_action_valid[dict.parse_current_state] === s.semantic_top) {
+      dict.parse_current_state = YY.table_dict.state_action[s.current_state];
     } else {
-      s.current_state = YY.table_dict.default_goto_method[truc - YY.nt_base];
+      dict.parse_current_state = YY.table_dict.default_goto_method[truc - YY.nt_base];
     }
     context.newState();
    };
 
-    //context.state_view      //yyssa
-    //context.state_top       //yyssp
-    //context.state_bottom    //yyss
-    //context.semantic_view   //yyvsa
-    //context.semantic_top    //yyvsp
-    //context.semantic_bottom //yyvs
-    //context.location_view   //yylsa
-    //context.location_top    //yylsp
-    //context.location_bottom //yyls
-    //context.eval            //yyval
-    //context.loco            //yyloc
-    //context.right_hand_side_length; //ylen
+
+  // (yydefault) - do the default reduction (action) for the current state.
+  function defaultAction(my_dict)  {
+    var dict = my_dict;
+    dict.truc = dict.lookup.default_reduction_rule[dict.parse_current_state];
+    if (dict.truc === 0) {
+      errorLab(dict);
+    }
+    reduceState(dict);
+  }
+
+  // (yybackup) -  the main parsing code starts here
+  function backup(my_dict) {
+    var dict = my_dict;
+
+    // Do appropriate processing given the current state. Read a lookahead 
+    // token if we need one and don't already have one.
+
+    // First try to decide what to do without reference to lookahead token.
+    // Refer to what set_state_action is saying about the current state
+      dict.truc = dict.lookup.set_state_action[dict.parse_current_state];
+      if (dict.truc == dict.is_state_default_action) {
+        defaultAction(dict);
+      }
+
+      // Not known => get a lookahead token if don't already have one.
+
+      // the lookahead_symbol is either an empty_token or end_of_file_reached 
+      // or a valid token in external form. Note: lexer should also set the
+      // lookahead_symbol_semantic_value
+      if (dict.lookahead_symbol === dict.empty_token) {
+        dict.lookahead_symbol = YY.lexer(YY.ival, YY.loco, "YYLEX_PARAM");
+        if (dict.quiet === 0) {
+          console.log("[info] Reading a token: ");
+          console.log(dict.lookahead_symbol);
+          console.log(dict.lookahead_symbol_semantic_value);
+          console.log(dict.lookahead_symbol_location_value);
+        }
+      }
+
+      // Convert token to internal form (in lookahead_symbol_as_number) for 
+      // indexing tables with
+
+      // This is the end of the input.
+      if (dict.lookahead_symbol <= 0) {
+        dict.lookahead_symbol_as_number = 0;
+
+        // Don't call YYLEX any more.
+        dict.lookahead_symbol = dict.end_of_file_reached;
+        if (dict.quiet === 0) {
+          console.log("[info] Now at end of input.");
+        }
+      } else {
+        dict.lookahead_symbol_as_number = translate(dict.lookahead_symbol);
+        if (dict.debug) {
+          console.log(
+            "[info] Next token is " + dict.lookahead_symbol + " (" +
+            dict.lookup.token_number_of_token[dict.lookahead_symbol_as_number]
+          );
+
+          // Give the individual parser a way to print the precise meaning 
+          // of a token, for further debugging info.
+          console.log(
+            "[info] Symbol: " + dict.lookahead_symbol + ". Semantic value: " +
+            dict.lookahead_symbol_semantic_value
+          );
+        }
+      }
+
+      // add character to truc. ah...
+      dict.truc += dict.lookahead_symbol_as_number;
+      if (dict.truc < 0 || dict.truc > dict.index_last_state_action ||
+        dict.lookup.state_action_valid[dict.truc] !== dict.lookahead_symbol_as_number) {
+        defaultAction(dict);
+      }
+      dict.truc = dict.lookup.state_action[dict.truc];
+
+      // truc can be rule or state, now it is what to do for this token type 
+      // in this current state.
+      // 1) Negative => reduce, -truc is rule number.
+      // 2) Positive => shift, truc is new state.
+      // 3) if new state is final state => no shift, just return success
+      // 4) if 0 or most negative number => error.
+      if (dict.quiet === 0) {
+        console.log("[info] Set truc to :" + dict.truc);
+      }
+      if (dict.truc < 0) {
+        if (dict.truc == dict.is_state_default_action) {
+          errorLab(dict);
+        }
+        dict.truc = -dict.truc;
+        reduceState(dict);
+      } else if (dict.truc === 0) {
+        errorLab(dict);
+      }
+      if (dict.truc === dict.final_rule) {
+        acceptLab(dict);
+      }
+
+      // Shift the lookahead token.
+      if (dict.is_verbose) {
+        console.log(
+          "[info] - Shifting token " + dict.lookahead_symbol + " (" + 
+          dict.lookup.token_number_of_token[dict.lookahead_symbol_as_number] +
+          ")"
+        );
+      }
+
+      // Discard the token being shifted unless it is eof.
+      if (dict.lookahead_symbol !== dict.end_of_file_reached) {
+        dict.lookahead_symbol = dict.empty_token;
+      }
+
+      // Adjust stacks
+      dict.semantic_top = dict.semantic_top + 1;
+      dict.semantic_view.setInt8(
+        dict.semantic_top,
+        dict.lookahead_symbol_semantic_value
+      );
+      if (dict.is_location_value_needed) {
+        dict.location_top = dict.location_top + 1;
+        dict.location_view.setInt8(
+          dict.location_top,
+          dict.lookahead_symbol_location_value
+        );
+      }
+
+      // Count tokens shifted since error; after three, turn off error status.
+      if (dict.shift_token_error_message_threshold) {
+        dict.shift_token_error_message_threshold--;
+      }
+      dict.parse_current_state = dict.truc;
+      newState(dict);
+  }
+
+  // (yysetstate) - set a new state, incrementing stacks done here
+  function setState(my_dict) {
+    var dict = my_dict,
+      current_stack_size;
+
+    dict.state_top = dict.parse_current_state;
+
+    // reallocate if we're running out of stack space (fortunately no memoy 
+    // management required here)
+    if (dict.state_top >= dict.state_bottom + dict.stack_size - 1) {
+
+      // Get the current used size of the three stacks, in elements.
+      current_stack_size = dict.state_top - dict.state_bottom + 1;
+      if (dict.is_overflow_possible === 0) {
+        if (relocateStack === undefined) {
+          overflowLab(dict);
+         } else {
+
+          // Extend the stack our own way, but honor or succumb to max_depth
+          if (dict.stack_size >= dict.stack_list_max_depth) {
+            overflowLab(dict);
+          }
+          dict.stack_size = dict.stack_size * 2;
+          if (dict.stack_size > dict.stack_list_max_depth) {
+            dict.stack_size = dict.stack_list_max_depth;
+          }
+
+          // we don't really need alloc(getStackTotalBytes(s.stack_size))...
+          // we just copy the old arrays into new ones with the larger stack 
+          // size. This replaces calls to YYSTACK_RELOCATE and YYSTACK_FREE.
+          setParserStackList(dict, dict.stack_size);
+        }
+      } else {
+        throw new Error("[error] - not able to handle arraybuffer overflow.");
+      }
+
+      dict.state_top = dict.state_bottom + current_stack_size - 1;
+      dict.semantic_top = dict.semantic_bottom + current_stack_size - 1;
+      if (dict.is_location_type_needed) {
+       dict.location_top = dict.location_bottom + current_stack_size - 1;
+      }
+      console.log("[info] - Stack size increased to " + s.stack_size);
+      if (dict.state_top >= dict.state_bottom + dict.stack_size - 1) {
+        abortLab(dict);
+      }
+    }
+
+    if (dict.quiet === 0) {
+      console.log("[info] - Entering state: " + dict.parse_current_state);
+    }
+    backup(dict);
+  }
+
+  // ----------------------------- PARSE ---------------------------------------
+
+  // #line 315 "/usr/share/bison/bison.simple"
+  // The user can define "my_unused_param" as name of an argument to be passed
+  // into parse. It should actually point to an object. Grammar actions can 
+  // access the variable by casting it to the proper pointer type.
+  // https://en.wikipedia.org/wiki/Liskov_substitution_principle
+
+  YY.parse = function (my_unused_param) {
+    var opts = YY.parser_dict,
+      dict;
+
+    // differentiate between reentrant non reentrant parser. Reentrant means
+    // it can be called again while processing (anything real time?), therefore
+    // all variables should only be locally set. If this is not the case, 
+    // variables can go onto the global option dict.
+    if (opts.is_pure) {
+      dict = extendDict({}, opts);
+    } else {
+      dict = YY.parser_dict;
+    }
+
+    dict = extendDict(dict, {
+    
+      // (yychar) [gram.tab.c] Lookahead symbol, upcoming token, this should be
+      // the right hand side = value
+      "lookahead_symbol": null,
+
+      // (yychar1) Lookahead token as an internal (translated) token number.
+      "lookahead_symbol_as_number": 0,
+
+      // (yylval) [gram.tab.c] Semantic value of lookahead symbol, l/rval stands
+      // for left/right side value of a key/value pair, so this is left = key
+      // Note: Careful: this is not yyval!
+      "lookahead_symbol_semantic_value": null,
+
+      // (yylloc) [gram.tab.c] - Location data for the lookahead symbol. 
+      // CAREFUL: not yyloc!
+      "lookahead_symbol_location_value": null,
+
+      // (yynerrs) [gram.tab.c] - Error counter
+      "current_error_count": 0,
+
+      // (yyresult) What eventually will be returned, spoiler: 0, 1, or 2...
+      "parse_result": null,
+
+      // (yystate) Flex uses as alias for YY_START (that's used by AT&T lex, ah.
+      "parse_current_state": null,
+
+      // (yyerrstatus) Number of tokens to shift before error messages enabled.
+      "shift_token_error_message_threshold": 0,
+
+      // (yyn) An all purpose variable... sigh. May represent state, rule or i
+      // too bad is_it_a_bird_or_a_plane is too long
+      "truc": null,
+
+      // (yyval) Variable used to return result of semantic evaluation 
+      // from action routine,
+      "semantic_evaluation_result": null,
+
+      // (yyloc) Variable used to return result of location evaluation 
+      // from action routine, loco. Goes with yyval.
+      "location_evaluation_result": null,
+
+      // (yylen) When reducing, the number of symbols on the RHS (right hand 
+      // side) of the reduced rule (length of RHS of a rule).
+      "reduced_rule_right_hand_side_symbol_len": null,
+
+      // also add a pointer to the lookup tables
+      "lookup": YY.table_dict
+
+    });
+
+    // cleanup
+    if (dict.is_location_value_needed === 0) {
+      delete dict.lookahead_symbol_location;
+      delete dict.location_evaluation_result;
+    }
+
+    setParserStackList(dict, dict.stack_initial_depth, true);
+
+    // Ok done declaring variables. Set the ball rolling!
+    if (dict.quiet === 0) {
+      console.log("[info] Starting parse.");
+    }
+
+    // Initial state
+    dict.parse_current_state = 0;
+    dict.shift_token_error_message_threshold = 0;
+    dict.current_error_count = 0;
+
+    // Cause a token to be read.
+    dict.lookahead_symbol = dict.empty_token;
+
+    // Initialize stack pointers.
+    // Waste one element of value and location stack so that they stay on the 
+    // same level as the state stack. The wasted elements are never initialized.
+    // Note: setting top = bottom
+    dict.state_top = dict.state_bottom;
+    dict.semantic_top = dict.semantic_bottom;
+    if (dict.is_location_type_needed) {
+      dict.location_top = dict.location_bottom;
+    }
 
     // ------------------------------ start ------------------------------------
-    context.setState();
+    setState(dict);
   };
+
+  // ===========================================================================
+  // ===========================================================================
+
+  // &&&&&&&&&&&&&&&&&&
+
+    // --------------------------------------------------------------
+    // unused -- XXX remove
+    // --------------------------------------------------------------
+    // (yyerrok) - not used
+    context.errorAccept = function () {
+      dict.shift_token_error_message_threshold = 0;
+    };
+
+    // (yyclearin)
+    context.clearChar = function () {
+      dict.lookahead_symbol = dict.empty_token;
+    };
+
+    // (YYFAIL) - from transition of new meaning of YYERROR when moving from
+    // GCC v2 from v1, remove this
+    context.fail = function () {
+      console.log("FAILING")
+      context.errorLab();
+    };
+
+    // (YYRECOVERING)
+    context.recover = function () {
+      return !!dict.shift_token_error_message_threshold;
+    };
+
+    // (YYBACKUP)
+    context.oldBackup = function (my_token, my_value) {
+      if (dict.lookahead_symbol === dict.empty_token && dict.reduced_rule_right_hand_side_symbol_len === 1) {
+        dict.lookahead_symbol = my_token;
+        dict.lookahead_symbol_semantic_value = my_value;
+        dict.lookahead_symbol_as_number = YY.translate(dict.lookahead_symbol);
+        my_context.popStack();
+        context.backup();
+      } else {
+        YY.error("Syntax error: Cannot back up.");
+        context.errorLabExtended();
+      }
+    };
+
+
+    //----------------------------------------------------
+    // errorLabExtended -- error raised explicitly by an action
+    //----------------------------------------------------
+    context.errorLabExtended = function () {
+      var s = context.scope;
+
+      // If just tried and failed to reuse lookahead token after error, discard
+      if (dict.shift_token_error_message_threshold === 3) {
+        if (dict.lookahead_symbol == dict.end_of_file_reached) {
+          context.abortLab();
+        }
+        
+        // return failure if at the end of input
+        console.log("[info] Discarding token " + dict.lookahead_symbol + " (" + 
+          YY.table_dict.token_number_of_token[dict.lookahead_symbol_as_number] + ").");
+        dict.lookahead_symbol = dict.empty_token;
+      }
+  
+      // Else will try to reuse lookahead token after shifting the error token.
+      // Each real token shifted decrements this
+      dict.shift_token_error_message_threshold = 3;
+      context.errorHandle();
+    };
+    
+    //--------------------------------------------------------------------------
+    // errorDefault - current state does not do anything special for error token                                     |
+    //--------------------------------------------------------------------------
+    context.errorDefault = function () {
+      //if (0) {
+      //  // This is wrong; only states that explicitly want error tokens
+      //  // should shift them.
+      //  truc = YY.table_dict.default_reduction_rule[dict.parse_current_state];
+      //  if (truc) {
+      //   yydefault();
+      //  }
+      //}
+      return;
+    };
+
+    //--------------------------------------------------------------------------
+    // errorPop -- pop current state because it cannot handle the error token                                   |
+    //--------------------------------------------------------------------------
+    context.errorPop = function () {
+      var s = context.scope,
+        temp_state_top;
+      if (s.state_top === s.state_bottom) {
+        context.abortLab();
+      }
+      s.semantic_top = s.semantic_top - 1;
+
+      // XXX *--yyssp?
+      dict.parse_current_state = s.state_top - 1;
+      if (dict.is_location_type_needed) {
+        s.location_top = s.location_top - 1;
+      }
+      
+      if (dict.debug) {
+       temp_state_bottom = s.state_bottom - 1;
+       console.log("[error] state stack now");
+       while (temp_state_bottom !== s.state_top) {
+         console.log("[error]" + temp_state_bottom);
+         temp_state_bottom += 1;
+       }
+      }
+    };
+
+    //----------------------------------------------------
+    // errorHandle 
+    //----------------------------------------------------
+    context.errorHandle = function () {
+      var s = context.scope;
+
+      dict.truc = YY.table_dict.set_state_action[dict.parse_current_state];
+      if (dict.truc === dict.is_state_default_action) {
+        context.errorDefault();
+      }
+
+      dict.truc = dict.truc + YY.terror;
+      if (dict.truc < 0 || dict.truc > dict.index_last_state_action ||
+        YY.table_dict.state_action_valid[dict.truc] !== YY.terror) {
+        context.errorDefault();
+      }
+      dict.truc = YY.table_dict.state_action[dict.truc];
+      if (dict.truc < 0) {
+        if (dict.truc == dict.is_state_default_action) {
+          context.errorPop();
+        }
+        dict.truc = -dict.truc;
+        context.reduceState();
+      } else if (dict.truc === 0) {
+        context.errorPop();
+      }
+      if (dict.truc == dict.final_rule) {
+        context.acceptLab();
+      }
+
+      console.log("[info] - Shifting error token.");
+      console.log(s)
+      console.log(dict.truc)
+      console.log(dict.lookahead_symbol_semantic_value)
+      console.log(dict.lookahead_symbol_location_value)
+
+      s.semantic_top = s.semantic_top + 1;
+      s.semantic_view.setInt8(s.semantic_top, dict.lookahead_symbol_semantic_value);
+      if (dict.is_location_value_needed) {
+        s.location_top = s.location_top + 1;
+        s.location_view.setInt8(s.location_top, dict.lookahead_symbol_location_value);
+      }
+      dict.parse_current_state = dict.truc;
+      context.newState();
+    };
+
+    // &&&&&&&&&&&&&&&&&&
+
 
   window.YY = YY;
 
