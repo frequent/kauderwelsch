@@ -110,10 +110,6 @@
   // (YYSIZE_T) type ? set to unsigned_int = 4 bytes   
   YY.sizet_size = 4; // XXX? YYSIZE_T a type?
 
-  // (YYSTACK_GAP_MAX) Size of the maximum gap between one aligned stack and 
-  // the next => sizeof(union yyalloc) - 1;
-  // YY.stack_gap_max = getMaxStackGap();
-
 
 
   
@@ -173,53 +169,36 @@
   // declared in gram.y, not sure yet what these do
   YY.custom_dict = {};
 
-  YY.custom_dict.block_reservse_switch = null;
-  YY.custom_dict.is_mode_assign_accept = 1;
-  YY.custom_dict.class_count = 0;
-  YY.custom_dict.current_class_count = 0;
-  YY.custom_dict.start_flag = 0;
+
   //YY.custom_dict.mode_block = 0;
   YY.custom_dict.grammar_modification_number = 0;
   YY.custom_dict.finite_automaton_list = null; // Pointer of start FA in FA network
 
-  // XXX mkfa.h? what is this for?
-  // "Can't alloc nonterminal list buffer" => this is a buffer for non-terminals
-  // BODY_NAME[body_class_number][symbol_len];
-  // with 100 elements each 256 bytes space?
-  YY.custom_dict.body_buffer_list = new ArrayBuffer(YY.custom_dict.body_class_number);
+  YY.custom_dict.body_class_flag_accept = 0;
+  
   YY.custom_dict.body_symbol_len = 256;
   YY.custom_dict.body_class_number = 100;
-  YY.custom_dict.body_count = 0;
-  YY.custom_dict.body_class_flag = 0;
-  YY.custom_dict.body_class_flag_start = 0;
-  YY.custom_dict.body_class_flag_accept = 0;
-  YY.custom_dict.body_class_flag_max = YY.custom_dict.body_class_flag * 8;
-  YY.custom_dict.is_block_start_or_end = 0; // ModeBlock
+  
+  
+ 
 
-  YY.custom_dict.head_name = "";
+  
 
-  // (CLASS_LIST_TAIL) The last node of the linear list of classes
-  YY.custom_dict.class_list_tail = null;
-
-  // (CLASS_LIST) Linear list of classes
-  YY.custom_dict.class_list = null;
-
-  // (START_SYMBOL) Class of start symbol
-  YY.custom_dict.start_symbol = null;
+  
 
   // XXX all of those are not used (yet?)
   YY.custom_dict.body_list = {"body": {}, "next": {}};
   YY.custom_dict.arc = {
     "inp": 0,
     "finite_automaton": {},
-    "body_class_flag_start": 0,
+    "class_start_flag": 0,
     "body_class_flag_accept": 0,
     "next": {}
   };
   YY.custom_dict.unify_arc = {
     "inp": 0,
     "finite_automaton": {},
-    "body_class_flag_start": 0,
+    "class_start_flag": 0,
     "body_class_flag_accept": 0,
     "next": {},
     "flag_reserved": 0
@@ -232,7 +211,7 @@
     // common
     "stat": 0,
     "arc": [],
-    "body_class_flag_start": 0,
+    "class_start_flag": 0,
     "body_class_flag_accept": 0,
     "flag_traversed": 0,
     // for DFA
@@ -243,229 +222,21 @@
   };
   // XXX end unused
 
-  YY.custom_dict.createBody = function () {
-   return {"name": null, "flag_abort": 0, "next": {}};
-  };
 
-  YY.custom_dict.createBodyClass = function () {
-    return {  
-      "number": null,
-      "name": null,
-      "next": {},
-      "body_list": {},
-      "branch": null,
-      "flag_used_fa": 0,
-      "flag_used": 0,
-      "flag_tmp": 0,
-      "tmp": null
-    };
-  };  
+
+
 
   
-  // => Non-Terminal symbols can be replaced using grammar rules
-  // => Terminl symbols cannot be replaced
-  YY.custom_dict.configureNonTerminalSymbol = function (my_body) {
-    var first_body = null,
-      previous_body = null,
-      i;
-    for (i = 0; i < YY.custom_dict.body_count; i += 1) {
-      my_body.name = YY.custom_dict.body_buffer_list.getInt(i);
-      my_body.abort = 0;
-      if (previous_body !== null) {
-        previous_body.next = my_body;
-      } else {
-        first_body = my_body;
-      }
-      previous_body = my_body;
-    }
-    my_body.next = null;
-    return first_body;
-  };
 
-  YY.custom_dict.outputHeader = function (my_name) {
-    if (YY.custom_dict.class_count >= YY.custom_dict.body_class_flag_max) {
-      if (YY.switch_dict && YY.switch_dict.compat_i === 0) {
-        console.log("[info] - Class accepted flag overflow, " + my_name);
-      }
-    } else {
-      if (YY.switch_dict && YY.switch_dict.compat_i === 0) {
 
-        // 0x%08x = pointer http://stackoverflow.com/a/33324713/536768
-        // XXX why the class_count check?
-        YY.file_dict.header += "#define ACCEPT_" + my_name + "0x%08x\n", 1 << YY.custom_dict.class_count;
-      }
-      YY.custom_dict.current_class_count = YY.custom_dict.class_count++;
-   }
-  };
-
-  YY.custom_dict.getNewClassName = function (my_key_name) {
-    var tmp_class_count = 0,
-      class_name = my_key_name + "#" + tmp_class_count;
-    if (YY.switch_dict && YY.switch_dict.semi_quiet === 0) {
-      console.log("[info] - Now modifying grammar to minimize states[" +
-        YY.custom_dict.grammar_modification_number + "]");
-      YY.switch_dict.no_new_line = 1;
-    }
-    YY.custom_dict.grammar_modification_number++;
-    return 1;
-  };
   
-  YY.custom_dict.unifyBody = function (my_class_name, my_body, my_new_body) {
-    var body_next,
-      new_body_next,
-      body_class,
-      new_body,
-      new_class_name;
 
-    // alors...
-    body_next = my_body.next;
-    new_body_next = my_new_body.next;
+  
 
-    while (1) {
-      if (body_next === null && new_body_next === null) {
-        return -1;
-      }
-      if (new_body_next === null) {
-        if (my_body.abort) {
-         return -1;
-        } else {
-         my_body.abort = 1;
-        }
-        return 0;
-      }
-      if (body_next === null) {
-        my_body.abort = 1;
-        my_body.next = new_body_next;
-        return 0;
-      }
-      if (body_next.name === new_body_next.name) {
-        break;
-      }
 
-      // XXX ?
-      my_body = body_next;
-      my_new_body = new_body_next;
-      body_next = body.next;
-      new_body_next = new_body.next;
-    }
+  
 
-    body_class = YY.custom_dict.createBodyClass(); // XXX another one?
-    if (body_class !== null && body_class.tmp) {
-      YY.custom_dict.enterNonTerminalSymbol(my_body.name, new_body_next, 0, 0, 0, 1);
-    } else {
-      new_class_name = getNewClassName(my_class_name);
-      YY.custom_dict.enterNonTerminalSymbol(new_class_name, body_next, 0, 0, 0, 1);
-      YY.custom_dict.enterNonTerminalSymbol(new_class_name, new_body_next, 0, 0, 0, 1);
-      my_new_body.name = new_class_name;
-      my_new_body.abort = 0;
-      my_new_body.next = null;
-      my_body.next = newBody;
-      body_next.next = body_next;
-    }
-    return 0;
-  };
 
-  YY.custom_dict.pushBody = function (my_body_class, my_new_body) {
-    var body_list = my_body_class.body_list,
-      define_number = 1,
-      pre_body_list = null,
-      new_body_list,
-      body,
-      cmp;
-   
-    while (body_list !== null) {
-      body = body_list.body;
-      cmp = body.name === my_new_body.name;
-      if (cmp > 0) {
-        break;
-      }
-      if (cmp === 0) {
-        if (YY.custom_dict.unifyBody(my_body_class.name, body, my_new_body)) {
-          console.log("[info] - Redefining class: ", my_body_class.name, body.name);
-        }
-        return;
-      }
-      pre_body_list = body_list;
-      body_list = body_list.next;
-      define_number++;
-    }
-    new_body_list.body = new_body;
-    if (pre_body_list !== null) {
-      pre_body_list.next = new_body_list;
-    } else {
-      my_body_class.body_list = new_body_list;
-    }
-    new_body_list.next = body_list;
-    my_body_class.branch++;
-  };
-
-  // Class Finite Automaton.
-  YY.custom_dict.enterNonTerminalSymbol = function(my_name, my_body_accept, my_start, my_member, my_tmp) {
-    // XXX mh not sure what to make of this
-    // CLASS *class;
-    // class = getClass( name );
-    var body_class = YY.custom_dict.createBodyClass();
-
-    if (body_class === null) {
-      if (my_member) {
-        dict.current_error_count++;
-        console.log("[error] - Accepted fla of class is reassigned:", YY.custom_dict.head_name);
-      }
-    } else {
-      body_class.name = my_name;
-      if (my_mode_accept) {
-        if (my_member) {
-          body_class.number = YY.custom_dict.current_class_count;
-        } else {
-          if (my_tmp === 0) {
-            outputHeader(name);
-            body_class.number = YY.custom_dict.current_class_count;
-          }
-        }
-      } else {
-        body_class.number = -1;
-      }
-      body_class.branch = 0;
-      body_class.used_finite_automaton = 0;
-      body_class.used = 1; // non-terminal does not appear in voca
-      body_class.body_list = null;
-      body_class.tmp = tmp;
-      body_class.next = null;
-      if (YY.custom_dict.class_list_tail === null) {
-        //YY.custom_dict.class_list.push(body_class);
-        YY.custom_dict.class_list = body_class;
-      } else {
-        YY.custom_dict.class_list_tail.next = body_class;
-      }
-      YY.custom_dict.class_list_tail = body_class;
-     }
-
-     if (my_body === null) {
-      YY.custom_dict.pushBody(body_class, my_body);
-      if (my_start) {
-        YY.custom_dict.body_class_flag_start = 0;
-        if (YY.custom_dict.start_symbol === null) {
-          YY.custom_dict.start_symbol = body_class;
-        } else {
-          dict.current_error_count++;
-          console.log("[error] - Start symbol is redefined: ", body_class.name);
-        }
-      }
-     }
-     return body_class;
-  };
-
-  YY.custom_dict.appendNonTerminalSymbol = function (my_name, my_mode_assign) {
-    YY.custom_dict.enterNonTerminalSymbol(
-      my_name,
-      YY.custom_dict.configureNonTerminalSymbol(YY.custom_dict.createBody()),
-      my_mode_assign,
-      YY.custom_dict.body_class_flag_start,
-      YY.custom_dict.is_block_start_or_end,
-      0
-    );
-    YY.custom_dict.body_count = 0;
-  };
 
 
 
@@ -544,9 +315,6 @@
 
 
   };
-    
-
-  }
 
   // ===========================================================================
   // ===========================================================================
@@ -783,8 +551,9 @@
     ]
   };
 
+  // --------------------------- config ----------------------------------------
   // YYucky options all go here
-  YY.parser_dict = extendDict(YY.parser_dict || {}, {
+  YY.opts_dict = extendDict(YY.opts_dict || {}, {
 
     // (YYPURE) [gram.tab.c]
     // Hardcoded. Pure parser = reeentrant = can be called during modification
@@ -838,8 +607,55 @@
 
     // (YYTERROR) the audacity... just write 1, no? also, only used inside 
     // errorHandle, why not just use 1?
-    "terror": 1
+    "terror": 1,
 
+    // (BlockReverseSw) [???] - from external params, let's define all here
+    "is_reverse_block": null,
+
+    // (ModeAssignAccptFlag) [???] - ?
+    "is_mode_assign_accept": 1,
+
+    // (classNo) [???] - counter for classes?, only in outputHeader
+    "class_number": 0,
+
+    // (CurClassNo) [???] - current class number
+    "current_class_number": 0,
+
+    // (CLASSFLAGS) [mkfa.h] - this is a type... typedef unsigned int CLASSFLAGS
+    // "body_class_flag": 0,
+
+    // (CLASSFLAG_MAX) [mkfa.h], so in bytes this should/would be 2, going by
+    // https://www.tutorialspoint.com/cprogramming/c_data_types.htm, but it
+    // could also mean a max value of 0 to 65,535
+    // only used in output header
+    "body_class_flag_max": 2 * 8,
+
+    // (HeadName) [] - 256 character string?
+    "head_string": "",
+
+    // (BodyNo) - [] ?    
+    "body_number": 0,
+
+    // (ModeBlock) [], stays zero, only used in appendNonTerminalSymbol
+    "is_block_start_or_end": 0,
+    
+    // (BodyName) [mkfa.h] - what is this for?
+    // "Can't alloc nonterminal list buffer" a buffer for non-terminals?
+    // but initialized as static char BODY_NAME[body_class_number][symbol_len];
+    // an array buffer with 100 elements each 256 bytes space!
+    "body_string_buffer": new ArrayBuffer(100),
+
+    // (ClassList) Linear list of classes
+    "class_list": null,
+
+    // (ClassListTail) The last node of the linear list of classes
+    "class_list_tail": null,
+
+    // (StartFlag) []
+    "class_start_flag": 0,
+
+    // (START_SYMBOL) Class of start symbol
+    "start_symbol": null,
 
   });
 
@@ -946,6 +762,273 @@
     }
   }
 
+  // -------------------------- external methods -------------------------------
+
+  // [mkfa.h]
+  function createBody() {
+   return {"name": null, "flag_abort": 0, "next": {}};
+  }
+
+  // [mkfa.h]
+  function createBodyClass() {
+    return {  
+      "number": null,
+      "name": null,
+      "next": {},
+      "body_list": {},
+      "branch": null,
+      "flag_used_fa": 0,
+      "flag_used": 0,
+      "flag_tmp": 0,
+      "tmp": null
+    };
+  }
+
+  function unifyBody(my_dict, my_class_name, my_body, my_new_body) {
+    var dict = my_dict,
+      body = my_body,
+      new_body = my_new_body,
+      body_next = my_body.next,
+      new_body_next = my_new_body.next,
+      body_class,
+      new_class_name;
+
+    while (1) {
+      if (body.next === null && new_body_next === null ) {
+        return -1;
+      }
+      if (new_body_next === null) {
+        if (body.abort) {
+          return -1;
+        } else {
+          body.abort = 1;
+          return 0;
+        }
+      }
+      if (body_next === null) {
+        body.abort = 1;
+        body.next = new_body_next;
+        return 0;
+      }
+      if (body_next.name === new_body_next.name) {
+        break;
+      }
+      body = body_next;
+      new_body = new_body_next;
+      body_next = body.next;
+      new_body_next = new_body.next;
+    }
+
+    // and now for something different
+    body_class = getClass(body.name);
+
+    if (body_class !== null && body_class.tmp) {
+      enterNonTerminalSymbol(body.name, new_body_next, 0, 0, 0, 1);
+    } else {
+      new_class_name = getNewClassName(my_class_name);
+      enterNonTerminalSymbol(new_class_name, body_next, 0, 0, 0, 1 );
+      enterNonTerminalSymbol(new_class_name, new_body_Next, 0, 0, 0, 1 );
+
+      // "Can't alloc body buffer of tmp class, \"%s\".", newClassName
+      new_body.name = new_class_name;
+      new_body.abort = 0;
+      new_body.next = null;
+      body.next = new_body;
+        new_body.next = new_body;
+      }
+      return 0;
+  }
+
+  /*
+  
+  
+  YY.custom_dict.getNewClassName = function (my_key_name) {
+    var tmp_class_count = 0,
+      class_name = my_key_name + "#" + tmp_class_count;
+    if (YY.switch_dict && YY.switch_dict.semi_quiet === 0) {
+      console.log("[info] - Now modifying grammar to minimize states[" +
+        YY.custom_dict.grammar_modification_number + "]");
+      YY.switch_dict.no_new_line = 1;
+    }
+    YY.custom_dict.grammar_modification_number++;
+    return 1;
+  };
+  
+  function pushBody(body_class, ) { 
+    var body_list = my_body_class.body_list,
+      define_number = 1,
+      pre_body_list = null,
+      new_body_list,
+      body,
+      cmp;
+   
+    while (body_list !== null) {
+      body = body_list.body;
+      cmp = body.name === my_new_body.name;
+      if (cmp > 0) {
+        break;
+      }
+      if (cmp === 0) {
+        if (YY.custom_dict.unifyBody(my_body_class.name, body, my_new_body)) {
+          console.log("[info] - Redefining class: ", my_body_class.name, body.name);
+        }
+        return;
+      }
+      pre_body_list = body_list;
+      body_list = body_list.next;
+      define_number++;
+    }
+    new_body_list.body = new_body;
+    if (pre_body_list !== null) {
+      pre_body_list.next = new_body_list;
+    } else {
+      my_body_class.body_list = new_body_list;
+    }
+    new_body_list.next = body_list;
+    my_body_class.branch++;
+  };
+  */
+
+
+  // (setNonTerm), must return a body
+  // Non-Terminal symbols can be replaced using grammar rules
+  // Terminl symbols cannot be replaced
+  function setNonTerminalSymbol(my_dict) {
+    var dict = my_dict, 
+      body = createBody(),
+      prev = null,
+      next = null,
+      i;
+
+    // alloc nonterminal list buffer
+    for (i = 0; i < dict.body_number; i += 1) {
+      body.name = dict.body_string_buffer.getInt8(i);
+      body.flag_abort = 0;
+      if (prev !== null) {
+        prev.next = body;
+      } else {
+        first = body;
+      }
+      prev = body;
+    }
+    body.next = null;
+    return body;
+  }
+  
+  // (outputHeader)
+  function outputHeader(my_dict, my_semantic_stack_bottom_value) {
+    var dict = my_dict;
+    if (dict.class_number >= dict.body_class_flag_max) {
+      if (dict.is_compat_i === 0) {
+        console.log("[info] Class accept-flag overflow, " + my_semantic_stack_bottom_value);
+      }
+    } else {
+      if (dict.is_compat_i === 0) {
+
+        // fprintf(FPheader, "#define ACCEPT_%s 0x%08x\n", name, 1 << ClassNo)
+        // http://www.cplusplus.com/reference/cstdio/fprintf/
+        // 0x%08x = pointer http://stackoverflow.com/a/33324713/536768
+        // %08x expects an unsigned int as argument, ~ 1 << dict.class_number
+        // http://www.c4learn.com/c-programming/c-bitwise-left-shift-operator/
+        // https://en.wikipedia.org/wiki/Bitwise_operations_in_C#Left_shift_.3C.3C
+        // can be used to multiply a number, 1 => 1,2,4,8
+        YY.file_dict.header += "#define ACCEPT_" + my_semantic_stack_bottom_value + "0x%08x\n", 1 << dict.class_number;
+      }
+      dict.current_class_number = dict.class_number = dict.class_number + 1;
+   }
+  }
+
+  // (appendNonTerm) [gram.tab.c]
+  function appendNonTerminalSymbol(my_dict, my_custom_is_mode_assign_accept) {
+    var dict = my_dict;
+    enterNonTerminalSymbol(
+      dict,
+      dict.head_string,
+      setNonTerminalSymbol(dict),
+      (my_custom_is_mode_assign_accept || dict.is_mode_assign_accept),
+      dict.class_start_flag,
+      dict.is_block_start_or_end,
+      0
+    );
+    dict.body_number = 0;
+  }
+
+  // (getClass) [nfa.c] - crap
+  function getClass(my_dict, my_head_string) {
+    var body_class = my_dict.class_list;
+    if (class_list === null) {
+      return null;
+    }
+    while (1) {
+      if (body_class.name === my_head_string) {
+        body_class.used = 1;
+        return body_class;
+      }
+      body_class = body_class.next;
+      if (body_class === null) {
+        return null;
+      }
+    }
+  }
+
+  // (enterNonTerm) - Class Finite Automaton.
+  // char *name, BODY *body, int modeAccpt, int start, int member, int tmp
+  function enterNonTerminalSymbol(my_dict, my_head_string, my_next_body, my_body_accept, my_start, my_member, my_tmp) {
+    var dict = my_dict,
+      body_class = getClass(dict, my_head_string);
+
+    if (body_class === null) {
+      if (my_member) {
+        dict.current_error_count++;
+        console.log("[error] - Accepted flag of class is reassigned:", my_head_string);
+      }
+    } else {
+      body_class.name = my_head_string;
+      if (my_mode_accept) {
+        if (my_member) {
+          body_class.number = dict.current_class_number;
+        } else {
+          if (my_tmp === 0) {
+            outputHeader(dict, name);
+            body_class.number = dict.current_class_number;
+          }
+        }  
+      } else {
+        body_class.number = -1;
+      }
+      body_class.branch = 0;
+      body_class.used_finite_automaton = 0;
+
+      // non-terminal does not appear in voca
+      body_class.used = 1;
+      body_class.body_list = null;
+      body_class.tmp = tmp;
+      body_class.next = null;
+      if (dict.class_list_tail === null) {
+
+        // XXX do we push? dict.class_list.push(body_class);
+        dict.class_list = body_class;
+      } else {
+        dict.class_list_tail.next = body_class;
+      }
+      dict.class_list_tail = body_class;
+    }
+    if (my_next_body !== null) {
+      pushBody(dict, body_class, my_next_body);
+    }
+    if (my_start) {
+      dict.class_start_flag = 0;
+      if (dict.start_symbol === null) {
+        dict.start_symbol = body_class;
+      } else {
+        dict.current_error_count++;
+        console.log("[error] Start symbol is redefined: ", body_class.name);
+      }
+    }
+    return body_class;
+  }
+
+  // ----------------------------- methods -------------------------------------
   // (YYLLOC_DEFAULT) -- Compute the default location (before the actions are run).
   // When YYLLOC_DEFAULT is run, CURRENT is set the location of the
   // first token.  By default, to implement support for ranges, extend
@@ -1060,6 +1143,11 @@
     //  }
     //}
     return;
+  }
+
+  // (yyerrok) - not used
+  function errorAccept(my_dict) {
+    my_dict.shift_token_error_message_threshold = 0;
   }
 
   // (yyerrpop) - pop current state because it cannot handle the error token                                   |
@@ -1220,6 +1308,7 @@
   // (yyreduce) - Do a reduction.
   function reduceState (my_dict) {
     var dict = my_dict,
+      custom_flag,
       tmp_semantic_top,
       i;
 
@@ -1255,83 +1344,87 @@
       );
     }
 
-    if (dict.debug) {
+    if (dict.quiet === 0) {
       console.log(
         "[info] - Reducing via rule " + dict.truc + " (line " +
           dict.lookup.rule_line_pointer[dict.truc] + ")"
       );
 
       // Print the symbols being reduced, and their result.
-      for (i = dict.lookup.right_hand_side_index[dict.truc]; dict.lookup.right_hand_side[i] > 0; i++) {
-        console.log("[info] " + dict.lookup.token_number_of_token[dict.lookup.right_hand_side[i]] + " ");
+      for (i = dict.lookup.right_hand_side_index[dict.truc]; dict.lookup.right_hand_side[i] > 0; i += 1) {
+        console.log(
+          "[info] " +
+          dict.lookup.token_number_of_token[
+            dict.lookup.right_hand_side[i]
+          ] + " "
+        );
       }
-      console.log("[info] => " + dict.lookup.token_number_of_token[dict.lookup.rule_left_hand_side_symbol_number[dict.truc]]);
+      console.log(
+        "[info] => " +
+        dict.lookup.token_number_of_token[
+          dict.lookup.rule_left_hand_side_symbol_number[dict.truc]
+        ]
+      );
     }
-  
+
     switch (dict.truc) {
       case 7: //#line 59 "gram.y"
-        context.errorAccept();
+        errorAccept(dict);
         break;
       case 9: //#line 66 "gram.y"
-        YY.custom_dict.block_reservse_switch = 0;
-        if (YY.custom_dict.is_mode_assign_accept) {
-         
+        dict.is_reverse_block = 0;
+        if (dict.is_mode_assign_accept) {
+
           // it should be from top, but I guess it's view
-          outputHeader(s.semantic_view.getInt8(0));
+          outputHeader(dict, dict.semantic_view.getInt8(0));
         }
         break;
       case 10: //#line 71 "gram.y"
-        YY.custom_dict.block_reservse_switch = 1;
-        if (YY.custom_dict.is_mode_assign_accept === 0) {
-          outputHeader(s.semantic_view.getInt8(0));
+        dict.is_reverse_block = 1;
+        if (dict.is_mode_assign_accept === 0) {
+          outputHeader(dict, dict.semantic_view.getInt8(0));
         }
        break;
       case 13: //#line 79 "gram.y"
-        YY.custom_dict.appendNonTerminalSymbol(
-          YY.custom_dict.head_name,
-          YY.custom_dict.is_mode_assign_accept ^ YY.custom_dict.block_reservse_switch
-        );
+        custom_flag = dict.is_mode_assign_accept ^ dict.is_reverse_block;
+        appendNonTerminalSymbol(dict, custom_flag);
         break;
       case 14: //#line 83 "gram.y"
-        YY.custom_dict.enterNonTerminalSymbol(
-          YY.custom_dict.head_name,
+        enterNonTerminalSymbol(
+          dict,
+          dict.head_string,
           null,
-          YY.custom_dict.is_mode_assign_accept ^ YY.custom_dict.block_reservse_switch,
+          dict.is_mode_assign_accept ^ dict.is_reverse_block,
           0,
           1,
           0
         );
         break;
       case 16: //#line 89 "gram.y"
-        YY.custom_dict.appendNonTerminalSymbol(
-          YY.custom_dict.head_name,
-          YY.custom_dict.is_mode_assign_accept
-        );
+        appendNonTerminalSymbol(dict);
         break;
       case 17: //#line 93 "gram.y"
-        YY.custom_dict.appendNonTerminalSymbol(
-          YY.custom_dict.head_name,
-          !YY.custom_dict.is_mode_assign_accept
-        );
+        appendNonTerminalSymbol(dict);
         break;
       case 21: //#line 102 "gram.y"
-        // XXX strcpy(YY.custom_dict.head_name, yyvsp[0]);
-        YY.custom_dict.head_name += s.semantic_view.getInt8(context.semantic_top);
+        // XXX strcpy(dict.head_string, yyvsp[0]);
+        dict.head_string += dict.semantic_view.getInt8(dict.semantic_top);
         break;
       case 22: //#line 106 "gram.y"
-        YY.custom_dict.start_flag = 1;
-        YY.custom_dict.head_name += s.semantic_view.getInt8(context.semantic_top);
+        dict.class_start_flag = 1;
+        dict.head_string += dict.semantic_view.getInt8(dict.semantic_top);
         break;
       case 23: //#line 112 "gram.y"
-        // XXX ? what is BodyName strcpy(BodyName[YY.custom_dict.body_count++], yyvsp[0]);
-        YY.custom_dict.body_count = YY.custom_dict.body_count + 1;
-        YY.custom_dict.body_buffer_list.setInt8(YY.custom_dict.body_count, s.semantic_view.getInt8(context.semantic_top));
+
+        // strcpy(BodyName[dict.body_number++], yyvsp[0]);
+        dict.body_number = dict.body_number + 1;
+        dict.body_string_buffer.setInt8(dict.body_number, dict.semantic_view.getInt8(dict.semantic_top));
         break;
       case 24: //#line 117 "gram.y"
-        YY.custom_dict.is_mode_assign_accept = 1;
+        dict.is_mode_assign_accept = 1;
         break;
       case 25: //#line 121 "gram.y"
-        YY.custom_dict.is_mode_assign_accept = 0;
+        dict.is_mode_assign_accept = 0;
         break;
       }
   
@@ -1570,7 +1663,7 @@
   // https://en.wikipedia.org/wiki/Liskov_substitution_principle
 
   YY.parse = function (my_unused_param) {
-    var opts = YY.parser_dict,
+    var opts = YY.opts_dict,
       dict;
 
     // differentiate between reentrant non reentrant parser. Reentrant means
@@ -1580,7 +1673,7 @@
     if (opts.is_pure) {
       dict = extendDict({}, opts);
     } else {
-      dict = YY.parser_dict;
+      dict = YY.opts_dict;
     }
 
     dict = extendDict(dict, {
@@ -1674,13 +1767,7 @@
 
   // &&&&&&&&&&&&&&&&&&
 
-    // --------------------------------------------------------------
-    // unused -- XXX remove
-    // --------------------------------------------------------------
-    // (yyerrok) - not used
-    context.errorAccept = function () {
-      dict.shift_token_error_message_threshold = 0;
-    };
+
 
     // (yyclearin)
     context.clearChar = function () {
@@ -1839,13 +1926,13 @@
     }
   }
 
-  // (chkNoInstantClass) [gram.tab.c], requires parser_dict
+  // (chkNoInstantClass) [gram.tab.c], requires opts_dict
   function checkNoInstantClass() {
-    var dict = YY.parser_dict,
+    var dict = YY.opts_dict,
       current_class = dict.class_list;
 
     if (dict === undefined) {
-      throw new Error("[error] YY.parser_dict is not defined.");
+      throw new Error("[error] YY.opts_dict is not defined.");
     }
     while (current_class !== null) {
       if (current_class.branch === undefined) {
@@ -1859,7 +1946,6 @@
   function setGrammarFile() {
     var opts = YY.opts_dict,
       dict = YY.file_dict,
-      parser = YY.parser_dict,
       version = "ver.1.44-flex-p1",
       grammar = getFileByType("grammar"),
       header = getFileByType("header"),
@@ -1895,12 +1981,12 @@
     if (opts.is_semi_quiet === 0) {
       console.log(
         "[info] - Now modifying grammar to minimize states[" +
-        parser_dict.grammar_modification_number + "]"
+        opts.grammar_modification_number + "]"
       );
       opts.is_no_new_line = 0;
     }
-    parser.start_symbol = parser.start_symbol || parser.class_list;
-    header.content += "/* Start Symbol: " + parser.start_symbol.name + " */\n";
+    opts.start_symbol = opts.start_symbol || opts.class_list;
+    header.content += "/* Start Symbol: " + opts.start_symbol.name + " */\n";
     class_name = checkNoInstantClass();
     // fclose( FPheader );
 
