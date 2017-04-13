@@ -1,3 +1,132 @@
+/* Unused so far
+
+  // (YYBISON) Identify Bison output.
+  YY.opts_dict.bison = 1;
+
+  // (YYLTYPE_IS_TRIVIAL)
+  // Even trivially named yet obfusciatingly set, only used once needlessly
+  // http://lxr.free-electrons.com/source/scripts/dtc/srcpos.h?v=2.6.33#L43
+  YY.opts_dict.ltype_trivial = 1;
+
+  // (YYSTYPE_IS_TRIVIAL)
+  // Since we're at it
+  YY.opts_dict.stype_trivial = 1;
+
+  // ((sizeof (short)) 2 bytes size of short -32,768 to 32,767
+  YY.opts_dict.short_size = 2;
+
+  // size of type STYPE - wrong
+  YY.opts_dict.stype_size = 0;
+
+  // size of type LTYPE - wrong
+  YY.opts_dict.ltype_size = 0;
+
+  // (YYSIZE_T) type ? set to unsigned_int = 4 bytes   
+  YY.opts_dict.sizet_size = 4; // XXX? YYSIZE_T a type?
+
+  // Pointer of start FA in FA network
+  YY.opts_dict.finite_automaton_list = null;
+
+  YY.opts_dict.body_class_flag_accept = 0;
+  
+  // (SYMBOL_LEN) [mkfa.h] - not used
+  YY.opts_dict.symbol_len = 256;
+
+  // (CLASS_NUM) - not used  
+  YY.opts_dict.class_number = 100;
+
+  // [mkfa.h]
+  YY.opts_dict.body_list = {
+    "body": {},
+    "next": {}
+  };
+
+  // [mkfa.h]
+  YY.opts.body_class = {
+    "number": null,
+    "name": null,
+    "next": {},
+    "body_list": {},
+    "branch": null,
+    "flag_used_fa": 0,
+    "flag_used": 0,
+    "flag_tmp": 0,
+    "tmp": null
+  };
+
+  // [mkfa.h]
+  YY.opts_dict.arc = {
+    "inp": 0,
+    "finite_automaton": {},
+    "class_start_flag": 0,
+    "body_class_flag_accept": 0,
+    "next": {}
+  };
+
+  // [mkfa.h]
+  YY.opts_dict.unify_arc = {
+    "inp": 0,
+    "finite_automaton": {},
+    "class_start_flag": 0,
+    "body_class_flag_accept": 0,
+    "next": {},
+    "flag_reserved": 0
+  };
+
+  // [mkfa.h]
+  YY.opts_dict.finite_automaton_list = {
+    "finite_automation": {},
+    "next": {}
+  };
+
+  // [mkfa.h]
+  YY.opts_dict.finite_automaton = {
+    // common
+    "stat": 0,
+    "arc": [],
+    "class_start_flag": 0,
+    "body_class_flag_accept": 0,
+    "flag_traversed": 0,
+    // for DFA
+    "psNum": 0,
+    "unify_arc_list": [],
+    "finite_automaton_list": [],
+    "flag_volatiled": 0
+  };
+
+  // (yyclearin)
+  function clearChar (my_dict) {
+    my_dict.lookahead_symbol = my_dict.empty_token;
+  }
+
+  // (YYFAIL) - from transition of new meaning of YYERROR when moving from
+  // GCC v2 from v1, remove this
+  function errorFail (my_dict) {
+    console.log("[error] failing.");
+    errorLab(my_dict);
+  }
+
+  // (YYRECOVERING)
+  function recoverFromError(my_dict) {
+    return !!my_dict.shift_token_error_message_threshold;
+  }
+
+  // (YYBACKUP) - uppercase
+  function oldBackup (my_dict, my_token, my_value) {
+    if (dict.lookahead_symbol === dict.empty_token &&
+      dict.reduced_rule_right_hand_side_symbol_len === 1) {
+      dict.lookahead_symbol = my_token;
+      dict.lookahead_symbol_semantic_value = my_value;
+      dict.lookahead_symbol_as_number = YY.translate(dict.lookahead_symbol);
+      popStack(my_dict);
+      backup(my_dict);
+    } else {
+      parseError(my_dict, "Syntax error. Cannot back up.");
+      errorLabExtended(my_dict);
+    }
+  }
+*/
+
 // =============================================================================
 // =============================  Set Grammer ==================================
 // =============================================================================
@@ -72,252 +201,11 @@
   // https://www.cs.uic.edu/~spopuri/cparser.html
   // https://en.wikipedia.org/wiki/Shift-reduce_parser
   // https://en.wikipedia.org/wiki/Terminal_and_nonterminal_symbols
-  
 
   // ------------------------------ setup --------------------------------------
 
   // behold the one YY to yyuck them all
   var YY = {};
-
-  // &&&&&&&&&&
-
-  // --------------------------- configure -------------------------------------
-
-  // Identify Bison output.
-  YY.bison = 1;
-
-  // (YYLEX)
-  YY.lexer = window.lexer;
-
-  YY.nt_base = 14;
-
-  // Even trivially named yet obfusciatingly set, only used once needlessly
-  // http://lxr.free-electrons.com/source/scripts/dtc/srcpos.h?v=2.6.33#L43
-  YY.ltype_trivial = 1;
-
-  // Since we're at it
-  YY.stype_trivial = 1;
-
-  // (short) 2 bytes size of short -32,768 to 32,767
-  YY.short_size = 2;
-
-  // size of type STYPE
-  YY.stype_size = 0; // XXX?
-
-  // size of type LTYPE
-  YY.ltype_size = 0; // XXX?
-
-  // (YYSIZE_T) type ? set to unsigned_int = 4 bytes   
-  YY.sizet_size = 4; // XXX? YYSIZE_T a type?
-
-
-
-  
-  
-
-
-  // --------------------------- token values ----------------------------------
-  // Here is the definitions section for the yacc input file:
-  // %token INTEGER
-  //
-  // This definition declares an INTEGER token. Yacc generates a parser in 
-  // file y.tab.c and an include file y.tab.h, like:
-  //
-  // #ifndef YYSTYPE
-  // #define YYSTYPE int
-  // #endif
-  // #define INTEGER 258
-  // extern YYSTYPE yylval;
-  //
-  // Lex includes this file and utilizes the definitions for token values. 
-  // To obtain tokens yacc calls yylex. Function yylex has a return type of int 
-  // that returns a token. Values associated with the token are returned by 
-  // lex in variable yylval. For example:
-  // 
-  // [0-9]+      {
-  //                yylval = atoi(yytext);
-  //                return INTEGER;
-  //             }
-  //
-  // would store the value of the integer in yylval, and return token INTEGER 
-  // to yacc. The type of yylval is determined by YYSTYPE. Since the default 
-  // type is integer this works well in this case. Token values 0-255 are 
-  // reserved for character values. For example, if you had a rule such as:
-  //
-  // [-+]       return *yytext;    /* return operator */
-  //
-  // the character value for minus or plus is returned. Note that we placed 
-  // the minus sign first so that it wouldnât be mistaken for a range 
-  // designator. Generated token values typically start around 258 because lex 
-  // reserves several values for end-of-file and error processing.
-
-  YY.token_values = {
-    "CTRL_ASSIGN": 257,
-    "CTRL_IGNORE": 258,
-    "OPEN": 259,
-    "CLOSE": 260,
-    "REVERSE": 261,
-    "STARTCLASS": 262,
-    "LET": 263,
-    "TAG": 264,
-    "SYMBOL": 265,
-    "REMARK": 266,
-    "NL": 267
-  };
-
-  // ------------------ custom foo (mkfa.h and mkdfa) --------------------------
-  // declared in gram.y, not sure yet what these do
-  YY.custom_dict = {};
-
-
-  //YY.custom_dict.mode_block = 0;
-  YY.custom_dict.grammar_modification_number = 0;
-  YY.custom_dict.finite_automaton_list = null; // Pointer of start FA in FA network
-
-  YY.custom_dict.body_class_flag_accept = 0;
-  
-  YY.custom_dict.body_symbol_len = 256;
-  YY.custom_dict.body_class_number = 100;
-  
-  
- 
-
-  
-
-  
-
-  // XXX all of those are not used (yet?)
-  YY.custom_dict.body_list = {"body": {}, "next": {}};
-  YY.custom_dict.arc = {
-    "inp": 0,
-    "finite_automaton": {},
-    "class_start_flag": 0,
-    "body_class_flag_accept": 0,
-    "next": {}
-  };
-  YY.custom_dict.unify_arc = {
-    "inp": 0,
-    "finite_automaton": {},
-    "class_start_flag": 0,
-    "body_class_flag_accept": 0,
-    "next": {},
-    "flag_reserved": 0
-  };
-  YY.custom_dict.finite_automaton_list = {
-    "finite_automation": {},
-    "next": {}
-  };
-  YY.custom_dict.finite_automaton = {
-    // common
-    "stat": 0,
-    "arc": [],
-    "class_start_flag": 0,
-    "body_class_flag_accept": 0,
-    "flag_traversed": 0,
-    // for DFA
-    "psNum": 0,
-    "unify_arc_list": [],
-    "finite_automaton_list": [],
-    "flag_volatiled": 0
-  };
-  // XXX end unused
-
-
-
-
-
-  
-
-
-  
-
-  
-
-
-  
-
-
-
-
-
-
-  YY.table_dict = {
-      
-    
-    
-
-
-    
-
-
-    // (yydefgoto) - lists default GOTOs for each non-terminal symbol. It is 
-    // only used after checking with yypgoto.
-    "default_goto_method": [
-      23,   10,   11,   12,   30,   31,   13,   14,   28,   15,
-      29,   16,   17  
-    ],
-
-    // This is a compressed form of the GOTO part of our traditional table. 
-    // It has as many entries as there are non-terminals in the grammar. Each 
-    // entry specifies the state to transition to on each non-terminal. So 
-    // here goes:
-    //{
-    //  -1,     3,     4,     5,     7
-    //};
-    // yydefgoto[nth non-terminal] = most common GOTO state for the nth 
-    // non-terminal. n starts from zero. An index into this array is obtained 
-    // by subtracting the number of terminal symbols from the symbol number of
-    // the non-terminal. For example, the symbol number for E is 10 and number 
-    // of tokens in the grammar is 8, so:
-    // Thus yydefgoto[E] = yydefgoto[10-8] = state 4.
-    // yydefgoto is consulted whenever the parser reduces stack contents 
-    // using a rule. Later we will see that yydefgoto is consulted only after 
-    // checking with another goto table, and that will explain how we manage 
-    // to go to state 6 from state 2 on L instead of going to state 3 as this
-    // table specifies for L.
-    // As a final note observe that the entry for the zeroth non-terminal
-    // ($accept) is -1. The stack will never be reduced with the $accept rule.
-    
-    
-    // (yypgoto) - accounts for non-default GOTOs for all non-terminal symbols.
-    "non_terminal_goto_method": [
-      51,-32768,-32768,-32768,   21,-32768,-32768,   -3,   24,   12,
-    -32768,-32768,   -2  
-    ],
-
-    // This table gives a reference to GOTO entries for non-terminals that can 
-    // transition the automaton to different states based on previous state.
-    // For example, the symbol L can take the automaton to state 3 if the 
-    // present state is 0, but the GOTO on L for state 2 is state 6. Similarly 
-    // for symbols E and P there are different GOTO states based on the current
-    // state. The most common GOTO is already defined in YYDEFGOTO. The job 
-    // of YYPGOTO is to indicate the anomalies. Lets take a look:
-    // {
-    //  -5,     5,    -1,     2,    -5
-    // };
-    // That's our ND table that we discussed in the compressing parsing tables 
-    // section. It is indexed by non-terminal symbol number; One entry each 
-    // for $accept, L, E, P, M. Let us say the current state on top of the 
-    // stack after reduction by rule #5 (P â a) is state 10 (see example parse
-    // in the appendix). Now the GOTO transition for state 10 on P is really 
-    // state 13 (according to our traditional tables), which is not the 
-    // yydefgoto entry for P.
-    // The parser adds yypgoto[P] i.e yypgoto[3] to the current exposed 
-    // state number (state 10). The result is 12 (since yypgoto[3]=2). 
-    // Now yytable[12] happens to be 13, so this is the new state to be 
-    // pushed on to the stack.
-
-    // How does the parser know that it has to pick the state value from 
-    // yytable (via yypgoto) and not from yydefgoto? For this, there is a 
-    // guard table called yycheck that will indicate this fact. It is only 
-    // after checking with this table that a proper pick is made. We will see 
-    // this operation in the section describing the parsing routine yyparse().
-
-
-  };
-
-  // ===========================================================================
-  // ===========================================================================
 
   // -------------------------- lookup tables ----------------------------------
   YY.table_dict = {
@@ -357,6 +245,68 @@
        2,     2,     2,     2,     2,     2,     1,     3,     4,     5,
        6,     7,     8,     9,    10,    11,    12,    13
     ],
+
+    // (yypgoto) - accounts for non-default GOTOs for all non-terminal symbols.
+    "non_terminal_goto_method": [
+      51,-32768,-32768,-32768,   21,-32768,-32768,   -3,   24,   12,
+    -32768,-32768,   -2  
+    ],
+
+    // (yydefgoto) - lists default GOTOs for each non-terminal symbol. It is 
+    // only used after checking with yypgoto.
+    "default_goto_method": [
+      23,   10,   11,   12,   30,   31,   13,   14,   28,   15,
+      29,   16,   17  
+    ],
+
+    // This is a compressed form of the GOTO part of our traditional table. 
+    // It has as many entries as there are non-terminals in the grammar. Each 
+    // entry specifies the state to transition to on each non-terminal. So 
+    // here goes:
+    //{
+    //  -1,     3,     4,     5,     7
+    //};
+    // yydefgoto[nth non-terminal] = most common GOTO state for the nth 
+    // non-terminal. n starts from zero. An index into this array is obtained 
+    // by subtracting the number of terminal symbols from the symbol number of
+    // the non-terminal. For example, the symbol number for E is 10 and number 
+    // of tokens in the grammar is 8, so:
+    // Thus yydefgoto[E] = yydefgoto[10-8] = state 4.
+    // yydefgoto is consulted whenever the parser reduces stack contents 
+    // using a rule. Later we will see that yydefgoto is consulted only after 
+    // checking with another goto table, and that will explain how we manage 
+    // to go to state 6 from state 2 on L instead of going to state 3 as this
+    // table specifies for L.
+    // As a final note observe that the entry for the zeroth non-terminal
+    // ($accept) is -1. The stack will never be reduced with the $accept rule.
+
+    // This table gives a reference to GOTO entries for non-terminals that can 
+    // transition the automaton to different states based on previous state.
+    // For example, the symbol L can take the automaton to state 3 if the 
+    // present state is 0, but the GOTO on L for state 2 is state 6. Similarly 
+    // for symbols E and P there are different GOTO states based on the current
+    // state. The most common GOTO is already defined in YYDEFGOTO. The job 
+    // of YYPGOTO is to indicate the anomalies. Lets take a look:
+    // {
+    //  -5,     5,    -1,     2,    -5
+    // };
+    // That's our ND table that we discussed in the compressing parsing tables 
+    // section. It is indexed by non-terminal symbol number; One entry each 
+    // for $accept, L, E, P, M. Let us say the current state on top of the 
+    // stack after reduction by rule #5 (P â a) is state 10 (see example parse
+    // in the appendix). Now the GOTO transition for state 10 on P is really 
+    // state 13 (according to our traditional tables), which is not the 
+    // yydefgoto entry for P.
+    // The parser adds yypgoto[P] i.e yypgoto[3] to the current exposed 
+    // state number (state 10). The result is 12 (since yypgoto[3]=2). 
+    // Now yytable[12] happens to be 13, so this is the new state to be 
+    // pushed on to the stack.
+
+    // How does the parser know that it has to pick the state value from 
+    // yytable (via yypgoto) and not from yydefgoto? For this, there is a 
+    // guard table called yycheck that will indicate this fact. It is only 
+    // after checking with this table that a proper pick is made. We will see 
+    // this operation in the section describing the parsing routine yyparse().
 
     // (yyr1) - Symbol number of symbol that rule yyn derives.
     // Symbol number of lhs of each rule. Used at the time of a 
@@ -657,7 +607,63 @@
     // (START_SYMBOL) Class of start symbol
     "start_symbol": null,
 
+    // (GramModifyNum)
+    "grammar_modification_number": 0,
+
+    // (YYNTBASE) maybe the number of actual rules (Bison adds 1 for accept)
+    "nt_base": 14,
+
   });
+
+  // --------------------------- token values ----------------------------------
+  // Here is the definitions section for the yacc input file:
+  // %token INTEGER
+  //
+  // This definition declares an INTEGER token. Yacc generates a parser in 
+  // file y.tab.c and an include file y.tab.h, like:
+  //
+  // #ifndef YYSTYPE
+  // #define YYSTYPE int
+  // #endif
+  // #define INTEGER 258
+  // extern YYSTYPE yylval;
+  //
+  // Lex includes this file and utilizes the definitions for token values. 
+  // To obtain tokens yacc calls yylex. Function yylex has a return type of int 
+  // that returns a token. Values associated with the token are returned by 
+  // lex in variable yylval. For example:
+  // 
+  // [0-9]+      {
+  //                yylval = atoi(yytext);
+  //                return INTEGER;
+  //             }
+  //
+  // would store the value of the integer in yylval, and return token INTEGER 
+  // to yacc. The type of yylval is determined by YYSTYPE. Since the default 
+  // type is integer this works well in this case. Token values 0-255 are 
+  // reserved for character values. For example, if you had a rule such as:
+  //
+  // [-+]       return *yytext;    /* return operator */
+  //
+  // the character value for minus or plus is returned. Note that we placed 
+  // the minus sign first so that it wouldnât be mistaken for a range 
+  // designator. Generated token values typically start around 258 because lex 
+  // reserves several values for end-of-file and error processing.
+
+  // #defines used in lexer!
+  YY.opts_dict.token_dict = {
+    "CTRL_ASSIGN": 257,
+    "CTRL_IGNORE": 258,
+    "OPEN": 259,
+    "CLOSE": 260,
+    "REVERSE": 261,
+    "STARTCLASS": 262,
+    "LET": 263,
+    "TAG": 264,
+    "SYMBOL": 265,
+    "REMARK": 266,
+    "NL": 267
+  };
 
   // ---------------------------- stacks ---------------------------------------
 
@@ -769,19 +775,18 @@
    return {"name": null, "flag_abort": 0, "next": {}};
   }
 
-  // [mkfa.h]
-  function createBodyClass() {
-    return {  
-      "number": null,
-      "name": null,
-      "next": {},
-      "body_list": {},
-      "branch": null,
-      "flag_used_fa": 0,
-      "flag_used": 0,
-      "flag_tmp": 0,
-      "tmp": null
-    };
+  // (getNewClassName)
+  function getNewClassName (my_dict, my_name) {
+    var tmp_class_count = 0,
+      class_name = my_name + "#" + tmp_class_count;
+    if (dict.quiet === 0) {
+      console.log("[info] - Now modifying grammar to minimize states[" +
+        dict.grammar_modification_number + "]"
+      );
+      dict.is_no_new_line = 1;
+    }
+    dict.grammar_modification_number++;
+    return 1;
   }
 
   function unifyBody(my_dict, my_class_name, my_body, my_new_body) {
@@ -825,7 +830,7 @@
     if (body_class !== null && body_class.tmp) {
       enterNonTerminalSymbol(body.name, new_body_next, 0, 0, 0, 1);
     } else {
-      new_class_name = getNewClassName(my_class_name);
+      new_class_name = getNewClassName(dict, my_class_name);
       enterNonTerminalSymbol(new_class_name, body_next, 0, 0, 0, 1 );
       enterNonTerminalSymbol(new_class_name, new_body_Next, 0, 0, 0, 1 );
 
@@ -839,23 +844,8 @@
       return 0;
   }
 
-  /*
-  
-  
-  YY.custom_dict.getNewClassName = function (my_key_name) {
-    var tmp_class_count = 0,
-      class_name = my_key_name + "#" + tmp_class_count;
-    if (YY.switch_dict && YY.switch_dict.semi_quiet === 0) {
-      console.log("[info] - Now modifying grammar to minimize states[" +
-        YY.custom_dict.grammar_modification_number + "]");
-      YY.switch_dict.no_new_line = 1;
-    }
-    YY.custom_dict.grammar_modification_number++;
-    return 1;
-  };
-  
-  function pushBody(body_class, ) { 
-    var body_list = my_body_class.body_list,
+  function pushBody(my_body, my_new_body) { 
+    var body_list = my_body.body_list,
       define_number = 1,
       pre_body_list = null,
       new_body_list,
@@ -869,8 +859,8 @@
         break;
       }
       if (cmp === 0) {
-        if (YY.custom_dict.unifyBody(my_body_class.name, body, my_new_body)) {
-          console.log("[info] - Redefining class: ", my_body_class.name, body.name);
+        if (unifyBody(my_body.name, body, my_new_body)) {
+          console.log("[info] Redefining class: ", my_body.name, body.name);
         }
         return;
       }
@@ -882,12 +872,12 @@
     if (pre_body_list !== null) {
       pre_body_list.next = new_body_list;
     } else {
-      my_body_class.body_list = new_body_list;
+      my_body.body_list = new_body_list;
     }
     new_body_list.next = body_list;
-    my_body_class.branch++;
-  };
-  */
+    my_body.branch++;
+  }
+
 
 
   // (setNonTerm), must return a body
@@ -955,10 +945,11 @@
 
   // (getClass) [nfa.c] - crap
   function getClass(my_dict, my_head_string) {
-    var body_class = my_dict.class_list;
-    if (class_list === null) {
+    var body_class;
+    if (my_dict.class_list === null) {
       return null;
     }
+    body_class = my_dict.class_list;
     while (1) {
       if (body_class.name === my_head_string) {
         body_class.used = 1;
@@ -1418,7 +1409,10 @@
 
         // strcpy(BodyName[dict.body_number++], yyvsp[0]);
         dict.body_number = dict.body_number + 1;
-        dict.body_string_buffer.setInt8(dict.body_number, dict.semantic_view.getInt8(dict.semantic_top));
+        dict.body_string_buffer.setInt8(
+          dict.body_number,
+          dict.semantic_view.getInt8(dict.semantic_top)
+        );
         break;
       case 24: //#line 117 "gram.y"
         dict.is_mode_assign_accept = 1;
@@ -1436,36 +1430,47 @@
         s.location_top -= dict.reduced_rule_right_hand_side_symbol_len;   
       }
 
-    if (dict.debug) {
-       tmp_semantic_top = s.semantic_bottom - 1;
-       console.log("[info] - State stack now");
-       while (tmp_semantic_top != s.semantic_top) {
-        console.log("[info] -", " " + s.semantic_view.getInt8(tmp_semantic_top));
+    if (dict.quiet === 0) {
+      tmp_semantic_top = dict.semantic_bottom - 1;
+      console.log("[info] - State stack now");
+      while (tmp_semantic_top !== stack.semantic_top) {
+        console.log(
+          "[info]", " " + dict.semantic_view.getInt8(tmp_semantic_top)
+        );
         tmp_semantic_top++;
        }
     }
 
-    s.semantic_top = s.semantic_top + 1;
-    s.semantic_view.setInt8(s.semantic_top, semantic_evaluation_result);
+    // up semantic and location stack, value stack will be done in newState
+    dict.semantic_top = dict.semantic_top + 1;
+    dict.semantic_view.setInt8(dict.semantic_top, semantic_evaluation_result);
     if (dict.is_location_type_needed) {
-      s.location_top = s.location_top + 1;
-      s.location_view.setInt8(s.location-top, location_evaluation_result);
+      dict.location_top = dict.location_top + 1;
+      dict.location_view.setInt8(dict.location_top, location_evaluation_result);
     }
-  
+
     // Now `shift' the result of the reduction.  Determine what state
     // that goes to, based on the state we popped back to and the rule
     // number reduced by.
   
-    dict.truc = YY.table_dict.rule_left_hand_side_symbol_number[dict.truc];
-    dict.parse_current_state = YY.table_dict.non_terminal_goto_method[dict.truc - YY.nt_base] + s.state_top;
-    if (dict.parse_current_state >= 0 && dict.parse_current_state <= dict.index_last_state_action && YY.table_dict.state_action_valid[dict.parse_current_state] === s.semantic_top) {
-      dict.parse_current_state = YY.table_dict.state_action[s.current_state];
+    dict.truc = dict.lookup.rule_left_hand_side_symbol_number[dict.truc];
+    dict.parse_current_state = dict.lookup.non_terminal_goto_method[
+      dict.truc - dict.nt_base
+    ] + dict.state_top;
+    if (dict.parse_current_state >= 0 &&
+      dict.parse_current_state <= dict.index_last_state_action && 
+        dict.lookup.state_action_valid[dict.parse_current_state] ===
+          dict.semantic_top) {
+      dict.parse_current_state = dict.lookup.state_action[
+        dict.parse_current_state
+      ];
     } else {
-      dict.parse_current_state = YY.table_dict.default_goto_method[truc - YY.nt_base];
+      dict.parse_current_state = dict.lookup.default_goto_method[
+        dict.truc - dict.nt_base
+      ];
     }
-    context.newState();
+    newState(dict);
   }
-
 
   // (yydefault) - do the default reduction (action) for the current state.
   function defaultAction(my_dict)  {
@@ -1761,47 +1766,6 @@
     // ------------------------------ start ------------------------------------
     setState(dict);
   };
-
-  // ===========================================================================
-  // ===========================================================================
-
-  // &&&&&&&&&&&&&&&&&&
-
-
-
-    // (yyclearin)
-    context.clearChar = function () {
-      dict.lookahead_symbol = dict.empty_token;
-    };
-
-    // (YYFAIL) - from transition of new meaning of YYERROR when moving from
-    // GCC v2 from v1, remove this
-    context.fail = function () {
-      console.log("FAILING")
-      context.errorLab();
-    };
-
-    // (YYRECOVERING)
-    context.recover = function () {
-      return !!dict.shift_token_error_message_threshold;
-    };
-
-    // (YYBACKUP)
-    context.oldBackup = function (my_token, my_value) {
-      if (dict.lookahead_symbol === dict.empty_token && dict.reduced_rule_right_hand_side_symbol_len === 1) {
-        dict.lookahead_symbol = my_token;
-        dict.lookahead_symbol_semantic_value = my_value;
-        dict.lookahead_symbol_as_number = YY.translate(dict.lookahead_symbol);
-        my_context.popStack();
-        context.backup();
-      } else {
-        parseError(dict, "Syntax error - cannot back up.");
-        errorLabExtended(dict);
-      }
-    };
-
-    // &&&&&&&&&&&&&&&&&&
-
 
   window.YY = YY;
 
