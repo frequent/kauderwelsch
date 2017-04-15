@@ -208,13 +208,13 @@
   lex.xxx_set_bol = function (my_at_bol) {
     if (!dict.current_buffer) {
       dict.current_buffer = lex.createBuffer(dict.file_input, dict.default_buffer_size);
-      dict.current_buffer.input_line_start = my_at_bol;
+      dict.current_buffer.buffer_state_input_line_start = my_at_bol;
     }
   };
 
   // (YY_AT_BOL) - duplicate?
   lex.xxx_is_at_bol = function () {
-    return dict.current_buffer.input_line_start;
+    return dict.current_buffer.buffer_state_input_line_start;
   };
   
   // (yy_flex_free)
@@ -274,7 +274,7 @@
 
     my_buffer.buffer_state_current_position = my_buffer.buffer_state_array_buffer.getInt8(0);
   
-    my_buffer.input_line_start = 1;
+    my_buffer.buffer_state_input_line_start = 1;
     my_buffer.buffer_status = lex.buffer_is_new;
   
     if (my_buffer === dict.current_buffer) {
@@ -301,7 +301,7 @@
     buffer.buffer_state_input_file = 0;
     buffer.buffer_character_len = b.buffer_state_size;
     buffer.buffer_state_interactive_input = 0;
-    buffer.input_line_start = 1;
+    buffer.buffer_state_input_line_start = 1;
     buffer.buffer_state_fill_if_full = 0;
     buffer.buffer_status = lex.buffer_is_new;
     lex.switchToBuffer(buffer);
@@ -532,24 +532,100 @@
   });
 
   // ----------------------------- methods -------------------------------------
+  
+  // (yy_buffer_state)
+  function getBufferStateDict() {
+    return {
+
+      // the file (yy_input_file)
+      buffer_state_input_file: null,
+
+      // (yy_is_interactive) Whether this is an "interactive" input source; 
+      // if so, and if we're using stdio for input, then we want to use getc()
+      // instead of fread(), to make sure we stop fetching input after 
+      // each newline.
+      buffer_state_interactive_input: null,
+
+      // (yy_fill_buffer) Whether to try to fill the input buffer when we 
+      // reach the end of it.
+      buffer_state_fill_if_full: null,
+
+      // (yy_buf_size type = yy_size_t) - Size of input buffer in bytes, not 
+      // including room for EOB characters.
+      buffer_state_size: null,
+
+      // (yy_is_our_buffer) Whether we "own" the buffer - i.e., we know we 
+      // created it, can realloc() it to grow and should free() it to delete it.
+      buffer_is_ours: null,
+
+      // (yy_ch_buf) input buffer
+      buffer_state_array_buffer: null,
+
+      // (yy_n_chars) Number of characters read into yy_ch_buf, not including 
+      // EOB characters.
+      buffer_state_character_len: null,
+
+      // (yy_buf_pos) current position in input buffer
+      buffer_state_current_position: null,
+
+      // (yy_buffer_status)
+      buffer_status: null,
+
+      // (yy_at_bol) Whether we're considered to be at the beginning of a line.
+      // If so, '^' rules will be active on the next match, otherwise not.
+      buffer_state_input_line_start: null
+    };
+  }
+
+  function setBuffer (my_size) {
+    return new ArrayBuffer(my_size);
+  }
+
+  function setView (my_array) {
+    return new DataView(my_array);
+  }
+
+  // added to reset whatever was #defined here, namely
+  function resetPseudoGlobalsSetInBuffer(my_dict) {
+    my_dict.buffer_eof_pending = 2;
+    my_dict.buffer_is_new = 0;
+    my_dict.buffer_is_normal = 1;
+  }
+
+  // (yy_init_buffer) load file into buffer state
+  function initializeBuffer(my_buffer, my_file) {
+    yy_flush_buffer(b);
+
+    b.buffer_state_input_file = my_file;
+    b.buffer_state_fill_if_full = 1;
+    if (lex.always_interactive) {
+      b.buffer_state_interactive_input = 1;
+    } else if (lex.never_interactive) {
+      b.buffer_state_interactive_input = 0;
+    } else {
+
+      // http://stackoverflow.com/questions/36258224/what-is-isatty-in-c-for      
+      b.buffer_state_interactive_input = my_file ? /* (isatty( fileno(file) ) > 0) */ 1 : 0;
+    }
+  };
 
   // (yy_create_buffer) ZZZ
   function createBuffer (my_file, my_size) {
-    var b = getBufferStateDict();
+    var buffer = getBufferStateDict();
 
     // removed out of dynamic memory test on createBuffer
 
-    b.resetPseudoGlobalsSetInBuffer();
-    b.buffer_state_size = my_size;
+    buffer.resetPseudoGlobalsSetInBuffer();
+    buffer.buffer_state_size = my_size;
 
     // yy_ch_buf has to be 2 characters longer than the size given because
     // we need to put in 2 end-of-buffer characters.
-    b.buffer_state_actual_buffer = lex.setBuffer(b.buffer_state_size + 2);
-    b.buffer_state_array_buffer = new DataView(b.buffer_state_actual_buffer);
+    buffer.buffer_state_actual_buffer = setBuffer(buffer.buffer_state_size + 2);
+    buffer.buffer_state_array_buffer = setView(buffer.buffer_state_actual_buffer);
 
-    b.buffer_is_ours = 1;
-    lex.initBuffer(b, my_file);
-    return b;
+    buffer.buffer_is_ours = 1;
+    initializeBuffer(buffer, my_file);
+    return buffer;
   }
 
   // dupe
@@ -736,56 +812,6 @@
     lex.tmp_character_hold = lex.current_run_buffer_character_position;
   };
 
-  // (yy_buffer_state)
-  lex.getBufferStateDict = function () {
-    return {
-
-      // the file (yy_input_file)
-      buffer_state_input_file: null,
-
-      // (yy_is_interactive) Whether this is an "interactive" input source; 
-      // if so, and if we're using stdio for input, then we want to use getc()
-      // instead of fread(), to make sure we stop fetching input after 
-      // each newline.
-      buffer_state_interactive_input: null,
-
-      // (yy_fill_buffer) Whether to try to fill the input buffer when we 
-      // reach the end of it.
-      buffer_state_fill_if_full: null,
-
-      // (yy_buf_size type = yy_size_t) - Size of input buffer in bytes, not 
-      // including room for EOB characters.
-      buffer_state_size: null,
-
-      // (yy_is_our_buffer) Whether we "own" the buffer - i.e., we know we 
-      // created it, can realloc() it to grow and should free() it to delete it.
-      buffer_is_ours: null,
-
-      // (yy_ch_buf) input buffer
-      buffer_state_array_buffer: null,
-
-      // (yy_n_chars) Number of characters read into yy_ch_buf, not including 
-      // EOB characters.
-      buffer_state_character_len: null,
-
-      // (yy_buf_pos) current position in input buffer
-      buffer_state_current_position: null,
-
-      // (yy_buffer_status)
-      buffer_status: null,
-
-      // (yy_at_bol) Whether we're considered to be at the beginning of a line.
-      // If so, '^' rules will be active on the next match, otherwise not.
-      input_line_start: null,
-
-      // added to reset whatever was #defined here, namely
-      resetPseudoGlobalsSetInBuffer: function () {
-        lex.buffer_eof_pending = 2;
-        lex.buffer_is_new = 0;
-        lex.buffer_is_normal = 1;
-      }
-    };
-  };
 
   // (yy_set_interactive) not used REMOVE
   lex.setLexterToInteractive = function (my_interactive) {
@@ -794,23 +820,6 @@
       dict.current_buffer.buffer_state_interactive_input = my_interactive;
     } else {
       throw new Error("[error] - Don't switch interactive after creating buffer...");
-    }
-  };
-  
-  // (yy_init_buffer) load file into buffer state
-  lex.restoreOriginalOffset = function (my_buffer, my_file) {
-    yy_flush_buffer(b);
-
-    b.buffer_state_input_file = my_file;
-    b.buffer_state_fill_if_full = 1;
-    if (lex.always_interactive) {
-      b.buffer_state_interactive_input = 1;
-    } else if (lex.never_interactive) {
-      b.buffer_state_interactive_input = 0;
-    } else {
-
-      // http://stackoverflow.com/questions/36258224/what-is-isatty-in-c-for      
-      b.buffer_state_interactive_input = my_file ? /* (isatty( fileno(file) ) > 0) */ 1 : 0;
     }
   };
 
@@ -866,9 +875,6 @@
     dict.current_buffer.buffer_state_array_buffer = new_data_view;
   };
 
-  lex.setBuffer = function (my_size) {
-    return new ArrayBuffer(my_size);
-  };
 
   // (YY_RESTORE_YY_MORE_OFFSET) - XXX not really sure what this is supposed
   // to do.
