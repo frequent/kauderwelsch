@@ -86,7 +86,9 @@
     // Undo effects of setting up matched_string (yytext).
     dict.current_run_buffer_start_position_address = dict.tmp_character_hold;
     restoreOriginalOffset(dict);
-    dict.current_buffer_character_position = dict.current_run_character_position = dict.current_run_buffer_start_position + my_n - dict.more_adjust;
+    dict.current_buffer_character_position =
+      dict.current_run_character_position =
+        dict.current_run_buffer_start_position + my_n - dict.more_adjust;
     doBeforeAction(); // set up matched_string (yytext) again
   };
   
@@ -120,15 +122,22 @@
       number_to_move = dict.buffer_character_len + 2;
 
       // XXX will fail, because memory_address is never set
-      dest = dict.current_buffer_memory_address.buffer_state_array_view.getInt8(dict.current_buffer.buffer_state_size + 2);
-      source = dict.current_buffer_memory_address.buffer_state_array_view.getInt8(number_to_move);
+      dest = dict.current_buffer_memory_address.buffer_state_array_view.getInt8(
+        dict.current_buffer.buffer_state_size + 2
+      );
+      source = dict.current_buffer_memory_address.buffer_state_array_view.getInt8(
+        number_to_move
+      );
       while (source > dict.current_buffer.buffer_state_array_view) {
         //XXX*--dest = *--source;
       }
       dict.current_run_character_position += (dest - source);
       dict.current_run_buffer_start_position += (dest - source);
-      dict.current_buffer.buffer_state_character_len = dict.buffer_character_len = dict.current_buffer.buffer_state_size;
-      if (dict.current_run_character_position < dict.current_buffer.buffer_state_array_view + 2 ) {
+      dict.current_buffer.buffer_state_character_len =
+        dict.buffer_character_len = dict.current_buffer.buffer_state_size;
+      if (dict.current_run_character_position <
+        dict.current_buffer.buffer_state_array_view + 2
+      ) {
         throw new Error("[error] - Flex scanner push-back overflow");
       }
     }
@@ -155,12 +164,16 @@
     
       // This was really a NUL.
       // XXX will fail because of memory_address is never set
-      if (dict.current_buffer_character_position < dict.current_buffer_memory_address.buffer_state_array_view.getInt8(dict.current_buffer.buffer_state_character_len)) {
+      if (dict.current_buffer_character_position <
+        dict.current_buffer_memory_address.buffer_state_array_view.getInt8(
+          dict.current_buffer.buffer_state_character_len
+        )) {
         dict.current_buffer_character_position_memory_address = '\0';
 
       // need more input
       } else {
-        offset = dict.current_buffer_character_position - dict.matched_string_pseudo_pointer;
+        offset = dict.current_buffer_character_position -
+          dict.matched_string_pseudo_pointer;
         dict.current_buffer_character_position++;
 
         switch (lex.getNextBuffer()) {
@@ -186,7 +199,7 @@
             }
             break;
 
-          case lex.end_of_block_action_continue_scan:
+          case dict.end_of_block_action_continue_scan:
             dict.current_buffer_character_position =
               dict.matched_string_pseudo_pointer + offset;
             break;
@@ -207,7 +220,10 @@
   // set beginning of line ^ to be active
   lex.xxx_set_bol = function (my_at_bol) {
     if (!dict.current_buffer) {
-      dict.current_buffer = lex.createBuffer(dict.file_input, dict.default_buffer_size);
+      dict.current_buffer = lex.createBuffer(
+        dict.file_input,
+        dict.default_buffer_size
+      );
       dict.current_buffer.buffer_state_input_line_start = my_at_bol;
     }
   };
@@ -230,8 +246,10 @@
 
     // Flush out information for old buffer.
     if (dict.current_buffer) {
-      dict.current_buffer_character_position_memory_address = dict.tmp_character_hold;
-      dict.current_buffer.buffer_state_current_position = dict.current_buffer_character_position;
+      dict.current_buffer_character_position_memory_address =
+        dict.tmp_character_hold;
+      dict.current_buffer.buffer_state_current_position =
+        dict.current_buffer_character_position;
       dict.current_buffer.buffer_state_character_len = dict.buffer_character_len;
     }
     dict.current_buffer = my_buffer;
@@ -263,7 +281,10 @@
     var buffer;
 
     // They forgot to leave room for the EOB's.
-    if (my_size < 2 || my_base.getInt8(my_size - 2) !== dict.buffer_end_character || my_base.getInt8(my_size - 1) !== dict.buffer_end_character) {
+    if (my_size < 2 ||
+      my_base.getInt8(my_size - 2) !== dict.buffer_end_character ||
+      my_base.getInt8(my_size - 1) !== dict.buffer_end_character
+    ) {
       return 0;
     }
 
@@ -335,7 +356,7 @@
         if (lex.start_stack === 0) {
           lex.start_stack = lex.setBuffer(new_size);
         } else {
-          lex.start_stack = lex.growCurrentBuffer(lex.start_stack, new_size);
+          lex.start_stack = growCurrentBuffer(dict, lex.start_stack, new_size);
         }
         if (lex.start_stack === undefined) {
           throw new Error("[error] - Out of memory expanding start-condition stack");
@@ -571,7 +592,9 @@
   function loadBufferState(my_dict) {
     var dict = my_dict;
     dict.buffer_character_len = dict.current_buffer.buffer_state_character_len;
-    dict.matched_string_pseudo_pointer = dict.current_buffer_character_position = dict.current_buffer.buffer_state_current_position;
+    dict.matched_string_pseudo_pointer =
+      dict.current_buffer_character_position =
+        dict.current_buffer.buffer_state_current_position;
     dict.file_input = dict.current_buffer.buffer_state_input_file;
 
     // only place currently where character position memory address is used!
@@ -592,7 +615,8 @@
     // a jam in that state.
     my_buffer.buffer_state_array_view.setInt8(0, my_dict.buffer_end_character);
     my_buffer.buffer_state_array_view.setInt8(1, my_dict.buffer_end_character);
-    my_buffer.buffer_state_current_position = my_buffer.buffer_state_array_view.getInt8(0);
+    my_buffer.buffer_state_current_position =
+      my_buffer.buffer_state_array_view.getInt8(0);
     my_buffer.buffer_state_input_line_start = 1;
     my_buffer.buffer_status = dict.buffer_is_new;
 
@@ -615,7 +639,8 @@
     } else {
 
       // http://stackoverflow.com/questions/36258224/what-is-isatty-in-c-for      
-      my_buffer.buffer_state_interactive_input = my_file ? /* (isatty( fileno(file) ) > 0) */ 1 : 0;
+      my_buffer.buffer_state_interactive_input =
+        my_file ? /* (isatty( fileno(file) ) > 0) */ 1 : 0;
     }
   }
 
@@ -699,7 +724,8 @@
 
     // setting pointer to current_run start position = "string from"
     dict.matched_string_pseudo_pointer = dict.current_run_buffer_start_position;
-    dict.matched_string_len = dict.current_run_character_position - dict.current_run_buffer_start_position;
+    dict.matched_string_len = dict.current_run_character_position -
+      dict.current_run_buffer_start_position;
     dict.current_buffer_character_position = dict.current_run_character_position;
 
     // Note, here we backup the current character position address! and then 
@@ -827,6 +853,28 @@
     return my_lexer_current_state;
   }
 
+  // (yy_flex_realloc) move to a larger arraybuffer
+  function growCurrentBuffer (my_dict, my_new_size) {
+    var dict = my_dict,
+      new_buffer = new ArrayBuffer(my_new_size),
+      new_data_view = new DataView(new_buffer),
+      current_view = dict.current_buffer.buffer_state_array_view,
+      len = dict.current_buffer.buffer_state_array_view.byteLength,
+      i;
+    for (i = 0; i < len; i += 1) {
+      new_data_view.setInt8(i, current_view.getInt8(i));
+    }
+    dict.current_buffer.buffer_state_array_buffer = new_buffer;
+    dict.current_buffer.buffer_state_array_view = new_data_view;
+  }
+
+  // (yyrestart) - cutting corners, initBuffer is is called inside createBuffer
+  function restartLex (my_dict, my_input_file) {
+    var dict = my_dict;
+    dict.current_buffer = createBuffer(my_input_file, dict.default_buffer_size);
+    loadBufferState(dict);
+  }
+  
   // (yy_get_next_buffer) - try to read in a new buffer (or block??)
   //  Returns a code representing an action:
   //   end_of_block_action_last_match (2) = goto? last match
@@ -837,6 +885,7 @@
       current_buffer_view = dict.current_buffer.buffer_state_array_view,
       current_buffer_len = current_buffer_view.byteLength,
       content_pointer = dict.matched_string_pseudo_pointer,
+      character_position = dict.current_buffer_character_position,
       current_buffer_offset,
       number_to_move,
       number_to_read,
@@ -857,8 +906,7 @@
     if (dict.current_buffer.buffer_state_fill_if_full === 0) {
 
       // We matched a single character, the EOB, treat this as a final EOF = 1
-      if (dict.current_buffer_character_position -
-        dict.matched_string_pseudo_pointer - dict.more_adjust === 1) {
+      if (character_position - content_pointer - dict.more_adjust === 1) {
         return dict.end_of_block_action_end_of_file;
       }
 
@@ -868,40 +916,48 @@
 
     // Try to read more data - First move last chars to start of buffer.
     // //XXX *(dest++) = *(source++); totally not sure
-    // HERE WE ARE
-    number_to_move = (dict.current_buffer_character_position - dict.matched_string_pseudo_pointer) - 1;
+
+    number_to_move = (character_position - content_pointer) - 1;
     for (i = 0; i < number_to_move; i++) {
+
+      // XXX won't work depending on what is in pseudo_pointer to yytext
       current_buffer_view.setInt8(current_buffer_len++, content_pointer++);
     }
 
     // don't read, it's not guaranteed to return an EOF, just force an EOF
-    if (dict.current_buffer.buffer_status === lex.buffer_eof_pending) {
-      dict.current_buffer.buffer_state_character_len = dict.buffer_character_len = 0;
+    if (dict.current_buffer.buffer_status === dict.buffer_eof_pending) {
+      dict.current_buffer.buffer_state_character_len =
+        dict.buffer_character_len = 0;
     } else {
-      number_to_read = dict.current_buffer.buffer_state_size - number_to_move - 1;
+      number_to_read = dict.current_buffer.buffer_state_size -
+        number_to_move - 1;
 
       // Not enough room in the buffer - grow it, sigh....
       while (number_to_read <= 0) {
 
-        // memory mongering
-        if (lex.uses_reject) {
-          throw new Error("[error] - input buffer overflow, can't enlarge buffer because scanner uses REJECT");
+        // memory mongering, ditch it
+        if (dict.uses_reject) {
+          throw new Error(
+            "[error] input buffer overflow. can't enlarge" + 
+            " buffer because scanner uses REJECT"
+          );
         } else {
-          
+
           // not sure I can use len here, but can't subtract the DataView
-          current_buffer_offset = dict.current_buffer_character_position - current_buffer_len;
+          current_buffer_offset = character_position - current_buffer_len;
           if (dict.current_buffer.buffer_is_ours) {
             new_size = dict.current_buffer.buffer_state_size * 2;
 
             if (new_size <= 0) {
-              dict.current_buffer.buffer_state_size += dict.current_buffer.buffer_state_size / 8;
+              dict.current_buffer.buffer_state_size +=
+                dict.current_buffer.buffer_state_size / 8;
             } else {
               dict.current_buffer.buffer_state_size = 2;
             }
 
             // Include room in for 2 EOB chars (careful, we use ACTUAL here,
             // not the array_buffer which is the data view to actual)
-            lex.growCurrentBuffer(dict.current_buffer.buffer_state_size + 2);
+            growCurrentBuffer(dict, dict.current_buffer.buffer_state_size + 2);
           } else {
             
             // Can't grow it, we don't own it.
@@ -910,42 +966,53 @@
           if (dict.current_buffer.buffer_state_array_view === 0) {
             throw new Error("[error] - fatal error, scanner input buffer overflow");
           }
-          // XXX ditch the above
-          dict.current_buffer_character_position = dict.current_buffer.buffer_state_array_view.getInt8(current_buffer_offset);
-          number_to_read = dict.current_buffer.buffer_state_size - number_to_move - 1;
+
+          character_position =
+            dict.current_buffer.buffer_state_array_view.getInt8(
+              current_buffer_offset
+            );
+          number_to_read = dict.current_buffer.buffer_state_size -
+            number_to_move - 1;
         }
 
-        if (number_to_read > lex.buffer_read_chunk_size) {
-          number_to_read = lex.buffer_read_chunk_size;
+        if (number_to_read > dict.buffer_read_chunk_size) {
+          number_to_read = dict.buffer_read_chunk_size;
         }
 
         // Read in more data.
         // We have to pass in the correct position on the buffer, this should 
         // return buffer_character_len or at least set it
         // XXX this will fail, because memory address is never initialized
-        memory_address = dict.current_buffer_memory_address.buffer_state_array_view.getInt8(number_to_move);
-        lex.readChunkFromInput(memory_address, dict.buffer_character_len, number_to_read);
+        memory_address =
+          dict.current_buffer_memory_address.buffer_state_array_view.getInt8(
+            number_to_move
+          );
+        readChunkFromInput(dict, memory_address, dict.buffer_character_len, number_to_read);
         dict.current_buffer.buffer_state_character_len = dict.buffer_character_len;
       }
     
       if (dict.buffer_character_len === 0) {
         if (number_to_move === dict.more_adjust) {
           return_value = dict.end_of_block_action_end_of_file;
-          lex.restartLex(dict.file_input);
+          restartLex(dict, dict.file_input);
         } else {
           return_value = dict.end_of_block_action_last_match;
-          dict.current_buffer.buffer_status = lex.buffer_eof_pending;
+          dict.current_buffer.buffer_status = dict.buffer_eof_pending;
         }
       } else {
-        return_value = lex.end_of_block_action_continue_scan;
+        return_value = dict.end_of_block_action_continue_scan;
       }
 
       dict.buffer_character_len += number_to_move;
-      dict.current_buffer.buffer_state_array_view.setInt8(dict.current_buffer.buffer_state_character_len, dict.buffer_end_character);
-      dict.current_buffer.buffer_state_array_view.setInt8(dict.current_buffer.buffer_state_character_len + 1, dict.buffer_end_character);
+      dict.current_buffer.buffer_state_array_view.setInt8(
+        dict.current_buffer.buffer_state_character_len, dict.buffer_end_character
+      );
+      dict.current_buffer.buffer_state_array_view.setInt8(
+        dict.current_buffer.buffer_state_character_len + 1, dict.buffer_end_character
+      );
 
       // XXX another error because of undefined memory address
-      dict.matched_string_pseudo_pointer = dict.current_buffer_memory_address.buffer_state_array_view.getInt8(0);
+      content_pointer = dict.current_buffer_memory_address.buffer_state_array_view.getInt8(0);
       return return_value;
     }
   }
@@ -1160,7 +1227,8 @@
             case dict.end_of_block_action_last_match:
 
               // XXX this return the character, not the buffer?
-              dict.current_buffer_character_position = dict.current_buffer.buffer_state_array_view.getInt8(dict.current_buffer.buffer_state_character_len);
+              dict.current_buffer_character_position =
+                dict.current_buffer.buffer_state_array_view.getInt8(dict.current_buffer.buffer_state_character_len);
               dict.current_state = getPreviousState(dict);
               dict.current_run_character_position = dict.current_buffer_character_position;
               dict.current_run_buffer_start_position = dict.matched_string_pseudo_pointer + dict.more_adjust;
@@ -1305,6 +1373,29 @@
       // (EOB_ACT_LAST_MATCH)
       "end_of_block_action_last_match": 2,
 
+      // (EOB_ACT_CONTINUE_SCAN)
+      "end_of_block_action_continue_scan": 0,
+
+      // (YY_BUFFER_EOF_PENDING)
+      // When an EOF's been seen but there's still some text to process
+      // then we mark the buffer as YY_EOF_PENDING, to indicate that we
+      // shouldn't try reading from the input source any more.  We might
+      // still have a bunch of tokens to match, though, because of
+      // possible backing-up.
+      //
+      // When we actually see the EOF, we change the status to "new"
+      // (via restartLex()), so that the user can continue scanning by
+      // just pointing file input (yyin) at a new input file.
+      // declared inside buffer state dict, not sure this can be pulled out
+      "buffer_eof_pending": 2,
+
+      // (YY_USES_REJECT) - not defined, whether memory can be grown XXX REMOVE
+      "uses_reject": 0,
+
+      // (YY_READ_BUF_SIZE) - Amount of stuff to slurp up with each read.
+      "buffer_read_chunk_size": 8192,
+
+
 
       // tables
       "lookup": YY.table_dict
@@ -1318,33 +1409,13 @@
   // (yy_c) character - only used as internal counter
   // lex.character;
 
-  // (YY_READ_BUF_SIZE) - Amount of stuff to slurp up with each read.
-  lex.buffer_read_chunk_size = 8192;
-
   // (yy_did_buffer_switch_on_eof) Flag which is used to allow 
   // lex.thatsAWrap()'s to do buffer switches instead of setting up a fresh 
   // yyin.  A bit of a hack ...
   lex.buffer_switched_on_end_of_file;
 
-  // (EOB_ACT_CONTINUE_SCAN)
-  lex.end_of_block_action_continue_scan = 0;
-
-  // (YY_BUFFER_EOF_PENDING)
-  // When an EOF's been seen but there's still some text to process
-  // then we mark the buffer as YY_EOF_PENDING, to indicate that we
-  // shouldn't try reading from the input source any more.  We might
-  // still have a bunch of tokens to match, though, because of
-  // possible backing-up.
-  //
-  // When we actually see the EOF, we change the status to "new"
-  // (via lex.restartLex()), so that the user can continue scanning by
-  // just pointing file input (yyin) at a new input file.
-  // declared inside buffer state dict, not sure this can be pulled out
-  lex.buffer_eof_pending = 2;
   
 
-  // (YY_USES_REJECT) - not defined, whether memory can be grown XXX REMOVE
-  lex.uses_reject = 0;
 
   // (YY_START) macro
   // Translate the current start state into a value that can be later handed
@@ -1369,68 +1440,13 @@
     }
   };
 
-  // (YY_INPUT) Gets input and stuffs it into "buf". Number of characters read,
-  // or nullinger is returned in "result".
-  lex.readChunkFromInput = function (my_buffer_top, my_character_len, my_chunk_size) {
-    var input_len = dict.file_input.byteLength,
-      view = dict.current_buffer.buffer_state_array_view,
-      current_character_position,
-      n,
-      character;
-    
-    // XXX var c = '*'; why?
 
-    if (dict.current_buffer.buffer_state_interactive_input) {
-      for (n = 0; n < my_chunk_size && (my_buffer_top + n) < input_len; n += 1) {
-        current_character_position = my_buffer_top + n;
-        character = dict.file_input.charCodeAt(current_character_position);
-
-        // line break
-        if (character === '\n') {
-          if (n >= 1 && view.getInt8(current_character_position - 1) === '\r') {
-            view.setInt8(current_character_position - 1, character);
-          } else {
-            view.setInt8(current_character_position++, character);
-          }
-
-        // end of file, only here we set character_len?
-        } else if (current_character_position === input_len) {
-          dict.buffer_character_len = current_character_position;
-
-        // normal character
-        } else {
-          view.setInt8(current_character_position + character);
-        }
-      }
-    } else {
-      // XXX real time lexing?
-    }
-  };
-
-  // (yy_flex_realloc) move to a larger arraybuffer
-  lex.growCurrentBuffer = function (my_new_size) {
-    var new_buffer = new ArrayBuffer(my_new_size),
-      new_data_view = new DataView(new_buffer),
-      current_view = dict.current_buffer.buffer_state_array_view,
-      len = dict.current_buffer.buffer_state_array_view.byteLength,
-      i;
-    for (i = 0; i < len; i += 1) {
-      new_data_view.setInt8(i, current_view.getInt8(i));
-    }
-    dict.current_buffer.buffer_state_array_buffer = new_buffer;
-    dict.current_buffer.buffer_state_array_view = new_data_view;
-  };
 
   // (YY_NEW_FILE) Special action meaning "start processing a new file".
-  lex.startProcessingNewFile = function () {
-    lex.restartLex(dict.file_input || YY.file_in);
+  lex.startProcessingNewFile = function (my_dict) {
+    my_dict.restartLex(dict.file_input || YY.file_in);
   };
 
-  // (yyrestart) - cutting corners, initBuffer is is called inside createBuffer
-  lex.restartLex = function (my_input_file) {
-    dict.current_buffer = createBuffer(my_input_file, dict.default_buffer_size);
-    loadBufferState(dict);
-  };
 
   // ------------------------------ LEX ----------------------------------------
 
