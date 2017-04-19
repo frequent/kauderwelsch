@@ -10,6 +10,279 @@
 }(window));
 
 // =============================================================================
+// ===============================  Set Voca ===================================
+// =============================================================================
+/*
+  Copyright (c) 1991-2011 Kawahara Lab., Kyoto University
+  Copyright (c) 2000-2005 Shikano Lab., Nara Institute of Science and Technology
+  Copyright (c) 2005-2011 Julius project team, Nagoya Institute of Technology
+  All rights reserved
+*/
+(function (window, YY) {
+  "use strict";
+
+  // ported from:
+  // https://goo.gl/H4slFg
+
+  if (YY === undefined) {
+    throw new Error("[error] Missing YY. We won't get far.");
+  }
+  
+  YY.voca_dict = extendDict(YY.voca_dict || {}, {
+    
+    // counter set on body_class
+    "static_enter_terminal_symobol_input_number": 0
+
+  });
+
+  // [mkfa.h] [mkfa.h] term list?
+  function createTermBody() {
+   return {
+     "name": null,
+     "next": {},
+     "flag_abort": 0,
+     };
+  }
+
+  // (BODYLIST) [mkfa.h]
+  YY.parse_dict.createBodyList = function () {
+    return {
+      "body": {},
+      "next": {}
+    };
+  };
+  
+  // (class) [mkfa.h]
+  YY.parse_dict.createBodyClass = function() {
+    return {
+      "number": null,
+      "name": null,
+      "next": {},
+      "body_list": {},
+      "branch": null,
+      "flag_used_finite_automaton": 0,
+      "flag_used": 0,
+      "flag_tmp": 0,
+    };
+  };
+  
+  // ~ (fgets)
+  // The C library function char *fgets(char *str, int n, FILE *stream) reads 
+  // a line from the specified stream and stores it into the string pointed to 
+  // by str. It stops when either (n-1) characters are read, the newline 
+  // character is read, or the end-of-file is reached, whichever comes first.
+  function splitFileIntoLines(my_file) {
+    return my_file.split(/[\r\n]/g).filter(Boolean);
+  }
+
+  // duplicate, create a handler for all dict when YY is defined initially
+  function extendDict(my_existing_dict, my_new_dict) {
+    var key;
+    for (key in my_new_dict) {
+      if (my_new_dict.hasOwnProperty(key)) {
+        if (my_exisiting_dict.hasOwnProperty(key)) {
+          throw new Error("[error] Redefining property: " + key);
+        } else {
+          my_existing_dict[key] = my_new_dict[key];
+        }
+      }
+    }
+    return my_existing_dict;
+  }
+
+  // (getClass) [nfa.c] - duplicate, move all body_list methods into one place
+  function getClass(my_dict, my_head_string) {
+    var body_class;
+    if (my_dict.class_list === null) {
+      return null;
+    }
+    body_class = my_dict.class_list;
+    while (1) {
+      if (body_class.name === my_head_string) {
+        body_class.flag_used = 1;
+        return body_class;
+      }
+      body_class = body_class.next;
+      if (body_class === null) {
+        return null;
+      }
+    }
+  }
+
+  // (gettoken) return a char
+  function getToken(my_string) {
+    var str_len = my_string.length, 
+      char,
+      i = 0;
+
+    // loop and return null if implicit or any \0 (end of string) is reached?
+    // there is no \0 in JavaScript, so end of a string will never be reached.
+    do {
+      i = i + 1;
+      char = my_string[i];
+      if (char === '\0') {
+        return null;
+      }
+    } while (char === ' ' || char == '\t' || ch == '\r' || ch == '\n');
+
+    for (i = 0; i < str_len; i += 1) {
+      
+    }
+    
+    while( 1 ){
+	*ptr++ = ch;
+	ch = *my_string++;
+	if( ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n' ){
+	    *ptr = '\0';
+	    return( my_string );
+	}
+	if( ch == '\0' ){
+	    *ptr = '\0';
+	    return( my_string - 1 );
+	}
+    }
+  }
+
+  // (entryTerm) [voca.c] - char *name, BODY *body, int listLen
+  function enterTerminalSymbol(my_identifier, my_body_list, my_body_num_list_len) {
+    var dict = YY.voca_dict,
+      parse = YY.parse_dict,
+      input_number = YY.voca_dict.static_enter_terminal_symobol_input_number,
+      body_class = createBodyClass(),
+      body_list = createBodyList();
+
+    // if( (body_class = malloc( sizeof(CLASS) )) == NULL ){
+    //  throw new Error(
+    //    "[error] - Can't allocate memory for class finite automaton."
+    //  );
+    //}
+    if (getClass(parse, my_identifier) !== null) {
+      throw new Error("[error] - Class redefined '" + my_identifier + "'");
+    }
+    body_class.number = input_number + 1;
+    body_class.name = my_identifier;
+
+    // negative!
+    body_class.branch = -my_body_num_list_len;
+    body_class.flag_used_finite_automaton = 0;
+    body_class.flag_used = 0;
+    body_class.flag_tmp = 0;
+
+    if (parse.class_list_tail === null) {
+      parse.class_list = body_class;
+    } else {
+      parse.class_list_tail.next = body_class;
+    }
+    parse.class_list_tail = body_class;
+
+    // if (body_list = malloc( sizeof(BODYLIST) )) === null) {
+    //  throw new Error("[error] - "Can't alloc nonterminal list buffer");
+    //}
+
+    body_list.body = my_body_list;
+    body_list.next = null;
+
+    return null;
+  }
+
+  // (appendTerm) [voca.c] - BODY *list, char *name
+  function appendTerminalSymbol(my_body_list, my_name) {
+    var new_term_body = createTermBody();
+
+    // if( (new_term_body = malloc( sizeof(BODY) )) == NULL ){
+    //  throw new Error("[error] - Can't alloc term list buffer");
+    // }
+    new_term_body.name = my_name;
+    new_term_body.abort = 0;
+    new_term_body.next = my_body_list;
+    return new_term_body;
+  }
+
+  // ------------------------------ start --------------------------------------
+  function setVocaFile() {
+    var voca = YY.file_dict.getFileByType("voca"); 
+      voca_line_list,
+      voca_line_len,
+      voca_line,
+      voca_line_pointer,
+      i,
+      virgin = 1,
+      body_number = 0,
+      body_list = null,
+      identifier = "",
+      token1,
+      token2;
+
+    if (voca === null) {
+      throw new Error("Can't open vocabulary file.");
+    }
+
+    if (dict.quiet === 0) {
+
+      // adjustNewLine(); outputs a new line for log and reset the below. skip.
+      dict.is_no_new_line = 0;
+      console.log("[info] - Now parsing vocabulary file.");
+    }
+
+    voca_line_list = splitFileIntoLines(voca);
+    voca_line_len = voca_line_list.length;
+
+    for (i = 0; i < voca_line_len; i += 1) {
+      voca_line = voca_line_list[i];
+
+      //?char *ptr = voca_line;
+
+      // nul character, there won't be any
+      //if (voca_line[0] === '\0') {
+      //  continue;
+      //}
+
+      // comments?
+      if (voca_line[0] === '#') {
+        token1 = getToken(voca_line_pointer);
+        //if (token1 === null) {
+        //  continue;
+        //}
+        if (virgin === 0) {
+          enterTerminalSymbol(identifier, body_list, body_number);
+          body_list = null;
+          body_number = 0;
+        } else {
+          virgin = 0;
+        }
+
+        // this omits first character from token1, probably the "#"
+        // http://www.cplusplus.com/doc/tutorial/ntcs/
+        // http://cpp.sh/
+        identifier = token1 + 1;
+        continue;
+
+      // "beef" to handle
+      } else {
+        token1 = getToken(voca_line_pointer);
+        //if (token1 === null) {
+        //  continue;
+        //}
+        token2 = getToken(token1);
+        if (token2 === null) {
+          body_list = appendTerminalSymbol(body_list, token1);
+        } else {
+          body_list = appendTerminalSymbol(body_list, token2);
+        }
+        body_number++;
+      }
+    }
+
+    // end of array
+    enterTerminalSymbol(identifier, body_list, body_number);
+  }
+
+}(window, YY));
+
+
+
+
+// =============================================================================
 // =============================  Set Grammer ==================================
 // =============================================================================
 
@@ -781,6 +1054,7 @@
     // add explicit null character? (*yy_cp = '\0'), the length of the string 
     // is +2 bytes, because the NUL character \0 still counts as a character 
     // and the string is still terminated with an implicit \0
+    // Note: all strings end with implicit end of string \0!, words too!
     dict.tmp_character_hold = dict.current_run_character_position_address;
     dict.current_run_character_position_address = "\0";
   }
@@ -1637,25 +1911,6 @@
   YY.parse_dict.class_number = 100;
 
   // [mkfa.h]
-  YY.parse_dict.body_list = {
-    "body": {},
-    "next": {}
-  };
-
-  // [mkfa.h]
-  YY.parse_dict.body_class = {
-    "number": null,
-    "name": null,
-    "next": {},
-    "body_list": {},
-    "branch": null,
-    "flag_used_fa": 0,
-    "flag_used": 0,
-    "flag_tmp": 0,
-    "tmp": null
-  };
-
-  // [mkfa.h]
   YY.parse_dict.arc = {
     "inp": 0,
     "finite_automaton": {},
@@ -2417,9 +2672,9 @@
     }
 
     // and now for something different
-    body_class = getClass(body.name);
+    body_class = getClass(dict, body.name);
 
-    if (body_class !== null && body_class.tmp) {
+    if (body_class !== null && body_class.flag_tmp) {
       enterNonTerminalSymbol(body.name, new_body_next, 0, 0, 0, 1);
     } else {
       new_class_name = getNewClassName(dict, my_class_name);
@@ -2499,7 +2754,9 @@
   
   // (outputHeader)
   function outputHeader(my_dict, my_semantic_stack_bottom_value) {
-    var dict = my_dict;
+    var dict = my_dict,
+      header = YY.file_dict.getFileByType("header");
+
     if (dict.class_number >= dict.body_class_flag_max) {
       if (dict.is_compat_i === 0) {
         console.log(
@@ -2516,8 +2773,8 @@
         // http://www.c4learn.com/c-programming/c-bitwise-left-shift-operator/
         // https://en.wikipedia.org/wiki/Bitwise_operations_in_C#Left_shift_.3C
         // can be used to multiply a number, 1 => 1,2,4,8
-        YY.file_dict.header += "#define ACCEPT_" +
-          my_semantic_stack_bottom_value + "0x%08x\n", 1 << dict.class_number;
+        header += "#define ACCEPT_" + my_semantic_stack_bottom_value + 
+          "0x%08x\n", 1 << dict.class_number;
       }
       dict.current_class_number = dict.class_number = dict.class_number + 1;
    }
@@ -2538,7 +2795,7 @@
     dict.body_number = 0;
   }
 
-  // (getClass) [nfa.c] - crap
+  // (getClass) [nfa.c] - duplicate, move all body_list methods into one place
   function getClass(my_dict, my_head_string) {
     var body_class;
     if (my_dict.class_list === null) {
@@ -2547,7 +2804,7 @@
     body_class = my_dict.class_list;
     while (1) {
       if (body_class.name === my_head_string) {
-        body_class.used = 1;
+        body_class.flag_used = 1;
         return body_class;
       }
       body_class = body_class.next;
@@ -2592,12 +2849,12 @@
         body_class.number = -1;
       }
       body_class.branch = 0;
-      body_class.used_finite_automaton = 0;
+      body_class.flag_used_finite_automaton = 0;
 
-      // non-terminal does not appear in voca
-      body_class.used = 1;
+      // non-terminal: does not appear in voca
+      body_class.flag_used = 1;
       body_class.body_list = null;
-      body_class.tmp = tmp;
+      body_class.flag_tmp = tmp;
       body_class.next = null;
       if (dict.class_list_tail === null) {
 
@@ -3436,48 +3693,16 @@
     throw new Error("[error] Missing YY. We won't get far.");
   }
 
-  // our makeshift file system
-  YY.file_dict = {};
-  
-  // more YYucky options go here
-  YY.parse_dict = extendDict(YY.parse_dict || {}, {
-
-    // (optF) [main.c] when option -f is used (vs -fg) to fix issues with -dfa
-    "is_init_f": 0,
-
-    // (SW_SentList) [main.c]
-    "is_sent_list": 0,
-
-    // (SW_NoWarning) [main.c]
-    "is_no_warning": 0,
-
-    // (NoNewLine) [main.c]
-    "is_no_new_line": 0,
-
-    // (SW_Compati) [main.c]
-    "is_compat_i": 0,
-
-    // (SW_Quiet) [main.c]
-    "is_quiet": 0,
-
-    // (SW_SemiQuiet) [main.c]
-    "is_semi_quiet": 0,
-
-    // (SW_Debug) [main.c]
-    "is_debug": 0,
-
-    // (SW_NFAoutput) [main.c]
-    "is_nfa_output": 0,
-
-    // (SW_Verbose) [main.c]
-    "is_verbose": 0,
-
-    // (SW_EdgeStart) [main.c]
-    "is_edge_start": null,
-
-    // (SW_EdgeAccpt) [main.c]
-    "is_edge_accept": null
-  });
+  // (newLineAdjust) [mkdfa.c] - we don't call this, just set keep no_new_line
+  // at 0 and eventually remove the method altogether, because it's just for
+  // outputting log messages.
+  function adjustNewLine(my_dict) {
+    var dict = my_dict;
+    if (is_no_new_line === 1) {
+      console.log("\n");
+    }
+    dict.is_no_new_line = 0;
+  }
 
   function extentDict(my_existing_dict, my_new_dict) {
     var key;
@@ -3734,6 +3959,53 @@
     }
   }
 
+  // -------------------------------- config------------------------------------
+  // our makeshift file system
+  YY.file_dict = {};
+
+  // and file accessor
+  YY.file_dict.getFileByType = getFileByType;
+
+  // more YYucky options go here
+  YY.parse_dict = extendDict(YY.parse_dict || {}, {
+
+    // (optF) [main.c] when option -f is used (vs -fg) to fix issues with -dfa
+    "is_init_f": 0,
+
+    // (SW_SentList) [main.c]
+    "is_sent_list": 0,
+
+    // (SW_NoWarning) [main.c]
+    "is_no_warning": 0,
+
+    // (NoNewLine) [main.c]
+    "is_no_new_line": 0,
+
+    // (SW_Compati) [main.c]
+    "is_compat_i": 0,
+
+    // (SW_Quiet) [main.c]
+    "is_quiet": 0,
+
+    // (SW_SemiQuiet) [main.c]
+    "is_semi_quiet": 0,
+
+    // (SW_Debug) [main.c]
+    "is_debug": 0,
+
+    // (SW_NFAoutput) [main.c]
+    "is_nfa_output": 0,
+
+    // (SW_Verbose) [main.c]
+    "is_verbose": 0,
+
+    // (SW_EdgeStart) [main.c]
+    "is_edge_start": null,
+
+    // (SW_EdgeAccpt) [main.c]
+    "is_edge_accept": null
+  });
+
   // ---------------------------- start (spec1)---------------------------------
   // initial call:
   //$mkfa -e1 -fg $rgramfile -fv $tmpvocafile -fo $(dfafile).tmp -fh $headerfile
@@ -3752,7 +4024,8 @@
         setGrammarFile();
 
         // 3/6 setVoca
-        //setVoca();
+        setVocaFile();
+
         // 4 makeNFA
         //makeNFA();
         // 5 makeDFA
