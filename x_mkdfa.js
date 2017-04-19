@@ -30,7 +30,7 @@
   // resources:
   // http://www.cs.man.ac.uk/~pjj/complang/usinglex.html
   // http://westes.github.io/flex/manual/FAQ.html#FAQ
-  // http://www.isi.edu/~pedro/Teaching/CSCI565-Fall16/Materials/LexAndYaccTutorial.pdf
+  // https://goo.gl/9BbDd0
   // https://github.com/aaditmshah/lexer
   // https://ds9a.nl/lex-yacc/cvs/lex-yacc-howto.html
   // http://www.cs.man.ac.uk/~pjj/cs211/ho/node6.html
@@ -145,7 +145,8 @@
     dict.current_run_character_position = my_c;
     dict.matched_string_pseudo_pointer = dict.current_run_buffer_start_position;
     dict.tmp_character_hold = dict.current_run_character_position_address;
-    dict.current_buffer_character_position = dict.current_run_character_position;
+    dict.current_buffer_character_position =
+      dict.current_run_character_position;
   };
 
   // (input)
@@ -252,7 +253,8 @@
         dict.tmp_character_hold;
       dict.current_buffer.buffer_state_current_position =
         dict.current_buffer_character_position;
-      dict.current_buffer.buffer_state_character_len = dict.buffer_character_len;
+      dict.current_buffer.buffer_state_character_len =
+        dict.buffer_character_len;
     }
     dict.current_buffer = my_buffer;
     loadBufferState(dict);
@@ -382,7 +384,11 @@
         if (dict.start_stack === 0) {
           dict.start_stack = setBuffer(dict, new_size);
         } else {
-          dict.start_stack = growCurrentBuffer(dict, dict.start_stack, new_size);
+          dict.start_stack = growCurrentBuffer(
+            dict,
+            dict.start_stack,
+            new_size
+          );
         }
         if (dict.start_stack === null) {
           throw new Error(
@@ -634,7 +640,8 @@
 
     // only place currently where character position memory address is used!
     // this should probably give the memory of the current character position?
-    dict.tmp_character_hold = dict.current_buffer_character_position_memory_address;
+    dict.tmp_character_hold =
+      dict.current_buffer_character_position_memory_address;
   }
 
   // (yy_flush_buffer)
@@ -716,21 +723,27 @@
       lookup = dict.lookup,
       counter;
     do {
-      counter = lookup.ec[doubleCast(dict.current_run_character_position_address)];
+      counter = lookup.ec[
+        doubleCast(dict.current_run_character_position_address)
+      ];
 
       if (lookup.accept[dict.current_state]) {
         dict.last_accepted_state = dict.current_state;
-        dict.last_accepted_character_position = dict.current_run_character_position;
+        dict.last_accepted_character_position =
+          dict.current_run_character_position;
       }
 
-      while (lookup.check[lookup.base[dict.current_state] + counter] !== dict.current_state) {
+      while (lookup.check[lookup.base[dict.current_state] + counter] !==
+        dict.current_state
+      ) {
         dict.current_state = lookup.def[dict.current_state];
         if (dict.current_state >= 33 ) {
           counter = lookup.meta[counter];
         }
       }
       dict.current_state = lookup.nxt[lookup.base[dict.current_state] + counter];
-      dict.current_run_character_position = dict.current_run_character_position + 1;
+      dict.current_run_character_position =
+        dict.current_run_character_position + 1;
 
     } while (lookup.base[dict.current_state] !== 40);
   }
@@ -745,7 +758,8 @@
 
     // have to back up
     if (dict.action_to_run === 0) {
-      dict.current_run_character_position = dict.last_accepted_character_position;
+      dict.current_run_character_position =
+        dict.last_accepted_character_position;
       dict.current_state = dict.last_accepted_state;
       dict.action_to_run = lookup.accept[dict.current_state];
     }
@@ -866,18 +880,24 @@
       lookup = dict.lookup,
       counter = 1;
 
-    dict.current_run_character_position_address = dict.current_buffer_character_position;
+    dict.current_run_character_position_address =
+      dict.current_buffer_character_position;
     if (lookup.accept[my_lexer_current_state]) {
       dict.last_accepted_state = my_lexer_current_state;
-      dict.last_accepted_character_position = dict.current_run_character_position;
+      dict.last_accepted_character_position =
+        dict.current_run_character_position;
     }
-    while (lookup.check[lookup.base[my_lexer_current_state] + counter] !== my_lexer_current_state) {
+    while (lookup.check[lookup.base[my_lexer_current_state] + counter] !==
+      my_lexer_current_state
+    ) {
       my_lexer_current_state = lookup.def[my_lexer_current_state];
       if (my_lexer_current_state >= 33) {
         counter = lookup.meta[counter];
       }
     }
-    my_lexer_current_state = lookup.nxt[lookup.base[my_lexer_current_state] + counter];
+    my_lexer_current_state = lookup.nxt[
+      lookup.base[my_lexer_current_state] + counter
+    ];
     //is_jammed = (my_lexer_current_state === 32);
 
     // is jammed
@@ -919,7 +939,10 @@
       n;
 
     if (dict.current_buffer.buffer_state_interactive_input) {
-      for (n = 0; n < my_chunk_size && (my_buffer_top + n) < input_len; n += 1) {
+      for (n = 0;
+           n < my_chunk_size && (my_buffer_top + n) < input_len;
+           n += 1
+      ) {
         current_character_position = my_buffer_top + n;
         character = dict.file_input.charCodeAt(current_character_position);
 
@@ -948,7 +971,7 @@
   // (yy_get_next_buffer) - try to read in a new buffer (or block??)
   //  Returns a code representing an action:
   //   end_of_block_action_last_match (2) = goto? last match
-  //   end_of_block_action_continue_scan (0) = continue scanning from current position
+  //   end_of_block_action_continue_scan (0) = continue from current position
   //   end_of_block_action_end_of_file (1) = end of file
   function getNextBuffer (my_dict) {
     var dict = my_dict,
@@ -1034,7 +1057,9 @@
             dict.current_buffer.buffer_state_array_view = 0;
           }
           if (dict.current_buffer.buffer_state_array_view === 0) {
-            throw new Error("[error] - fatal error, scanner input buffer overflow");
+            throw new Error(
+              "[error] - fatal error, scanner input buffer overflow"
+            );
           }
 
           character_position =
@@ -1058,7 +1083,8 @@
             number_to_move
           );
         readChunkFromInput(dict, memory_address, number_to_read);
-        dict.current_buffer.buffer_state_character_len = dict.buffer_character_len;
+        dict.current_buffer.buffer_state_character_len =
+          dict.buffer_character_len;
       }
     
       if (dict.buffer_character_len === 0) {
@@ -1075,14 +1101,17 @@
 
       dict.buffer_character_len += number_to_move;
       dict.current_buffer.buffer_state_array_view.setInt8(
-        dict.current_buffer.buffer_state_character_len, dict.buffer_end_character
+        dict.current_buffer.buffer_state_character_len,
+        dict.buffer_end_character
       );
       dict.current_buffer.buffer_state_array_view.setInt8(
-        dict.current_buffer.buffer_state_character_len + 1, dict.buffer_end_character
+        dict.current_buffer.buffer_state_character_len + 1,
+        dict.buffer_end_character
       );
 
       // XXX will fail because of undefined memory address
-      content_pointer = dict.current_buffer_memory_address.buffer_state_array_view.getInt8(0);
+      content_pointer =
+        dict.current_buffer_memory_address.buffer_state_array_view.getInt8(0);
       return return_value;
     }
   }
@@ -1107,7 +1136,8 @@
       // must back up, undo the effects of doBeforeAction
       case 0:
         dict.current_run_character_position_address = dict.tmp_character_hold;
-        dict.current_run_character_position = dict.last_accepted_character_position;
+        dict.current_run_character_position =
+          dict.last_accepted_character_position;
         dict.current_state = dict.last_accepted_state;
         return findAction(dict);
 
@@ -1118,7 +1148,8 @@
         // set lookahead_symbol_semantic_value (yylval), note this sets the
         // to pointer, not returns the actual value.
         ext.lookahead_symbol = ext.token_dict.TAG;
-        ext.lookahead_symbol_semantic_value = dict.matched_string_pseudo_pointer + 1;
+        ext.lookahead_symbol_semantic_value =
+          dict.matched_string_pseudo_pointer + 1;
         return 1;
 
       //#line 7 "gram.l"
@@ -1228,7 +1259,8 @@
           // globals.  Here is the right place to do so, because this is the 
           // first action (other than possibly a back-up) that will match for 
           // the new input source.
-          dict.buffer_character_len = dict.current_buffer.buffer_state_character_len;
+          dict.buffer_character_len =
+            dict.current_buffer.buffer_state_character_len;
           dict.current_buffer.buffer_state_input_file = dict.file_input;
           dict.current_buffer.buffer_status = dict.buffer_is_normal;
         }
@@ -1264,11 +1296,13 @@
 
           // Consume the NUL.
           if (dict.next_state) {
-            dict.current_run_character_position = dict.current_buffer_character_position++;
+            dict.current_run_character_position =
+              dict.current_buffer_character_position++;
             dict.current_state = dict.next_state;
             matchText(dict);
           } else {
-            dict.current_run_character_position = dict.current_buffer_character_position;
+            dict.current_run_character_position =
+              dict.current_buffer_character_position;
             findAction(dict);
           }
         } else {
@@ -1289,7 +1323,10 @@
                 // will get returned.
                 dict.current_buffer_character_position =
                   dict.matched_string_pseudo_pointer + dict.more_adjust;
-                dict.action_to_run = setEofState(dict, start_state_confusulation);
+                dict.action_to_run = setEofState(
+                  dict,
+                  start_state_confusulation
+                );
                 doAction(dict);
               } else {
 
@@ -1301,7 +1338,8 @@
               break;
             case dict.end_of_block_action_continue_scan:
               dict.current_buffer_character_position =
-                dict.matched_string_pseudo_pointer + dict.amount_of_matched_text;
+                dict.matched_string_pseudo_pointer +
+                  dict.amount_of_matched_text;
               dict.current_state = getPreviousState(dict);
               dict.current_run_character_position =
                 dict.current_buffer_character_position;
@@ -1346,8 +1384,7 @@
     return my_existing_dict;
   }
 
-  // ------------------------------ Config --------------------------------------
-  
+  // ------------------------------ Config -------------------------------------
   YY.lex_dict = extendDict(YY.lex_dict || {}, {
 
       // (yy_init) whether we need to initialize
@@ -1418,7 +1455,7 @@
       // the current run.
       "current_run_buffer_start_position": null,
 
-      // (yy_current_state) pulled out it is declared in parse but used elsewhere
+      // (yy_current_state) pulled out, declared in parse but used elsewhere
       "current_state": null,
 
       // (yy_last_accepted_state)
@@ -1550,6 +1587,12 @@
 
 }(window, YY));
 
+/*
+  Copyright (c) 1991-2011 Kawahara Lab., Kyoto University
+  Copyright (c) 2000-2005 Shikano Lab., Nara Institute of Science and Technology
+  Copyright (c) 2005-2011 Julius project team, Nagoya Institute of Technology
+  All rights reserved
+*/
 // =============================================================================
 //                                  Parser
 // =============================================================================
@@ -1683,17 +1726,9 @@
       errorLabExtended(my_dict);
     }
   }
-
   */
-  /*
-   * Copyright (c) 1991-2011 Kawahara Lab., Kyoto University
-   * Copyright (c) 2000-2005 Shikano Lab., Nara Institute of Science and Technology
-   * Copyright (c) 2005-2011 Julius project team, Nagoya Institute of Technology
-   * All rights reserved
-   */
-   
+
   // A ported Bison parser, made from gram. by hand.
-  
   /* Skeleton output parser for bison,
   
     Copyright (C) 1984, 1989, 1990, 2000, 2001, 2002 Free Software
@@ -1731,10 +1766,12 @@
     define necessary library symbols; they are noted "INFRINGES ON
     USER NAME SPACE" below.  */
 
-  // https://github.com/julius-speech/julius/blob/6d135a686a74376495a7a6f55d3d67df54186f83/gramtools/mkdfa/mkfa-1.44-flex/gram.tab.c
+  // ported from:
+  // https://goo.gl/2koggK
+  // resources:
   // http://www.cs.man.ac.uk/~pjj/cs212/ex5_hint.html
   // https://en.wikipedia.org/wiki/LALR_parser#LR_parsers
-  // http://www.isi.edu/~pedro/Teaching/CSCI565-Fall16/Materials/LexAndYaccTutorial.pdf
+  // https://goo.gl/9BbDd0
   // https://zaa.ch/jison/try
   // https://www.cs.uic.edu/~spopuri/cparser.html
   // https://en.wikipedia.org/wiki/Shift-reduce_parser
@@ -2247,7 +2284,6 @@
   // https://opensource.apple.com/source/cc/cc-798/bison/bison.hairy.auto.html
   // Mozilla has an arrayBuffer tranfer which extends without copying but not 
   // supported anywhere else
-  // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer/transfer
   // Copy STACK COUNT objects FROM to TO. source and destination don't overlap
   function relocateStack(my_old_view, my_new_view, my_len) {
     var i;
@@ -2466,7 +2502,9 @@
     var dict = my_dict;
     if (dict.class_number >= dict.body_class_flag_max) {
       if (dict.is_compat_i === 0) {
-        console.log("[info] Class accept-flag overflow, " + my_semantic_stack_bottom_value);
+        console.log(
+          "[info] Class accept-flag overflow, " + my_semantic_stack_bottom_value
+        );
       }
     } else {
       if (dict.is_compat_i === 0) {
@@ -2476,9 +2514,10 @@
         // 0x%08x = pointer http://stackoverflow.com/a/33324713/536768
         // %08x expects an unsigned int as argument, ~ 1 << dict.class_number
         // http://www.c4learn.com/c-programming/c-bitwise-left-shift-operator/
-        // https://en.wikipedia.org/wiki/Bitwise_operations_in_C#Left_shift_.3C.3C
+        // https://en.wikipedia.org/wiki/Bitwise_operations_in_C#Left_shift_.3C
         // can be used to multiply a number, 1 => 1,2,4,8
-        YY.file_dict.header += "#define ACCEPT_" + my_semantic_stack_bottom_value + "0x%08x\n", 1 << dict.class_number;
+        YY.file_dict.header += "#define ACCEPT_" +
+          my_semantic_stack_bottom_value + "0x%08x\n", 1 << dict.class_number;
       }
       dict.current_class_number = dict.class_number = dict.class_number + 1;
    }
@@ -2520,14 +2559,23 @@
 
   // (enterNonTerm) - Class Finite Automaton.
   // char *name, BODY *body, int modeAccpt, int start, int member, int tmp
-  function enterNonTerminalSymbol(my_dict, my_head_string, my_next_body, my_body_accept, my_start, my_member, my_tmp) {
+  function enterNonTerminalSymbol(
+    my_dict,
+    my_head_string,
+    my_next_body,
+    my_body_accept,
+    my_start,
+    my_member, my_tmp
+  ) {
     var dict = my_dict,
       body_class = getClass(dict, my_head_string);
 
     if (body_class === null) {
       if (my_member) {
         dict.current_error_count++;
-        console.log("[error] - Accepted flag of class is reassigned:", my_head_string);
+        console.log(
+          "[error] - Accepted flag of class is reassigned:" + my_head_string
+        );
       }
     } else {
       body_class.name = my_head_string;
@@ -2576,11 +2624,11 @@
   }
 
   // ----------------------------- methods -------------------------------------
-  // (YYLLOC_DEFAULT) -- Compute the default location (before the actions are run).
+  // (YYLLOC_DEFAULT) -- Compute default location (before the actions are run).
   // When YYLLOC_DEFAULT is run, CURRENT is set the location of the
   // first token.  By default, to implement support for ranges, extend
   // its range to the last symbol.
-  // https://www.gnu.org/software/bison/manual/html_node/Location-Default-Action.html
+  // https://www.gnu.org/software/bison/manual/html_node/Location-Default-Action
   // Since locations are much more general than semantic values, there is room 
   // in the output parser to redefine the default action to take for each rule. 
   // The YYLLOC_DEFAULT macro is invoked each time a rule is matched, before 
@@ -2620,8 +2668,7 @@
   }
 
 
-  // build long string of everything we have, then get its length, similar to 
-  // http://code.stephenmorley.org/javascript/finding-the-memory-usage-of-objects
+  // build long string of everything we have, then get its length
   function sizeof(my_list) {
     var str = "",
       i,
@@ -2754,10 +2801,16 @@
     console.log("[info] - Shifting error token.");
 
     dict.semantic_top = dict.semantic_top + 1;
-    dict.semantic_view.setInt8(dict.semantic_top, dict.lookahead_symbol_semantic_value);
+    dict.semantic_view.setInt8(
+      dict.semantic_top,
+      dict.lookahead_symbol_semantic_value
+    );
     if (dict.is_location_value_needed) {
       dict.location_top = dict.location_top + 1;
-      dict.location_view.setInt8(s.location_top, dict.lookahead_symbol_location_value);
+      dict.location_view.setInt8(
+        s.location_top,
+        dict.lookahead_symbol_location_value
+      );
     }
     dict.parse_current_state = dict.truc;
     newState(dict);
@@ -2812,7 +2865,9 @@
 
       if (dict.quiet === 0) {
         dict.truc = dict.lookup.set_state_action[dict.parse_current_state];
-        if (truc > dict.is_state_default_action && truc > dict.index_last_state_action) {
+        if (truc > dict.is_state_default_action &&
+          truc > dict.index_last_state_action
+        ) {
           count = 0;
 
           len = Math.ceil(
@@ -2826,7 +2881,9 @@
             }
           }
           message = "parse error, unexpected " +
-            YY.table_dict.token_number_of_token[YY.translate(dict.lookahead_symbol)];
+            YY.table_dict.token_number_of_token[
+              YY.translate(dict.lookahead_symbol)
+            ];
           if (count < 5) {
             count = 0;
             for (i = setCounter(dict.truc); i < len; i += 1) {
@@ -2898,7 +2955,10 @@
       );
 
       // Print the symbols being reduced, and their result.
-      for (i = dict.lookup.right_hand_side_index[dict.truc]; dict.lookup.right_hand_side[i] > 0; i += 1) {
+      for (i = dict.lookup.right_hand_side_index[dict.truc];
+           dict.lookup.right_hand_side[i] > 0;
+           i += 1
+      ) {
         console.log(
           "[info] " +
           dict.lookup.token_number_of_token[
@@ -3099,7 +3159,9 @@
       // add character to truc. ah...
       dict.truc += dict.lookahead_symbol_as_number;
       if (dict.truc < 0 || dict.truc > dict.index_last_state_action ||
-        dict.lookup.state_action_valid[dict.truc] !== dict.lookahead_symbol_as_number) {
+        dict.lookup.state_action_valid[dict.truc]
+          !== dict.lookahead_symbol_as_number
+      ) {
         defaultAction(dict);
       }
       dict.truc = dict.lookup.state_action[dict.truc];
@@ -3332,15 +3394,14 @@
 // =============================================================================
 // ================================  Start =====================================
 // =============================================================================
+/*
+  Copyright (c) 1991-2011 Kawahara Lab., Kyoto University
+  Copyright (c) 2000-2005 Shikano Lab., Nara Institute of Science and Technology
+  Copyright (c) 2005-2011 Julius project team, Nagoya Institute of Technology
+  All rights reserved
+*/
 (function (window, RSVP, YY, Error) {
   "use strict";
-
-  /*
-   * Copyright (c) 1991-2011 Kawahara Lab., Kyoto University
-   * Copyright (c) 2000-2005 Shikano Lab., Nara Institute of Science and Technology
-   * Copyright (c) 2005-2011 Julius project team, Nagoya Institute of Technology
-   * All rights reserved
-   */
 
   // Finite automaton generator, mkfa %s programmed by 1995-1996 S.Hamada
   //
@@ -3349,7 +3410,7 @@
   // option:     -dfa    DFA output(default)
   //             -nfa    NFA output
   //             -c      compatible FA output with g2fa
-  //             -e[0|1] putting class reduction flag on edge(default: on vertex)
+  //             -e[0|1] putting class reduction flag on edge(default on vertex)
   //                    (0:accept 1:start omitted:both)
   //             -nw     no warning messages
   //             -q[0|1] control of processing report
@@ -3366,10 +3427,9 @@
   //              * State#1 isn't always final state even if compiled with -c.,
   //                ver.1.44-flex-p1);
 
-  // original:
-  // https://github.com/julius-speech/julius/blob/6d135a686a74376495a7a6f55d3d67df54186f83/gramtools/mkdfa/mkfa-1.44-flex/gram.y
-
-  // http://www.isi.edu/~pedro/Teaching/CSCI565-Fall16/Materials/LexAndYaccTutorial.pdf
+  // ported from:
+  // https://goo.gl/9ecYWU
+  // resources:
   // https://julius.osdn.jp/juliusbook/en/
 
   if (YY === undefined) {
