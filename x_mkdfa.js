@@ -23,48 +23,19 @@
 
   // ported from:
   // https://goo.gl/H4slFg
+  // resources:
+  // http://cpp.sh/
 
   if (YY === undefined) {
     throw new Error("[error] Missing YY. We won't get far.");
   }
-  
+
   YY.voca_dict = extendDict(YY.voca_dict || {}, {
     
     // counter set on body_class
     "static_enter_terminal_symobol_input_number": 0
 
   });
-
-  // [mkfa.h] [mkfa.h] term list?
-  function createTermBody() {
-   return {
-     "name": null,
-     "next": {},
-     "flag_abort": 0,
-     };
-  }
-
-  // (BODYLIST) [mkfa.h]
-  YY.parse_dict.createBodyList = function () {
-    return {
-      "body": {},
-      "next": {}
-    };
-  };
-  
-  // (class) [mkfa.h]
-  YY.parse_dict.createBodyClass = function() {
-    return {
-      "number": null,
-      "name": null,
-      "next": {},
-      "body_list": {},
-      "branch": null,
-      "flag_used_finite_automaton": 0,
-      "flag_used": 0,
-      "flag_tmp": 0,
-    };
-  };
   
   // ~ (fgets)
   // The C library function char *fgets(char *str, int n, FILE *stream) reads 
@@ -80,7 +51,7 @@
     var key;
     for (key in my_new_dict) {
       if (my_new_dict.hasOwnProperty(key)) {
-        if (my_exisiting_dict.hasOwnProperty(key)) {
+        if (my_existing_dict.hasOwnProperty(key)) {
           throw new Error("[error] Redefining property: " + key);
         } else {
           my_existing_dict[key] = my_new_dict[key];
@@ -109,53 +80,60 @@
     }
   }
 
-  // (gettoken) return a char
+  // (gettoken)
   function getToken(my_string) {
     var str_len = my_string.length, 
       char,
       i = 0;
 
-    // loop and return null if implicit or any \0 (end of string) is reached?
+    // loop and return nul if implicit or any \0 (end of string) is reached?
+    // char c = '\0', it's the same aschar c = 0;
+    // char c = 'A', it's the same as char c = 65
     // there is no \0 in JavaScript, so end of a string will never be reached.
-    do {
-      i = i + 1;
-      char = my_string[i];
-      if (char === '\0') {
-        return null;
-      }
-    } while (char === ' ' || char == '\t' || ch == '\r' || ch == '\n');
+    // but we'll just loop over the line we have anyway,
+    //do {
+    //  i = i + 1;
+    //  char = my_string[i];
+    //  if (char === '\0') {
+    //    return null;
+    //  }
+    //} while (char === ' ' || char == '\t' || ch == '\r' || ch == '\n');
 
     for (i = 0; i < str_len; i += 1) {
-      
-    }
-    
-    while( 1 ){
-	*ptr++ = ch;
-	ch = *my_string++;
-	if( ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n' ){
-	    *ptr = '\0';
-	    return( my_string );
-	}
-	if( ch == '\0' ){
-	    *ptr = '\0';
-	    return( my_string - 1 );
-	}
+      char = my_string[i];
+
+      // any of these mean we'll look no further, replace with nul and return)
+      if (char === ' ' || char == '\t' || ch == '\r' || ch == '\n') {
+        // char = '\0';
+        return (my_string.substring(0, i - 1));        
+      }
+
+      // end of string, return it
+      //if (char === '\0') {
+      //  // char = '\0';
+      //  return (my_string - 1);
+      //}
+      // 
+      if (i === str_len - 1) {
+        return my_string;
+      }
     }
   }
 
   // (entryTerm) [voca.c] - char *name, BODY *body, int listLen
-  function enterTerminalSymbol(my_identifier, my_body_list, my_body_num_list_len) {
+  function enterTerminalSymbol(my_identifier, my_body_list, my_body_num_len) {
     var dict = YY.voca_dict,
       parse = YY.parse_dict,
       input_number = YY.voca_dict.static_enter_terminal_symobol_input_number,
-      body_class = createBodyClass(),
-      body_list = createBodyList();
+      body_class = parse-createBodyClass(),
+      body_list = parse.createBodyList();
 
     // if( (body_class = malloc( sizeof(CLASS) )) == NULL ){
     //  throw new Error(
     //    "[error] - Can't allocate memory for class finite automaton."
     //  );
     //}
+
     if (getClass(parse, my_identifier) !== null) {
       throw new Error("[error] - Class redefined '" + my_identifier + "'");
     }
@@ -163,7 +141,7 @@
     body_class.name = my_identifier;
 
     // negative!
-    body_class.branch = -my_body_num_list_len;
+    body_class.branch = -my_body_num_len;
     body_class.flag_used_finite_automaton = 0;
     body_class.flag_used = 0;
     body_class.flag_tmp = 0;
@@ -175,7 +153,7 @@
     }
     parse.class_list_tail = body_class;
 
-    // if (body_list = malloc( sizeof(BODYLIST) )) === null) {
+    // if (body_list = malloc(sizeof(BODYLIST)) === null) {
     //  throw new Error("[error] - "Can't alloc nonterminal list buffer");
     //}
 
@@ -187,11 +165,12 @@
 
   // (appendTerm) [voca.c] - BODY *list, char *name
   function appendTerminalSymbol(my_body_list, my_name) {
-    var new_term_body = createTermBody();
+    var new_term_body = YY.parse_dict.createTermBody();
 
-    // if( (new_term_body = malloc( sizeof(BODY) )) == NULL ){
+    // if (new_term_body = malloc(sizeof(BODY)) === null) {
     //  throw new Error("[error] - Can't alloc term list buffer");
     // }
+
     new_term_body.name = my_name;
     new_term_body.abort = 0;
     new_term_body.next = my_body_list;
@@ -204,7 +183,6 @@
       voca_line_list,
       voca_line_len,
       voca_line,
-      voca_line_pointer,
       i,
       virgin = 1,
       body_number = 0,
@@ -230,16 +208,17 @@
     for (i = 0; i < voca_line_len; i += 1) {
       voca_line = voca_line_list[i];
 
-      //?char *ptr = voca_line;
-
-      // nul character, there won't be any
+      // nul character, end of string/empty line, go to next line?
       //if (voca_line[0] === '\0') {
       //  continue;
       //}
+      if (voca_line === "") {
+        continue;
+      }
 
       // comments?
       if (voca_line[0] === '#') {
-        token1 = getToken(voca_line_pointer);
+        token1 = getToken(voca_line);
         //if (token1 === null) {
         //  continue;
         //}
@@ -251,18 +230,22 @@
           virgin = 0;
         }
 
-        // this omits first character from token1, probably the "#"
+        // token1 + 1; ~ omits first character from token1, probably the "#"?
         // http://www.cplusplus.com/doc/tutorial/ntcs/
-        // http://cpp.sh/
-        identifier = token1 + 1;
+        identifier = token1.substring(1);
         continue;
 
       // "beef" to handle
       } else {
-        token1 = getToken(voca_line_pointer);
+        token1 = getToken(voca_line);
         //if (token1 === null) {
         //  continue;
         //}
+
+        // not sure what token2 is for, on first token I replace a space
+        // with nul and on second token I stumble over that nul or the regular
+        // one at the end of the string and return the token. Thus I think it
+        // only splits/terminates a string on the first space/tab/line break
         token2 = getToken(token1);
         if (token2 === null) {
           body_list = appendTerminalSymbol(body_list, token1);
@@ -273,7 +256,7 @@
       }
     }
 
-    // end of array
+    // end of array, needed?
     enterTerminalSymbol(identifier, body_list, body_number);
   }
 
@@ -669,8 +652,7 @@
           );
         }
       }
-      dict.start_stack[dict.start_stack_pointer++] =
-        dict.start_state_confusulation;
+      dict.start_stack[dict.start_stack_pointer++] = (dict.start_state - 1)/2;
 
       // used to be BEGIN(new_state) but as it only replaces... 
       dict.start_state = 1 + 2 * new_state;
@@ -1599,7 +1581,7 @@
                   dict.matched_string_pseudo_pointer + dict.more_adjust;
                 dict.action_to_run = setEofState(
                   dict,
-                  start_state_confusulation
+                  (dict.start_state - 1)/2
                 );
                 doAction(dict);
               } else {
@@ -1648,7 +1630,7 @@
     var key;
     for (key in my_new_dict) {
       if (my_new_dict.hasOwnProperty(key)) {
-        if (my_exisiting_dict.hasOwnProperty(key)) {
+        if (my_existing_dict.hasOwnProperty(key)) {
           throw new Error("[error] Redefining property: " + key);
         } else {
           my_existing_dict[key] = my_new_dict[key];
@@ -1804,7 +1786,7 @@
       // Translate the current start state into a value that can be later handed
       // by BEGIN to return to the state. The YYSTATE alias is for lex
       // compatibility.
-      "start_state_confusulation": (dict.start_state - 1)/2,
+      //"start_state_confusulation": (dict.start_state - 1)/2,
 
       // tables
       "lookup": YY.table_dict
@@ -1813,7 +1795,7 @@
   // ------------------------------ LEX ----------------------------------------
 
   // Default declaration of scanner
-  lex.lexer = function (my_ival, my_loco, my_param) {
+  function lexer(my_ival, my_loco, my_param) {
     var dict = YY.lex_dict;
 
     if (dict.init) {
@@ -1855,9 +1837,9 @@
         break; 
       }
     } // end of scanning one token
-  };
+  }
 
-  window.Lexer = lex.lexer;
+  YY.Lexer = lexer;
 
 }(window, YY));
 
@@ -1870,7 +1852,7 @@
 // =============================================================================
 //                                  Parser
 // =============================================================================
-(function (window, Math, Lexer, Error) {
+(function (window, YY, Math, Error) {
   "use strict";
 
   /* Unused so far
@@ -2602,7 +2584,7 @@
 
       // (yystacksize) will also be overwritten externally, no need to update 
       // on relocates
-      my_dict.stack_size = dict.stack_initial_depth;
+      my_dict.stack_size = my_dict.stack_initial_depth;
 
       // (YYPOPSTACK)
       my_dict.popStack = function (n) {
@@ -2617,10 +2599,45 @@
 
   // -------------------------- external methods -------------------------------
 
+  // [mkfa.h] [mkfa.h] term list?
+  YY.parse_dict.createTermBody = function () {
+   return {
+     "name": null,
+     "next": {},
+     "flag_abort": 0,
+     };
+  };
+
+  // (BODYLIST) [mkfa.h]
+  YY.parse_dict.createBodyList = function () {
+    return {
+      "body": {},
+      "next": {}
+    };
+  };
+  
+  // (class) [mkfa.h]
+  YY.parse_dict.createBodyClass = function() {
+    return {
+      "number": null,
+      "name": null,
+      "next": {},
+      "body_list": {},
+      "branch": null,
+      "flag_used_finite_automaton": 0,
+      "flag_used": 0,
+      "flag_tmp": 0,
+    };
+  };
+
   // [mkfa.h]
-  function createBody() {
-   return {"name": null, "flag_abort": 0, "next": {}};
-  }
+  YY.parse_dict.createBody = function() {
+    return {
+      "name": null,
+      "flag_abort": 0,
+      "next": {}
+    };
+  };
 
   // (getNewClassName)
   function getNewClassName (my_dict, my_name) {
@@ -2732,7 +2749,7 @@
   // Terminl symbols cannot be replaced
   function setNonTerminalSymbol(my_dict) {
     var dict = my_dict, 
-      body = createBody(),
+      body = YY.parse_dict.createBody(),
       prev = null,
       next = null,
       i;
@@ -2914,7 +2931,7 @@
     var key;
     for (key in my_new_dict) {
       if (my_new_dict.hasOwnProperty(key)) {
-        if (my_exisiting_dict.hasOwnProperty(key)) {
+        if (my_existing_dict.hasOwnProperty(key)) {
           throw new Error("[error] Redefining property: " + key);
         } else {
           my_existing_dict[key] = my_new_dict[key];
@@ -3542,7 +3559,7 @@
   // access the variable by casting it to the proper pointer type.
   // https://en.wikipedia.org/wiki/Liskov_substitution_principle
 
-  YY.parse = function (my_unused_param) {
+  function parse(my_unused_param) {
     var opts = YY.parse_dict,
       dict;
 
@@ -3642,11 +3659,11 @@
 
     // ------------------------------ start ------------------------------------
     setState(dict);
-  };
+  }
 
-  window.YY = YY;
+  YY.Parser = parse;
 
-}(window, Math, Lexer, Error));
+}(window, YY, Math, Error));
 
 // =============================================================================
 // ================================  Start =====================================
@@ -3704,17 +3721,18 @@
     dict.is_no_new_line = 0;
   }
 
-  function extentDict(my_existing_dict, my_new_dict) {
+  function extendDict(my_existing_dict, my_new_dict) {
     var key;
     for (key in my_new_dict) {
       if (my_new_dict.hasOwnProperty(key)) {
-        if (my_exisiting_dict.hasOwnProperty(key)) {
+        if (my_existing_dict.hasOwnProperty(key)) {
           throw new Error("[error] Redefining property: " + key);
         } else {
           my_existing_dict[key] = my_new_dict[key];
         }
       }
     }
+    return my_existing_dict;
   }
 
   // retrieve a specific file from the file dict. as user can pass his own
@@ -3783,7 +3801,7 @@
     }
 
     // yyiha!
-    opts.parse();
+    YY.Parser();
 
     if (opts.is_semi_quiet === 0) {
       console.log(
@@ -4019,13 +4037,14 @@
 
         // 1/6 main.c => set up files
         getSwitch(parameter_list);
-
+        console.log("switched");
         // 2/6 setGram => parse & lex
         setGrammarFile();
-
+        console.log("grammared");
         // 3/6 setVoca
         setVocaFile();
-
+        console.log("vocaed");
+        console.log(YY);
         // 4 makeNFA
         //makeNFA();
         // 5 makeDFA
