@@ -102,6 +102,55 @@
 (function (window, YY) {
   "use strict";
 
+  /* not used so far
+
+  // (FAList) Pointer of start FA in FA network
+  YY.parse_dict.finite_automaton_list = null;
+
+  YY.parse_dict.flag_body_class_accept = 0;
+
+  // [mkfa.h]
+  YY.parse_dict.arc = {
+    "inp": 0,
+    "finite_automaton": {},
+    "flag_body_class_start": 0,
+    "flag_body_class_accept": 0,
+    "next": {}
+  };
+
+  // [mkfa.h]
+  YY.parse_dict.unify_arc = {
+    "inp": 0,
+    "finite_automaton": {},
+    "flag_body_class_start": 0,
+    "flag_body_class_accept": 0,
+    "next": {},
+    "flag_reserved": 0
+  };
+
+  // [mkfa.h]
+  YY.parse_dict.finite_automaton_list = {
+    "finite_automation": {},
+    "next": {}
+  };
+
+  // [mkfa.h]
+  YY.parse_dict.finite_automaton = {
+    // common
+    "stat": 0,
+    "arc": [],
+    "flag_body_class_start": 0,
+    "flag_body_class_accept": 0,
+    "flag_traversed": 0,
+    // for DFA
+    "psNum": 0,
+    "unify_arc_list": [],
+    "finite_automaton_list": [],
+    "flag_volatiled": 0
+  };
+  
+  */
+
   // (getClass) [nfa.c]
   function getClass(my_dict, my_head_string) {
     var dict = my_dict,
@@ -135,7 +184,7 @@
   }
   
   // (chkNoInstantClass) [gram.tab.c]
-  function checkNoInstantClass(my_dict, my_class_name) {
+  function checkNoInstantClass(my_dict) {
     var dict = my_dict,
       current_class = dict.class_tree,
       class_node_without_branch;
@@ -500,7 +549,6 @@
 
 }(window, YY));
 
-
 // =============================================================================
 // ================================  Start =====================================
 // =============================================================================
@@ -538,25 +586,16 @@
   // https://julius.osdn.jp/juliusbook/en/
 
   function setGrammarFile() {
-    var opts = YY.parse_dict,
-      dict = YY.file_dict,
+    var version = "ver.1.44-flex-p1",
+      dict = YY.parse_dict,
       state_dict = YY.state_dict,
-      version = "ver.1.44-flex-p1",
-      grammar = YY.util_dict.getFileByType(dict, "grammar"),
-      header = YY.util_dict.getFileByType(dict, "header"),
-      class_name;
-
-    if (grammar === undefined) {
-      throw new Error("[error] Can't open grammar file");
-    }
-    if (header === undefined) {
-      throw new Error("[error] Can't open header file");
-    }
+      grammar = YY.util_dict.getFileByType(YY.file_dict, "grammar"),
+      header = YY.util_dict.getFileByType(YY.file_dict, "header");
 
     // set grammar file to input so parser (actually lexer) can pick it up
-    opts.file_in = grammar.content;
+    dict.file_in = grammar.content;
 
-    if (opts.is_compat_i) {
+    if (dict.is_compat_i) {
       header.content += "/dev/null\n";
     }
 
@@ -566,24 +605,24 @@
        //        Do logical AND between label and FA's field #4, #5.\n\
        //\n\n";
 
-    if (opts.is_quiet === 0) {
+    if (dict.is_quiet === 0) {
       console.log("[info]: Now parsing grammar file\n");
     }
 
     // yyiha!
     YY.Parser();
 
-    if (opts.is_semi_quiet === 0) {
+    if (dict.is_semi_quiet === 0) {
       console.log(
         "[info] - Now modifying grammar to minimize states[" +
-        opts.grammar_modification_number + "]"
+        dict.grammar_modification_number + "]"
       );
-      opts.is_no_new_line = 0;
+      dict.is_no_new_line = 0;
     }
-    YY.state_dict.start_symbol = YY.state_dict.start_symbol || YY.state_dict.class_tree;
-    header.content += "/* Start Symbol: " + YY.state_dict.start_symbol.name + " */\n";
-    state_dict.checkNoInstantClass(state_dict, class_name);
-    // fclose( FPheader );
+    state_dict.start_symbol = state_dict.start_symbol || state_dict.class_tree;
+    header.content = header.content +
+      "/* Start Symbol: " + state_dict.start_symbol.name + " */\n";
+    state_dict.checkNoInstantClass(state_dict);
   }
 
   function setFileName(my_param, my_mode) {
@@ -2603,51 +2642,6 @@
 
   // (YYSIZE_T) type ? set to unsigned_int = 4 bytes   
   YY.parse_dict.sizet_size = 4; // XXX? YYSIZE_T a type?
-
-  // Pointer of start FA in FA network
-  YY.parse_dict.finite_automaton_list = null;
-
-  YY.parse_dict.flag_body_class_accept = 0;
-
-  // [mkfa.h]
-  YY.parse_dict.arc = {
-    "inp": 0,
-    "finite_automaton": {},
-    "flag_body_class_start": 0,
-    "flag_body_class_accept": 0,
-    "next": {}
-  };
-
-  // [mkfa.h]
-  YY.parse_dict.unify_arc = {
-    "inp": 0,
-    "finite_automaton": {},
-    "flag_body_class_start": 0,
-    "flag_body_class_accept": 0,
-    "next": {},
-    "flag_reserved": 0
-  };
-
-  // [mkfa.h]
-  YY.parse_dict.finite_automaton_list = {
-    "finite_automation": {},
-    "next": {}
-  };
-
-  // [mkfa.h]
-  YY.parse_dict.finite_automaton = {
-    // common
-    "stat": 0,
-    "arc": [],
-    "flag_body_class_start": 0,
-    "flag_body_class_accept": 0,
-    "flag_traversed": 0,
-    // for DFA
-    "psNum": 0,
-    "unify_arc_list": [],
-    "finite_automaton_list": [],
-    "flag_volatiled": 0
-  };
 
   // (yyclearin)
   function clearChar (my_dict) {
