@@ -7,7 +7,7 @@
 // =============================================================================
 // ================================= YY ========================================
 // =============================================================================
-(function (window, Math) {
+(function (window, Math, Error) {
   "use strict";
 
   function setBuffer (my_size) {
@@ -19,13 +19,13 @@
   }
 
   // (newLineAdjust) [mkdfa.c]
-  function adjustNewLine(my_dict) {
-    var dict = my_dict;
-    if (is_no_new_line === 1) {
-      console.log("\n");
-    }
-    dict.is_no_new_line = 0;
-  }
+  //function adjustNewLine(my_dict) {
+  //  var dict = my_dict;
+  //  if (is_no_new_line === 1) {
+  //    console.log("\n");
+  //  }
+  //  dict.is_no_new_line = 0;
+  //}
 
   function getFileByType(my_dict, my_type) {
     var dict = my_dict,
@@ -94,12 +94,12 @@
 
   })};
 
-}(window, Math));
+}(window, Math, Error));
 
 // =============================================================================
 // ================================= State =====================================
 // =============================================================================
-(function (window, YY) {
+(function (window, YY, Error) {
   "use strict";
 
   /* not used so far
@@ -532,7 +532,8 @@
     // start_class or change all class names to symbol.
     "start_symbol": null,
 
-    // (classNo) [gram.tab.c] - counter for classes?, only in outputHeader
+    // (classNo) [gram.tab.c] - static, counter for classes, only used in
+    // outputHeader, never increased after being set to 0.
     "class_number": 0,
 
     // (CLASSFLAGS) [mkfa.h] - this is a type... typedef unsigned int CLASSFLAGS
@@ -547,7 +548,7 @@
 
   });
 
-}(window, YY));
+}(window, YY, Error));
 
 // =============================================================================
 // ================================  Start =====================================
@@ -585,12 +586,13 @@
   // resources:
   // https://julius.osdn.jp/juliusbook/en/
 
+  // (setGram) [gram.tab.c]
   function setGrammarFile() {
-    var version = "ver.1.44-flex-p1",
-      dict = YY.parse_dict,
+    var dict = YY.parse_dict,
       state_dict = YY.state_dict,
-      grammar = YY.util_dict.getFileByType(YY.file_dict, "grammar"),
-      header = YY.util_dict.getFileByType(YY.file_dict, "header");
+      file_dict = YY.file_dict,
+      grammar = YY.util_dict.getFileByType(file_dict, "grammar"),
+      header = YY.util_dict.getFileByType(file_dict, "header");
 
     // set grammar file to input so parser (actually lexer) can pick it up
     dict.file_in = grammar.content;
@@ -601,7 +603,7 @@
 
     header.content +=
       "// Header of class reduction flag for finite automaton parser\n\
-       //                   made with mkfa " + version + "\n\n\
+       //                   made with mkfa " + "ver.1.44-flex-p1" + "\n\n\
        //        Do logical AND between label and FA's field #4, #5.\n\
        //\n\n";
 
@@ -612,12 +614,11 @@
     // yyiha!
     YY.Parser();
 
-    if (dict.is_semi_quiet === 0) {
+    if (dict.is_quiet === 0) {
       console.log(
         "[info] - Now modifying grammar to minimize states[" +
         dict.grammar_modification_number + "]"
       );
-      dict.is_no_new_line = 0;
     }
     state_dict.start_symbol = state_dict.start_symbol || state_dict.class_tree;
     header.content = header.content +
@@ -660,7 +661,7 @@
 
       // spec2
       case 5:
-        opts.is_init_f = 1;
+        opts.is_init_with_filename = 1;
         dict.key = key = my_param[0];
         dict[key + ".grammar"] = setFile("grammar", my_param[1]);
         dict[key + ".voca"] = setFile("voca", my_param[2]);
@@ -681,32 +682,33 @@
     return 1;
   }
 
+  // (setSwitch) [main.c]
   function setSwitch (my_input) {
-    var opts = YY.parse_dict;
+    var dict = YY.parse_dict;
     switch (my_input) {
       case "l":
-        opts.is_sent_list = 1;
+        dict.is_sent_list = 1;
         break;
       case "nw":
-        opts.is_no_warning = 1;
+        dict.is_no_warning = 1;
         break;
       case "c":
-        opts.is_compat_i = 1;
+        dict.is_compat_i = 1;
         break;
       case "db":
-        opts.is_debug = 1;
+        dict.is_debug = 1;
         break;
       case "dfa":
-        if (opts.is_init_f && opts.debug === 0) {
+        if (dict.is_init_with_filename && dict.debug === 0) {
           console.log("[info] dfa resolving option set");
         }
-        opts.is_nfa_output = 0;
+        dict.is_nfa_output = 0;
         break;
       case "nfa":
-        if (opts.is_init_f && opts.quiet === 0) {
+        if (dict.is_init_with_filename && dict.quiet === 0) {
           console.log("[info] dfa resolving option set");
         }
-        opts.is_nfa_output = 1;
+        dict.is_nfa_output = 1;
         break;
       case "fg":
         return 1;
@@ -719,38 +721,26 @@
       case "f":
         return 5;
       case "v":
-        opts.is_verbose = 1;
+        dict.is_verbose = 1;
         break;
       case "c":
-        opts.is_compat_i = 1;
+        dict.is_compat_i = 1;
         break;
       case "e":
-        opts.is_edge_accept = 1;
-        opts.is_edge_start = 1;
-        break;
-      case "e0":
-        opts.is_edge_accept = 1;
+        dict.is_edge_start = 1;
         break;
       case "e1":
-        opts.is_edge_start = 1;
+        dict.is_edge_start = 1;
         break;
       case "q0":
-        opts.is_quiet = 1;
-        break;
-      case "q":
-      case "q1":
-        opts.is_semi_quiet = 1;
+        dict.is_quiet = 1;
         break;
       default:
-        throw new Error("[error] Ran out of switch options.... funny");
+        throw new Error("[error] Out of options...");
     }
   }
 
   // (getSwitch) [main.c]
-  // elaborate logic for naming and setting up files, let's hope the rest
-  // of the overhead is eventually used.
-  //$mkfa -e1 -fg $rgramfile -fv $tmpvocafile -fo $(dfafile).tmp -fh $headerfile
-  //$mkfa -e1 -f ["sample" $rgramfile $tmpvocafile $(dfafile).tmp $headerfile]
   function getSwitch(my_parameter_list) {
     var len = my_parameter_list.length,
       file_mode = 0,
@@ -780,14 +770,14 @@
   }
 
   // -------------------------------- config------------------------------------
-  // our makeshift file system
+  // makeshift file system
   YY.file_dict = {};
 
   // more YYucky options go here
-  YY.parse_dict = YY.util_dict.extendDict(YY.parse_dict || {}, {
+  YY.parse_dict = YY.util_dict.extendDict({}, {
 
     // (optF) [main.c] when option -f is used (vs -fg) to fix issues with -dfa
-    "is_init_f": 0,
+    "is_init_with_filename": 0,
 
     // (SW_SentList) [main.c]
     "is_sent_list": 0,
@@ -795,8 +785,8 @@
     // (SW_NoWarning) [main.c]
     "is_no_warning": 0,
 
-    // (NoNewLine) [main.c]
-    "is_no_new_line": 0,
+    // (NoNewLine) [main.c] - set new lines on logs, but we only console.log
+    //"is_no_new_line": 0,
 
     // (SW_Compati) [main.c]
     "is_compat_i": 0,
@@ -804,8 +794,8 @@
     // (SW_Quiet) [main.c]
     "is_quiet": 0,
 
-    // (SW_SemiQuiet) [main.c]
-    "is_semi_quiet": 0,
+    // (SW_SemiQuiet) [main.c] - quiet or no quiet is enough
+    // "is_semi_quiet": 0,
 
     // (SW_Debug) [main.c]
     "is_debug": 0,
@@ -819,20 +809,30 @@
     // (SW_EdgeStart) [main.c]
     "is_edge_start": null,
 
-    // (SW_EdgeAccpt) [main.c]
-    "is_edge_accept": null
+    // (SW_EdgeAccpt) [main.c] - AcceptFlag on edge is under construction.
+    // only set to 1 in setSwitch, then throws. Used in triplets where it
+    // should be zero. So we can remove the checks.
+    // "is_edge_accept": null,
+
+    // (setGram) [gram.tab.c] - call parser
+    "setGrammarFile": setGrammarFile,
+
+    // (getSwitch) [main.c] naming and setting up files, two ways to call:
+    //$mkfa -e1 -fg $rgramfile -fv $tmpvoca -fo $(dfafile).tmp -fh $headerfile
+    //$mkfa -e1 -f ["sample" $rgramfile $tmpvoca $(dfafile).tmp $headerfile]
+    "getSwitch": getSwitch,
+
+    // (setSwitch) [main.c]
+    "setSwitch": setSwitch
   });
 
-  // ---------------------------- start (spec1)---------------------------------
+  // ------------------------------ start --------------------------------------
   // initial call:
   //$mkfa -e1 -fg $rgramfile -fv $tmpvocafile -fo $(dfafile).tmp -fh $headerfile
   function createDfa() {
     var parameter_list = arguments;
     return new RSVP.Queue()
       .push(function () {
-        if (YY.parse_dict.is_edge_accept) {
-          throw new Error("[error] AcceptFlag on edge is under construction.");
-        }
 
         // 1/6 main.c => set up files
         getSwitch(parameter_list);
@@ -844,14 +844,13 @@
         setVocaFile();
         console.log("vocaed");
         console.log(YY);
-        // 4 makeNFA
+        // 4/6 makeNFA
         //makeNFA();
-        // 5 makeDFA
+        // 5/6 makeDFA
         //if (SWITCH_DICT.nfa_output === 0) {
         //  makeDFA();
         //}
-
-        // 6 makeTriplets
+        // 6/6 makeTriplets
         //makeTriplet();
       })
       .push(undefined, function (my_error) {
@@ -959,7 +958,7 @@
     if (dict.quiet === 0) {
 
       // util_dict.adjustNewLine();
-      dict.is_no_new_line = 0;
+      // dict.is_no_new_line = 0;
       console.log("[info] - Now parsing vocabulary file.");
     }
 
@@ -3314,7 +3313,7 @@
         console.log("[info] - Now modifying grammar to minimize states[" +
           dict.grammar_modification_number + "]"
         );
-        dict.is_no_new_line = 1;
+        // dict.is_no_new_line = 1;
       }
       dict.grammar_modification_number++;
       YY.state_dict.enterNonTerminalSymbol(new_class_name, body_next, 0, 0, 0, 1 );
