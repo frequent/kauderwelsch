@@ -217,6 +217,88 @@
        0,     0,     2,     5,     7,     9,    11,    13,    16,    23,
       25,    28,    30,    33,    35,    38,    40,    42,    45,    50,
       52,    55,    57,    60,    62,    65,    67,    69
+    ],
+
+    LEX_EC = [
+      0,
+      1,    1,    1,    1,    1,    1,    1,    1,    2,    3,
+      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+      1,    2,    4,    1,    5,    1,    6,    1,    1,    1,
+      1,    7,    1,    1,    1,    1,    1,    8,    8,    8,
+      8,    8,    8,    8,    8,    8,    8,    9,    1,    1,
+      1,    1,    1,   10,   11,    8,    8,    8,   12,    8,
+     13,    8,   14,    8,    8,    8,    8,   15,   16,    8,
+      8,   17,   18,    8,    8,    8,    8,    8,    8,    8,
+      1,    1,    1,    1,    8,    1,    8,    8,    8,    8,
+  
+      8,    8,    8,    8,    8,    8,    8,    8,    8,    8,
+      8,    8,    8,    8,    8,    8,    8,    8,    8,    8,
+      8,    8,   19,    1,   20,    1,    1,    1,    1,    1,
+      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+  
+      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+      1,    1,    1,    1,    1
+    ],
+
+    LEX_ACCEPT = [
+        0,
+        0,    0,   15,   13,   12,   10,    7,   13,   13,    8,
+        2,    9,   13,    3,    4,    0,   11,    0,    0,    2,
+        1,    0,    0,    0,    0,    0,    0,    0,    0,    5,
+        6,    0
+    ],
+
+    LEX_BASE = [
+      0,
+      0,    0,   39,   40,   40,   40,   40,   35,   10,   40,
+      0,   40,    0,   40,   40,   34,   40,   18,   22,    0,
+      0,   16,   18,   18,   15,   17,   12,   13,   15,   40,
+     40,   40,   24,   21,   20
+    ],
+
+    LEX_META = [
+      0,
+      1,    1,    1,    1,    1,    1,    1,    2,    1,    1,
+      2,    2,    2,    2,    2,    2,    2,    2,    1,    1
+    ],
+
+    LEX_DEF = [
+       0,
+       32,    1,   32,   32,   32,   32,   32,   33,   32,   32,
+       34,   32,   35,   32,   32,   33,   32,   32,   32,   34,
+       35,   32,   32,   32,   32,   32,   32,   32,   32,   32,
+       32,    0,   32,   32,   32
+    ],
+
+    LEX_NXT = [
+      0,
+      4,    5,    6,    7,    8,    9,   10,   11,   12,   13,
+     11,   11,   11,   11,   11,   11,   11,   11,   14,   15,
+     18,   21,   20,   19,   16,   16,   31,   30,   29,   28,
+     27,   26,   25,   24,   23,   22,   17,   17,   32,    3,
+     32,   32,   32,   32,   32,   32,   32,   32,   32,   32,
+     32,   32,   32,   32,   32,   32,   32,   32,   32,   32
+    ],
+
+    LEX_CHK = [
+      0,
+      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+      9,   35,   34,    9,   33,   33,   29,   28,   27,   26,
+     25,   24,   23,   22,   19,   18,   16,    8,    3,   32,
+     32,   32,   32,   32,   32,   32,   32,   32,   32,   32,
+     32,   32,   32,   32,   32,   32,   32,   32,   32,   32
     ];
 
   function translate(my_x) {
@@ -229,7 +311,30 @@
   // (YYTRANSLATE) [gram.tabl.c]
   YY.table_dict = YY.util_dict.extendDict({}, {
 
-    // (yytranslate)
+    // (yy_ec) [lex.yy.c] ??
+    "ec": LEX_EC,
+
+    // (yy_accept) [lex.yy.c] used to set yy_act = action to run, so this
+    // should be list of actions, probably corresponding to the
+    // number of rules available (15, 14+1)
+    "accept": LEX_ACCEPT,
+
+    // (yy_base)
+    "base": LEX_BASE,
+
+    // (yy_meta)
+    "meta": LEX_META,
+
+    // (yy_def)
+    "def": LEX_DEF,
+
+    // (yy_nxt)
+    "nxt": LEX_NXT,
+
+    // (yy_chk) checks current state, probably to validate
+    "check": LEX_CHK,
+
+    // (yytranslate) [gram.tab.c]
     // This table maps lexical token numbers to their symbol numbers. If you 
     // have %token declarations in your grammar, Bison assigns token numbers to 
     // the different tokens; If you just use character representations, Bison 
@@ -237,11 +342,12 @@
     // is yytranslate[97] = 5 which is 'a'. Full listing of yytranslate is below.
     "translate_token": TRANSLATE_TOKEN,
 
-    // (yypgoto) - accounts for non-default GOTOs for all non-terminal symbols.
+    // (yypgoto) [gram.tab.c] accounts for non-default GOTOs for all 
+    // non-terminal symbols.
     "non_terminal_goto_method": NON_TERMINAL_GOTO_METHOD,
 
-    // (yydefgoto) - lists default GOTOs for each non-terminal symbol. It is 
-    // only used after checking with yypgoto.
+    // (yydefgoto) [gram.tab.c] Lists default GOTOs for each non-terminal 
+    // symbol. It is only used after checking with yypgoto.
     // This is a compressed form of the GOTO part of our traditional table. 
     // It has as many entries as there are non-terminals in the grammar. Each 
     // entry specifies the state to transition to on each non-terminal. So 
@@ -290,7 +396,7 @@
     // this operation in the section describing the parsing routine yyparse().
     "default_goto_method": DEFAULT_GOTO_METHOD,
 
-    // (yyr1) - Symbol number of symbol that rule yyn derives.
+    // (yyr1) [gram.tab.c] Symbol number of symbol that rule yyn derives.
     // Symbol number of lhs of each rule. Used at the time of a 
     // reduction to find the next state. yyr1 specifies the symbol number of 
     // the LHS of each rule. Remember that 0 is never used as a rule number, 
@@ -307,16 +413,16 @@
     // use.
     "rule_left_hand_side_symbol_number": RULE_LEFT_HAND_SIDE_SYMBOL_NUMBER,
 
-    // (yyrhs) - A -1 separated list of RHS (right hand side/key) symbol
-    // numbers of all rules. yyrhs[n] is first symbol on the RHS (right hand 
-    // side of rule #n)
+    // (yyrhs) [gram.tab.c] A -1 separated list of RHS (right hand side/key) 
+    // symbol numbers of all rules. yyrhs[n] is first symbol on the RHS (right 
+    // hand side of rule #n)
     // Not generated anymore in Bison > 2014
     "right_hand_side": RIGHT_HAND_SIDE,
 
-    // (yyr2) - length of RHS of each rule (Number of symbols composing right
-    // hand side of rule. Used at the time of reduction to pop the stack.
-    // yyr2 specifies the length (number of symbols) of the right hand side of 
-    // each rule. Here is a listing produced by Bison:
+    // (yyr2) [gram.tab.c] length of RHS of each rule (Number of symbols 
+    // composing right hand side of rule. Used at the time of reduction to pop 
+    // the stack. yyr2 specifies the length (number of symbols) of the right 
+    // hand side of each rule. Here is a listing produced by Bison:
     // {
     //   0,     2,     3,     1,     3,     1,     1,     3,     0,     1
     // };
@@ -326,14 +432,15 @@
     // hand side of the reducing rule.
     "rule_right_hand_side_symbol_length": RULE_RIGHT_HAND_SIDE_SYMBOL_LENGTH,
 
-    // (yydefact) - default reduction rules for each state = default rule to 
-    // reduce with in state S when YYTABLE doesn't specify something else to do.
+    // (yydefact) [gram.tab.c] default reduction rules for each state = default 
+    // rule to reduce with in state S when YYTABLE doesn't specify something 
+    // else to do.
     "default_reduction_rule": DEFAULT_REDUCTION_RULE,
 
-    // (yyrline[n]) - Line # in .y grammar source file where rule n is defined.
-    // This table lists default reductions for each state. yydefact[state] = 
-    // rule number to use for a default reduction in that state. Here is the 
-    // yydefact table produced for our a sample grammar:
+    // (yyrline[n]) [gram.tab.c] Line # in .y grammar source file where rule 
+    // n is defined. This table lists default reductions for each state. 
+    // yydefact[state] = rule number to use for a default reduction in that 
+    // state. Here is the yydefact table produced for our a sample grammar:
     // {
     // 0,     6,     8,     0,     3,     5,     9,     0,     1,     0,
     // 0,     7,     2,     4
@@ -346,8 +453,8 @@
     // r6 in yydefact.
     "line_pointer": LINE_POINTER,
 
-    // (yypact) - Directory into yytable indexed by state number. Ddisplacements 
-    // in yytable are indexed by symbol number.
+    // (yypact) [gram.tab.c] Directory into yytable indexed by state number. 
+    // Displacements in yytable are indexed by symbol number.
     // This table specifies the portion of yytable that describes what to do 
     // in state S. It is indexed by the symbol number of the token symbols. This
     // is like the directory table D that was described in the previous section 
@@ -367,13 +474,13 @@
     // the stack with rule #3.
     "set_state_action": SET_STATE_ACTION,
 
-    // (yycheck) - guard used to check legal bounds within portions yytable 
-    // This is like a guard table. This table is used for various checks. Again 
-    // this table is another mixed bag - of symbol numbers and state numbers. 
-    // There is a very good explanation for this table inside Bison source
-    // code (src/tables.h): YYCHECK = a vector indexed in parallel with YYTABLE.  
-    // It indicates, in a roundabout way, the bounds of the portion you are 
-    // trying to examine.
+    // (yycheck) [gram.tab.c] guard used to check legal bounds within portions 
+    // yytable. This is like a guard table. This table is used for various 
+    // checks. Again this table is another mixed bag - of symbol numbers and 
+    // state numbers. There is a very good explanation for this table inside 
+    // Bison source code (src/tables.h): YYCHECK = a vector indexed in parallel 
+    // with YYTABLE.  It indicates, in a roundabout way, the bounds of the 
+    // portion you are trying to examine.
     // Suppose that the portion of YYTABLE starts at index P and the index to 
     // be examined within the portion is I. Then if YYCHECK[P+I] != I,
     // I is outside the bounds of what is actually allocated, and the 
@@ -397,8 +504,8 @@
     // yydefgoto to decide the transition.
     "state_action_valid": STATE_ACTION_VALID,
 
-    // (yytable) - a highly compressed representation of the actions in each 
-    // state. Negative entries represent reductions. There is a negative 
+    // (yytable) [gram.tab.c] highly compressed representation of the actions 
+    // in each state. Negative entries represent reductions. There is a negative 
     // infinity to detect errors.
     // This table is a mixed bag of state numbers and rule numbers in some 
     // pre-calculated order. This is the table T we discussed in the previous 
@@ -428,6 +535,7 @@
 // =============================================================================
 // ================================= State =====================================
 // =============================================================================
+
 (function (window, YY, Error) {
   "use strict";
 
@@ -727,6 +835,103 @@
     return body_class;
   }
 
+
+  function unifyBody(my_dict, my_class_name, my_body, my_new_body) {
+    var dict = my_dict,
+      body = my_body,
+      new_body = my_new_body,
+      body_next = my_body.next,
+      new_body_next = my_new_body.next,
+      body_class,
+      new_class_name;
+
+    while (1) {
+      if (body.next === null && new_body_next === null ) {
+        return -1;
+      }
+      if (new_body_next === null) {
+        if (body.abort) {
+          return -1;
+        } else {
+          body.abort = 1;
+          return 0;
+        }
+      }
+      if (body_next === null) {
+        body.abort = 1;
+        body.next = new_body_next;
+        return 0;
+      }
+      if (body_next.name === new_body_next.name) {
+        break;
+      }
+      body = body_next;
+      new_body = new_body_next;
+      body_next = body.next;
+      new_body_next = new_body.next;
+    }
+
+    // and now for something different
+    body_class = dict.getClass(dict, body.name);
+
+    if (body_class !== null && body_class.flag_tmp) {
+      dict.enterNonTerminalSymbol(body.name, new_body_next, 0, 0, 0, 1);
+    } else {
+      new_class_name = dict.getNewClassName(dict, my_class_name);
+
+      // used to be semi-quiet, let's just call it
+      console.log("[info] - Now modifying grammar to minimize states[" +
+        dict.grammar_modification_number + "]"
+      );
+
+      dict.grammar_modification_number++;
+      dict.enterNonTerminalSymbol(new_class_name, body_next, 0, 0, 0, 1 );
+      dict.enterNonTerminalSymbol(new_class_name, new_body_Next, 0, 0, 0, 1 );
+
+      // "Can't alloc body buffer of tmp class, \"%s\".", newClassName
+      new_body.name = new_class_name;
+      new_body.abort = 0;
+      new_body.next = null;
+      body.next = new_body;
+        new_body.next = new_body;
+      }
+      return 0;
+  }
+
+  function pushBody(my_body, my_new_body) { 
+    var body_list = my_body.body_list,
+      define_number = 1,
+      pre_body_list = null,
+      new_body_list,
+      body,
+      cmp;
+   
+    while (body_list !== null) {
+      body = body_list.body;
+      cmp = body.name === my_new_body.name;
+      if (cmp > 0) {
+        break;
+      }
+      if (cmp === 0) {
+        if (unifyBody(my_body.name, body, my_new_body)) {
+          console.log("[info] Redefining class: ", my_body.name, body.name);
+        }
+        return;
+      }
+      pre_body_list = body_list;
+      body_list = body_list.next;
+      define_number++;
+    }
+    new_body_list.body = new_body;
+    if (pre_body_list !== null) {
+      pre_body_list.next = new_body_list;
+    } else {
+      my_body.body_list = new_body_list;
+    }
+    new_body_list.next = body_list;
+    my_body.branch++;
+  }
+
   // -------------------------------- config------------------------------------
   YY.state_dict = YY.util_dict.extendDict({}, {
 
@@ -789,6 +994,12 @@
 
     // (outputHeader) [gram.tab.c], writes to header file. Not sure what.
     "outputHeader": outputHeader,
+
+    // (unifyBody) [gram.tab.c]
+    "unifyBody": unifyBody,
+
+    // (pushBody) [gram.tab.c]
+    "pushBody": pushBody,
 
     // (ClassList) Linear list of classes
     "class_tree": null,
@@ -860,9 +1071,17 @@
     // only used in output header
     "flag_body_class_max": 2 * 8,
 
+    // (GramModifyNum) [gram.tab.c] - no idea what good for, only used on 
+    // messaging
+    "grammar_modification_number": 0,
+
   });
 
 }(window, YY, Error));
+
+// =============================================================================
+// =============================  Set Grammer ==================================
+// =============================================================================
 
 // =============================================================================
 //                                  Parser
@@ -871,6 +1090,7 @@
   "use strict";
 
   // A ported Bison parser, made from gram. by hand.
+
   /* Skeleton output parser for bison,
   
     Copyright (C) 1984, 1989, 1990, 2000, 2001, 2002 Free Software
@@ -1041,71 +1261,9 @@
 
 }(window, YY, Math, Error));
 
-
+// &&&&&&&&&&&&&&
 (function (window, YY, Math, Error) {
-  
 
-  /* Unused so far
-
-  // (YYBISON) Identify Bison output.
-  YY.parse_dict.bison = 1;
-
-  // (YYLTYPE_IS_TRIVIAL)
-  // Even trivially named yet obfusciatingly set, only used once needlessly
-  // http://lxr.free-electrons.com/source/scripts/dtc/srcpos.h?v=2.6.33#L43
-  YY.parse_dict.ltype_trivial = 1;
-
-  // (YYSTYPE_IS_TRIVIAL)
-  // Since we're at it
-  YY.parse_dict.stype_trivial = 1;
-
-  // ((sizeof (short)) 2 bytes size of short -32,768 to 32,767
-  YY.parse_dict.short_size = 2;
-
-  // size of type STYPE - wrong
-  YY.parse_dict.stype_size = 0;
-
-  // size of type LTYPE - wrong
-  YY.parse_dict.ltype_size = 0;
-
-  // (YYSIZE_T) type ? set to unsigned_int = 4 bytes   
-  YY.parse_dict.sizet_size = 4; // XXX? YYSIZE_T a type?
-
-  // (yyclearin)
-  function clearChar (my_dict) {
-    my_dict.lookahead_symbol = my_dict.empty_token;
-  }
-
-  // (YYFAIL) - from transition of new meaning of YYERROR when moving from
-  // GCC v2 from v1, remove this
-  function errorFail (my_dict) {
-    console.log("[error] failing.");
-    errorLab(my_dict);
-  }
-
-  // (YYRECOVERING)
-  function recoverFromError(my_dict) {
-    return !!my_dict.shift_token_error_message_threshold;
-  }
-
-  // (YYBACKUP) - uppercase
-  function oldBackup (my_dict, my_token, my_value) {
-    if (dict.lookahead_symbol === dict.empty_token &&
-      dict.reduced_rule_right_hand_side_symbol_len === 1) {
-      dict.lookahead_symbol = my_token;
-      dict.lookahead_symbol_semantic_value = my_value;
-      dict.lookahead_symbol_as_number = YY.translate(dict.lookahead_symbol);
-      popStack(my_dict);
-      backup(my_dict);
-    } else {
-      parseError(my_dict, "Syntax error. Cannot back up.");
-      errorLabExtended(my_dict);
-    }
-  }
-  */
-
-
-  
 
   // --------------------------- config ----------------------------------------
   // YYucky options all go here
@@ -1164,9 +1322,6 @@
     // (YYTERROR) the audacity... just write 1, no? also, only used inside 
     // errorHandle, why not just use 1?
     "terror": 1,
-
-    // (GramModifyNum)
-    "grammar_modification_number": 0,
 
     // (YYNTBASE) maybe the number of actual rules (Bison adds 1 for accept)
     "nt_base": 14,
@@ -1343,118 +1498,6 @@
       };
     }
   }
-
-  // -------------------------- external methods -------------------------------
-
-
-
-  function unifyBody(my_dict, my_class_name, my_body, my_new_body) {
-    var dict = my_dict,
-      state_dict = YY.state_dict,
-      body = my_body,
-      new_body = my_new_body,
-      body_next = my_body.next,
-      new_body_next = my_new_body.next,
-      body_class,
-      new_class_name;
-
-    while (1) {
-      if (body.next === null && new_body_next === null ) {
-        return -1;
-      }
-      if (new_body_next === null) {
-        if (body.abort) {
-          return -1;
-        } else {
-          body.abort = 1;
-          return 0;
-        }
-      }
-      if (body_next === null) {
-        body.abort = 1;
-        body.next = new_body_next;
-        return 0;
-      }
-      if (body_next.name === new_body_next.name) {
-        break;
-      }
-      body = body_next;
-      new_body = new_body_next;
-      body_next = body.next;
-      new_body_next = new_body.next;
-    }
-
-    // and now for something different
-    body_class = state_dict.getClass(state_dict, body.name);
-
-    if (body_class !== null && body_class.flag_tmp) {
-      YY.state_dict.enterNonTerminalSymbol(body.name, new_body_next, 0, 0, 0, 1);
-    } else {
-      new_class_name = getNewClassName(dict, my_class_name);
-      
-      // removed from getNewClassName as it uses basic options and is only
-      // called here
-      if (dict.quiet === 0) {
-        console.log("[info] - Now modifying grammar to minimize states[" +
-          dict.grammar_modification_number + "]"
-        );
-        // dict.is_no_new_line = 1;
-      }
-      dict.grammar_modification_number++;
-      YY.state_dict.enterNonTerminalSymbol(new_class_name, body_next, 0, 0, 0, 1 );
-      YY.state_dict.enterNonTerminalSymbol(new_class_name, new_body_Next, 0, 0, 0, 1 );
-
-      // "Can't alloc body buffer of tmp class, \"%s\".", newClassName
-      new_body.name = new_class_name;
-      new_body.abort = 0;
-      new_body.next = null;
-      body.next = new_body;
-        new_body.next = new_body;
-      }
-      return 0;
-  }
-
-  function pushBody(my_body, my_new_body) { 
-    var body_list = my_body.body_list,
-      define_number = 1,
-      pre_body_list = null,
-      new_body_list,
-      body,
-      cmp;
-   
-    while (body_list !== null) {
-      body = body_list.body;
-      cmp = body.name === my_new_body.name;
-      if (cmp > 0) {
-        break;
-      }
-      if (cmp === 0) {
-        if (unifyBody(my_body.name, body, my_new_body)) {
-          console.log("[info] Redefining class: ", my_body.name, body.name);
-        }
-        return;
-      }
-      pre_body_list = body_list;
-      body_list = body_list.next;
-      define_number++;
-    }
-    new_body_list.body = new_body;
-    if (pre_body_list !== null) {
-      pre_body_list.next = new_body_list;
-    } else {
-      my_body.body_list = new_body_list;
-    }
-    new_body_list.next = body_list;
-    my_body.branch++;
-  }
-
-
-
-
-  
-
-
-
 
   // ----------------------------- methods -------------------------------------
   // (YYLLOC_DEFAULT) -- Compute default location (before the actions are run).
@@ -2090,9 +2133,8 @@
     backup(dict);
   }
 
-
-
 }(window, YY, Math, Error));
+// &&&&&&&&&&&&&&
 
 // =============================================================================
 // ================================  Start =====================================
@@ -2161,7 +2203,7 @@
     if (dict.is_quiet === 0) {
       console.log(
         "[info] - Now modifying grammar to minimize states[" +
-        dict.grammar_modification_number + "]"
+        YY.state_dict.grammar_modification_number + "]"
       );
     }
     state_dict.start_symbol = state_dict.start_symbol || state_dict.class_tree;
@@ -2412,12 +2454,7 @@
 // =============================================================================
 // ===============================  Set Voca ===================================
 // =============================================================================
-/*
-  Copyright (c) 1991-2011 Kawahara Lab., Kyoto University
-  Copyright (c) 2000-2005 Shikano Lab., Nara Institute of Science and Technology
-  Copyright (c) 2005-2011 Julius project team, Nagoya Institute of Technology
-  All rights reserved
-*/
+
 (function (window, YY) {
   "use strict";
 
@@ -2569,19 +2606,11 @@
 
 
 
-// =============================================================================
-// =============================  Set Grammer ==================================
-// =============================================================================
 
 // =============================================================================
 //                                  Lexer
 // =============================================================================
-/*
-  Copyright (c) 1991-2011 Kawahara Lab., Kyoto University
-  Copyright (c) 2000-2005 Shikano Lab., Nara Institute of Science and Technology
-  Copyright (c) 2005-2011 Julius project team, Nagoya Institute of Technology
-  All rights reserved
-*/
+
 (function (window, YY) {
   "use strict";
 
@@ -2596,535 +2625,6 @@
   // http://www.cs.man.ac.uk/~pjj/cs211/ho/node6.html
   // http://www.tldp.org/HOWTO/Lex-YACC-HOWTO-6.html
 
-  /* Not used so far
-
-  // (BEGIN)
-  // Enter a start condition. This macro really ought to take a parameter,
-  // but we do it the disgusting crufty way forced on us by the ()-less
-  // definition of BEGIN.
-  function begin(my_dict, my_state) {
-    my_dict.start_state = 1 + 2 * my_state;
-  };
-
-  // (yy_set_interactive)
-  function setLexterToInteractive = function (my_dict, my_interactive) {
-    var dict = my_dict;
-    if (dict.current_buffer === null) {
-      dict.current_buffer = createBuffer(
-        dict,
-        dict.file_input,
-        dict.default_buffer_size
-      );
-      dict.current_buffer.buffer_state_interactive_input = my_interactive;
-    } else {
-      throw new Error("[error] Don't switch interactive after creating buffer");
-    }
-  };
-
-  // (yyless)
-  // The funky do-while in the following #define is used to turn the definition
-  // int a single C statement (which needs a semi-colon terminator).  This
-  // avoids problems with code like:
-  //
-  //  if ( condition_holds )
-  //    yyless( 5 );
-  //  else
-  //    do_something_else();
-  //
-  // Prior to using the do-while the compiler would get upset at the
-  // "else" because it interpreted the "if" statement as being all
-  // done when it reached the ';' after the yyless() call.
-  // Return all but the first 'n' matched characters back to the input stream.
-  function less(my_n) {
-
-    // Undo effects of setting up matched_string (yytext).
-    dict.current_run_buffer_start_position_address = dict.tmp_character_hold;
-    restoreOriginalOffset(dict);
-    dict.current_buffer_character_position =
-      dict.current_run_character_position =
-        dict.current_run_buffer_start_position + my_n - dict.more_adjust;
-
-    // set up matched_string (yytext) again
-    doBeforeAction(dict);
-  }
-  
-  // (yyless)
-  // Redefine yyless() so it works in section 3 code.
-  // XXX What is section 3?
-  function less(my_n) {
-
-    // Undo effects of setting up yytext.
-    matched_string[dict.matched_string_len] = dict.tmp_character_hold;
-    dict.current_buffer_character_position = dict.matched_string + my_n;
-    dict.tmp_character_hold =
-      dict.current_buffer_character_position_memory_address;
-    dict.current_buffer_character_position_memory_address = '\0';
-    dict.matched_string_len = my_n;
-  }
-
-  // (unput)
-  function unput = function (my_dict, my_c, my_matched_string_pseudo_pointer) {
-    var view = dict.current_buffer.buffer_state_array_view,
-      dest,
-      source;
-
-    // undo effects of setting up matched_string (yytext)
-    dict.current_run_character_position_address = dict.tmp_character_hold;
-
-    // need to shift things up to make room
-    if (dict.current_run_character_position <
-      dict.current_buffer.buffer_state_array_view + 2) { 
-
-      
-      number_to_move = dict.buffer_character_len + 2;
-
-      // this is buffer top + 2 for EOB chars.
-      dest = dict.current_buffer.buffer_state_size + 2;
-      source = dict.buffer_character_len + 2
-
-      // decrease to zero and move elements to the top?
-      while (source > view.byteLength) {
-
-        //*--dest = *--source;
-        view.setInt8(dest, view.getInt8(source));
-        dest = dest - 1;
-        source = source - 1;
-      }
-      dict.current_run_character_position += (dest - source);
-      dict.current_run_buffer_start_position += (dest - source);
-      dict.current_buffer.buffer_state_character_len =
-        dict.buffer_character_len = dict.current_buffer.buffer_state_size;
-      if (dict.current_run_character_position <
-        dict.current_buffer.buffer_state_array_view + 2
-      ) {
-        throw new Error("[error] - Flex scanner push-back overflow");
-      }
-    }
-
-    // *--dict.current_run_character_position = (char) c
-    // I thought c is a character, not the position
-    dict.current_run_character_position = my_c;
-    dict.matched_string_pseudo_pointer = dict.current_run_buffer_start_position;
-    dict.tmp_character_hold = dict.current_run_character_position_address;
-    dict.current_buffer_character_position =
-      dict.current_run_character_position;
-  };
-
-  // (input)
-  function input(my_dict) {
-    var dict = my_dict,
-      character,
-      offset;
-
-    dict.current_buffer_character_position_memory_address =
-      dict.tmp_character_hold;
-
-    // current_buffer_character_position now points to the character we 
-    // want to return. If this occurs before the EOB character, then it's a
-    // valid NUL. If not, then we've hit the end of the buffer.
-    if (current_buffer_character_position_memory_address ===
-        dict.buffer_end_character) {
-    
-      // This was really a NUL.
-      if (dict.current_buffer_character_position <
-        dict.current_buffer_memory_address.buffer_state_array_view.getInt8(
-          dict.current_buffer.buffer_state_character_len
-        )) {
-        dict.current_buffer_character_position_memory_address = '\0';
-
-      // need more input
-      } else {
-        offset = dict.current_buffer_character_position -
-          dict.matched_string_pseudo_pointer;
-        dict.current_buffer_character_position++;
-
-        switch (getNextBuffer(dict)) {
-
-          // This happens because yy_g_n_b() sees that we've accumulated a
-          // token and flags that we need to try matching the token before
-          // proceeding. But for input(), there's no matching to consider.
-          // So convert the dict.end_of_block_action_last_match
-          // to end_of_block_action_end_of_file.
-          case dict.end_of_block_action_last_match:
-
-            // Reset buffer status.
-            return restartLex(dict, dict.file_input);
-
-          //fall through
-          case dict.end_of_block_action_end_of_file:
-            if (thatsAWrap()) {
-              return dict.eof;
-            }
-            if (dict.buffer_switched_on_end_of_file === 0) {
-              startProcessingNewFile(dict);
-              return input();
-            }
-            break;
-
-          case dict.end_of_block_action_continue_scan:
-            dict.current_buffer_character_position =
-              dict.matched_string_pseudo_pointer + offset;
-            break;
-        }
-      }
-    }
-
-    // cast for 8-bit char's?
-    character = dict.current_buffer_character_position;
-
-    // preserve matched_string (yytext) 
-    dict.current_buffer_character_position_memory_address = '\0';  
-    dict.tmp_character_hold = ++dict.current_buffer_character_position;
-    return character;
-  };
-
-  // (yy_set_bol)
-  // set beginning of line ^ to be active
-  function setBol(my_dict, my_at_bol) {
-    var dict = my_dict;
-    if (!dict.current_buffer) {
-      dict.current_buffer = createBuffer(
-        dict,
-        dict.file_input,
-        dict.default_buffer_size
-      );
-      dict.current_buffer.buffer_state_input_line_start = my_at_bol;
-    }
-  }
-
-  // (YY_AT_BOL)
-  function isAtBol(my_dict) {
-    return my_dict.current_buffer.buffer_state_input_line_start;
-  }
-
-  // (yy_flex_free)
-  function freeBuffer = function (my_dict) {
-    my_dict.current_buffer = null;
-  }
-
-  // (yy_switch_to_buffer)
-  function switchToBuffer(my_dict, my_buffer) {
-    var dict = my_dict;
-    if (dict.current_buffer === my_buffer) {
-      return;
-    }
-
-    // Flush out information of old buffer.
-    if (dict.current_buffer) {
-      dict.current_buffer_character_position_memory_address =
-        dict.tmp_character_hold;
-      dict.current_buffer.buffer_state_current_position =
-        dict.current_buffer_character_position;
-      dict.current_buffer.buffer_state_character_len =
-        dict.buffer_character_len;
-    }
-    dict.current_buffer = my_buffer;
-    loadBufferState(dict);
-
-    // We don't actually know whether we did this switch during
-    // EOF (thatsAWrap) processing, but the only time this flag
-    // is looked at is after thatsAWrap() is called, so it's safe
-    // to go ahead and always set it.
-    dict.buffer_switched_on_end_of_file = 1;
-  };
-
-  // (yy_delete_buffer)
-  function deleteBuffer(my_dict, my_buffer) {
-    var dict = my_dict;
-    if (my_buffer === undefined) {
-      return;
-    }
-    if (my_buffer === dict.current_buffer) {
-      dict.current_buffer = 0;
-    }
-    if (my_buffer.buffer_is_ours) {
-      freeBuffer(dict, my_buffer.buffer_state_array_view);
-    }
-    freeBuffer(dict, my_buffer);
-  }
-
-  // (yy_scan_buffer)
-  function scanBuffer(my_dict, my_base, my_size) {
-    var dict = my_dict,
-      buffer;
-
-    // They forgot to leave room for the EOB's.
-    if (my_size < 2 ||
-      my_base.getInt8(my_size - 2) !== dict.buffer_end_character ||
-      my_base.getInt8(my_size - 1) !== dict.buffer_end_character
-    ) {
-      return 0;
-    }
-
-    buffer = setBuffer(dict, sizeof(yy_buffer_state));
-    if (buffer === undefined) {
-      throw new Error("[error] Out of dynamic memory in scanBuffer()");
-    }
-
-    // "- 2" to take care of EOB's/
-    buffer.buffer_state_size = my_size - 2;
-    buffer.buffer_state_current_position = b.buffer_state_array_view = my_base;
-    buffer.buffer_is_ours = 0;
-    buffer.buffer_state_input_file = 0;
-    buffer.buffer_character_len = b.buffer_state_size;
-    buffer.buffer_state_interactive_input = 0;
-    buffer.buffer_state_input_line_start = 1;
-    buffer.buffer_state_fill_if_full = 0;
-    buffer.buffer_status = dict.buffer_is_new;
-    switchToBuffer(dict, buffer);
-    return buffer; 
-  };
-
-  // (EOF)
-  // said SO: It is reasonable to assume that EOF equals -1...
-  dict.eof = -1;
-
-  // (yy_c) character - only used as internal counter
-  dict.character = null;
-
-  // (YY_NUM_RULES)
-  dict.number_of_rules = 14;
-
-  // (yy_size_t)
-  // The following is because we cannot portably get our hands on size_t
-  // (without autoconf's help, which isn't available because we want
-  // flex-generated scanners to compile on their own).
-  dict.size = null;
-
-  // (sizeof(int))
-  // 4 bytes it shall be
-  dict.sizeof_(int) = 4;
-
-  // (YY_STACK_USED) stacks
-  dict.stack_used = 0;
-  
-  if (dict.stack_used) {
-
-    // (YY_START_STACK_INCR)
-    // Number of entries by which start-condition stack grows.
-    dict.start_stack_increment = 25;
-
-    // (YY_NO_PUSH_STATE)
-    dict.no_push_state = 0;
-    
-    // (YY_NO_POP_STATE)
-    dict.no_pop_state = 0;
-
-    // (YY_NO_TOP_STATE)
-    dict.no_top_state = 0; 
-
-    // (yy_start_stack_ptr)
-    dict.start_stack_pointer = 0;
-
-    // (yy_start_stack_depth)
-    dict.start_stack_depth = 0;
-
-    // (yy_start_stack)
-    dict.start_stack = 0;
-
-  } else {
-
-    // (YY_NO_PUSH_STATE)
-    dict.no_push_state = 1;
-    
-    // (YY_NO_POP_STATE)
-    dict.no_pop_state = 1;
-
-    // (YY_NO_TOP_STATE)
-    dict.no_top_state = 1;
-  }
-
-  // (yy_push_state)
-  if (dict.no_push_state === 0) {
-    function pushState(my_dict, my_new_state) {
-      var dict = my_dict,
-        new_size;
-      if (dict.start_stack_pointer >= dict.start_stack_depth) {
-        dict.start_stack_depth += dict.start_stack_increment;
-        new_size = dict.start_stack_depth * dict.sizeof_(int);
-
-        if (dict.start_stack === 0) {
-          dict.start_stack = setBuffer(dict, new_size);
-        } else {
-          dict.start_stack = growCurrentBuffer(
-            dict,
-            dict.start_stack,
-            new_size
-          );
-        }
-        if (dict.start_stack === null) {
-          throw new Error(
-            "[error] - Out of memory expanding start-condition stack"
-          );
-        }
-      }
-      dict.start_stack[dict.start_stack_pointer++] = (dict.start_state - 1)/2;
-
-      // used to be BEGIN(new_state) but as it only replaces... 
-      dict.start_state = 1 + 2 * new_state;
-    }
-  }
-
-  // (yy_pop_state)
-  if (dict.no_pop_state === 0) {
-    function popState(my_dict) {
-      var dict = my_dict;
-      if (--dict.start_stack_pointer < 0) {
-        throw new Error("[error] - Start-condition stack underflow" );
-      }
-
-      // used to be BEGIN(new_state) but as it only replaces... 
-      dict.start_state = 1 + 2 * lex.start_stack[lex.start_stack_pointer];
-    }
-  }
-
-  // (yy_top_state)
-  if (dict.no_top_state === 0) {
-    function topState(my_dict) {
-      return dict.start_stack[dict.start_stack_pointer - 1];
-    }
-  }
-
-  // (yy_scan_string) 
-  function scanString(my_dict, my_string) {
-    var len;
-    for (len = 0; my_string[len]; ++len) {
-      ;
-    }
-    return scanBytes(my_dict, my_string, len);
-  }
-
-  // (yy_scan_bytes)
-  function scanBytes(my_bytes, my_len) {
-    var dict = my_dict, 
-      buffer,
-      scanned_buffer,
-      i,
-      n;
-
-    // Get memory for full buffer, including space for trailing EOB's.
-    n = len + 2;
-    buffer = setBuffer(n);
-    if (buffer === undefined) {
-      throw new Error("[[error] - Out of dynamic memory in scanBytes()");
-    }
-    for (i = 0; i < len; ++i) {
-      buffer.setInt8(i, bytes.charCodeAt(i));
-    }
-    buffer.setInt8(len, dict.buffer_end_character);
-    buffer.setInt8(len + 1, dict.buffer_end_character);
-    scanned_buffer = scanBuffer(buffer, n);
-    if (scanned_buffer === null) {
-      throw new Error("[error] - Bad buffer in scanBytes()" );
-    }
-
-    // It's okay to grow etc. this buffer, and we should throw it
-    // away when we're done.
-    scanned_buffer.buffer_is_ours = 1;
-
-    return scanned_buffer;
-  };
-
-  */
-
-  if (YY === undefined) {
-    throw new Error("[error] Missing YY. We won't get far.");
-  }
-
-  // -------------------------- lookup tables ----------------------------------
-  YY.table_dict = YY.util_dict.extendDict(YY.table_dict || {}, {
-
-    // (yy_ec) - ??
-    "ec": [
-      0,
-      1,    1,    1,    1,    1,    1,    1,    1,    2,    3,
-      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-      1,    2,    4,    1,    5,    1,    6,    1,    1,    1,
-      1,    7,    1,    1,    1,    1,    1,    8,    8,    8,
-      8,    8,    8,    8,    8,    8,    8,    9,    1,    1,
-      1,    1,    1,   10,   11,    8,    8,    8,   12,    8,
-     13,    8,   14,    8,    8,    8,    8,   15,   16,    8,
-      8,   17,   18,    8,    8,    8,    8,    8,    8,    8,
-      1,    1,    1,    1,    8,    1,    8,    8,    8,    8,
-  
-      8,    8,    8,    8,    8,    8,    8,    8,    8,    8,
-      8,    8,    8,    8,    8,    8,    8,    8,    8,    8,
-      8,    8,   19,    1,   20,    1,    1,    1,    1,    1,
-      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-  
-      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-      1,    1,    1,    1,    1
-    ],
-
-    // (yy_accept) - used to set yy_act = action to run, so this
-    // should be list of actions, probably corresponding to the
-    // number of rules available (15, 14+1)
-    "accept": [
-        0,
-        0,    0,   15,   13,   12,   10,    7,   13,   13,    8,
-        2,    9,   13,    3,    4,    0,   11,    0,    0,    2,
-        1,    0,    0,    0,    0,    0,    0,    0,    0,    5,
-        6,    0
-    ],
-
-    // (yy_base)
-    "base": [
-      0,
-      0,    0,   39,   40,   40,   40,   40,   35,   10,   40,
-      0,   40,    0,   40,   40,   34,   40,   18,   22,    0,
-      0,   16,   18,   18,   15,   17,   12,   13,   15,   40,
-     40,   40,   24,   21,   20
-    ],
-
-    // (yy_meta)
-    "meta": [
-      0,
-      1,    1,    1,    1,    1,    1,    1,    2,    1,    1,
-      2,    2,    2,    2,    2,    2,    2,    2,    1,    1
-    ],
-
-    // (yy_def)
-    "def": [
-       0,
-       32,    1,   32,   32,   32,   32,   32,   33,   32,   32,
-       34,   32,   35,   32,   32,   33,   32,   32,   32,   34,
-       35,   32,   32,   32,   32,   32,   32,   32,   32,   32,
-       32,    0,   32,   32,   32
-    ],
-
-    // (yy_nxt)
-    "nxt": [
-      0,
-      4,    5,    6,    7,    8,    9,   10,   11,   12,   13,
-     11,   11,   11,   11,   11,   11,   11,   11,   14,   15,
-     18,   21,   20,   19,   16,   16,   31,   30,   29,   28,
-     27,   26,   25,   24,   23,   22,   17,   17,   32,    3,
-     32,   32,   32,   32,   32,   32,   32,   32,   32,   32,
-     32,   32,   32,   32,   32,   32,   32,   32,   32,   32
-    ],
-
-    // (yy_chk) checks current state, probably to validate
-    "check": [
-      0,
-      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-      1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-      9,   35,   34,    9,   33,   33,   29,   28,   27,   26,
-     25,   24,   23,   22,   19,   18,   16,    8,    3,   32,
-     32,   32,   32,   32,   32,   32,   32,   32,   32,   32,
-     32,   32,   32,   32,   32,   32,   32,   32,   32,   32
-    ]
-  });
 
   // ----------------------------- methods -------------------------------------
   
