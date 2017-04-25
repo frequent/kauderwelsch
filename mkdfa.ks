@@ -97,6 +97,335 @@
 }(window, Math, Error));
 
 // =============================================================================
+// ================================= Table =====================================
+// =============================================================================
+
+(function (window, YY, Error) {
+  "use strict";
+
+  var TRANSLATE_TOKEN = [
+       0,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
+       2,     2,     2,     2,     2,     2,     1,     3,     4,     5,
+       6,     7,     8,     9,    10,    11,    12,    13
+    ],
+
+    NON_TERMINAL_GOTO_METHOT = [
+      51,-32768,-32768,-32768,   21,-32768,-32768,   -3,   24,   12,
+    -32768,-32768,   -2  
+    ],
+
+    DEFAULT_GOTO_METHOD = [
+      23,   10,   11,   12,   30,   31,   13,   14,   28,   15,
+      29,   16,   17  
+    ],
+
+    RULE_LEFT_HAND_SIDE_SYMBOL_NUMBER = [
+       0,   14,   14,   15,   15,   15,   15,   15,   16,   17,
+      17,   18,   18,   19,   19,   19,   20,   20,   21,   22,
+      22,   23,   23,   24,   25,   25,   26,   26  
+    ],
+
+    RIGHT_HAND_SIDE = [
+      15,     0,    15,    14,     0,    16,     0,    20,     0,    25,
+       0,    26,     0,     1,    13,     0,    17,     5,    26,    18,
+       6,    26,     0,    10,     0,     7,    10,     0,    19,     0,
+      19,    18,     0,    21,     0,    23,    26,     0,    26,     0,
+      21,     0,     7,    21,     0,    23,     9,    22,    26,     0,
+      24,     0,    24,    22,     0,    11,     0,     8,    11,     0,
+      11,     0,     3,    26,     0,     4,     0,    12,     0,    13,
+       0
+    ],    
+
+    RULE_RIGHT_HAND_SIDE_SYMBOL_LENGTH = [
+      0,    1,    2,    1,    1,    1,    1,    2,    6,    1,
+      2,    1,    2,    1,    2,    1,    1,    2,    4,    1,
+      2,    1,    2,    1,    2,    1,    1,    1  
+    ],
+
+    DEFAULT_REDUCTION_RULE = [
+       0,    0,    0,   25,    0,    0,    9,   21,   26,   27,
+       0,    3,    0,    4,   16,    0,    5,    6,    7,   24,
+      10,   17,   22,    2,    0,    0,    0,   23,    0,   19,
+       0,   11,   13,    0,   15,   18,   20,    0,   12,   14,
+       8,    0,    0,    0
+    ],
+
+    LINE_POINTER = [
+       0,    55,    55,    57,    57,    57,    57,    58,    63,    65,
+      70,    76,    76,    78,    82,    86,    88,    92,    97,    99,
+      99,   101,   105,   111,   116,   120,   125,   125
+    ],
+
+    SET_STATE_ACTION = [
+          29,    14,     5,-32768,    36,     0,-32768,-32768,-32768,-32768,
+           2,-32768,    20,-32768,-32768,    25,-32768,-32768,-32768,-32768,
+      -32768,-32768,-32768,-32768,     5,    34,     8,-32768,     5,    34,
+          42,     8,-32768,    -5,-32768,-32768,-32768,     5,-32768,-32768,
+      -32768,    49,    50,-32768
+    ],
+
+    STATE_ACTION_VALID = [
+       2,    4,    0,    1,    9,    3,    4,   12,   13,    7,
+       8,   11,   10,   11,   12,   13,    8,   12,   13,   11,
+      12,   13,   24,   26,   26,    5,   28,   13,   31,   31,
+       1,   33,    3,    4,    9,   37,    7,    8,   26,   10,
+      11,   12,   13,   31,    8,   11,   10,   11,    6,    0,
+       0,    0,   31,   29
+    ],
+
+    STATE_ACTION = [
+      19,   21,   -1,    1,   25,    2,    3,    8,    9,    4,
+       5,   22,    6,    7,    8,    9,    5,    8,    9,    7,
+       8,    9,   26,   32,   34,   24,   35,   18,   32,   34,
+       1,   39,    2,    3,   25,   40,    4,    5,   33,    6,
+       7,    8,    9,   33,    5,   27,   20,    7,   37,   42,
+      43,   41,   38,   36
+    ],
+
+    TOKEN_NUMBER_OF_TOKEN = [
+      "$", "error", "$undefined.", "CTRL_ASSIGN", "CTRL_IGNORE", "OPEN", 
+      "CLOSE", "REVERSE", "STARTCLASS", "LET", "TAG", "SYMBOL", "REMARK", 
+      "NL", "src", "statement", "block", "tag", "members", "member", "single", 
+      "define", "bodies", "head", "body", "contol", "remark", 0  
+    ],
+
+    RIGHT_HAND_SIDE_INDEX = [
+       0,     0,     2,     5,     7,     9,    11,    13,    16,    23,
+      25,    28,    30,    33,    35,    38,    40,    42,    45,    50,
+      52,    55,    57,    60,    62,    65,    67,    69
+    ];
+
+  function translate(my_x) {
+    if (my_x <= 267) {
+      return YY.table_dict.translate_token[my_x];
+    }
+    return 27;
+  }
+
+  // (YYTRANSLATE) [gram.tabl.c]
+  YY.table_dict = YY.util_dict.extendDict({}, {
+
+    // (yytranslate)
+    // This table maps lexical token numbers to their symbol numbers. If you 
+    // have %token declarations in your grammar, Bison assigns token numbers to 
+    // the different tokens; If you just use character representations, Bison 
+    // just maps their ASCII values to the symbol numbers. Example of the latter
+    // is yytranslate[97] = 5 which is 'a'. Full listing of yytranslate is below.
+    "translate_token": TRANSLATE_TOKEN,
+
+    // (yypgoto) - accounts for non-default GOTOs for all non-terminal symbols.
+    "non_terminal_goto_method": NON_TERMINAL_GOTO_METHOD,
+
+    // (yydefgoto) - lists default GOTOs for each non-terminal symbol. It is 
+    // only used after checking with yypgoto.
+    // This is a compressed form of the GOTO part of our traditional table. 
+    // It has as many entries as there are non-terminals in the grammar. Each 
+    // entry specifies the state to transition to on each non-terminal. So 
+    // here goes:
+    //{
+    //  -1,     3,     4,     5,     7
+    //};
+    // yydefgoto[nth non-terminal] = most common GOTO state for the nth 
+    // non-terminal. n starts from zero. An index into this array is obtained 
+    // by subtracting the number of terminal symbols from the symbol number of
+    // the non-terminal. For example, the symbol number for E is 10 and number 
+    // of tokens in the grammar is 8, so:
+    // Thus yydefgoto[E] = yydefgoto[10-8] = state 4.
+    // yydefgoto is consulted whenever the parser reduces stack contents 
+    // using a rule. Later we will see that yydefgoto is consulted only after 
+    // checking with another goto table, and that will explain how we manage 
+    // to go to state 6 from state 2 on L instead of going to state 3 as this
+    // table specifies for L.
+    // As a final note observe that the entry for the zeroth non-terminal
+    // ($accept) is -1. The stack will never be reduced with the $accept rule.
+    // This table gives a reference to GOTO entries for non-terminals that can 
+    // transition the automaton to different states based on previous state.
+    // For example, the symbol L can take the automaton to state 3 if the 
+    // present state is 0, but the GOTO on L for state 2 is state 6. Similarly 
+    // for symbols E and P there are different GOTO states based on the current
+    // state. The most common GOTO is already defined in YYDEFGOTO. The job 
+    // of YYPGOTO is to indicate the anomalies. Lets take a look:
+    // {
+    //  -5,     5,    -1,     2,    -5
+    // };
+    // That's our ND table that we discussed in the compressing parsing tables 
+    // section. It is indexed by non-terminal symbol number; One entry each 
+    // for $accept, L, E, P, M. Let us say the current state on top of the 
+    // stack after reduction by rule #5 (P â a) is state 10 (see example parse
+    // in the appendix). Now the GOTO transition for state 10 on P is really 
+    // state 13 (according to our traditional tables), which is not the 
+    // yydefgoto entry for P.
+    // The parser adds yypgoto[P] i.e yypgoto[3] to the current exposed 
+    // state number (state 10). The result is 12 (since yypgoto[3]=2). 
+    // Now yytable[12] happens to be 13, so this is the new state to be 
+    // pushed on to the stack.
+    // How does the parser know that it has to pick the state value from 
+    // yytable (via yypgoto) and not from yydefgoto? For this, there is a 
+    // guard table called yycheck that will indicate this fact. It is only 
+    // after checking with this table that a proper pick is made. We will see 
+    // this operation in the section describing the parsing routine yyparse().
+    "default_goto_method": DEFAULT_GOTO_METHOD,
+
+    // (yyr1) - Symbol number of symbol that rule yyn derives.
+    // Symbol number of lhs of each rule. Used at the time of a 
+    // reduction to find the next state. yyr1 specifies the symbol number of 
+    // the LHS of each rule. Remember that 0 is never used as a rule number, 
+    // so this table has NRULES + 1 entries, where NRULES is the number of 
+    // rules in the grammar. Here is the listing:
+    // Other example:
+    // {
+    //   0,     8,     9,     9,    10,    10,    11,    11,    12,    12
+    // };
+    // So rule #1 has $accept as LHS, and hence rule_symbol_number[1] = 8 (see 
+    // symbol table given previously) and so on. When a reduction takes place, 
+    // We need to know the LHS symbol of the rule used for reduction to 
+    // transition to an appropriate state. That is where this table comes into 
+    // use.
+    "rule_left_hand_side_symbol_number": RULE_LEFT_HAND_SIDE_SYMBOL_NUMBER,
+
+    // (yyrhs) - A -1 separated list of RHS (right hand side/key) symbol
+    // numbers of all rules. yyrhs[n] is first symbol on the RHS (right hand 
+    // side of rule #n)
+    // Not generated anymore in Bison > 2014
+    "right_hand_side": RIGHT_HAND_SIDE,
+
+    // (yyr2) - length of RHS of each rule (Number of symbols composing right
+    // hand side of rule. Used at the time of reduction to pop the stack.
+    // yyr2 specifies the length (number of symbols) of the right hand side of 
+    // each rule. Here is a listing produced by Bison:
+    // {
+    //   0,     2,     3,     1,     3,     1,     1,     3,     0,     1
+    // };
+    // Rule #2 (L â L;E) has 3 symbols on the RHS, and hence yyr2[2] = 3. This 
+    // table is also used at the time of a reduction. The number of states to 
+    // be popped off the stack is same as the number of symbols on the right 
+    // hand side of the reducing rule.
+    "rule_right_hand_side_symbol_length": RULE_RIGHT_HAND_SIDE_SYMBOL_LENGTH,
+
+    // (yydefact) - default reduction rules for each state = default rule to 
+    // reduce with in state S when YYTABLE doesn't specify something else to do.
+    "default_reduction_rule": DEFAULT_REDUCTION_RULE,
+
+    // (yyrline[n]) - Line # in .y grammar source file where rule n is defined.
+    // This table lists default reductions for each state. yydefact[state] = 
+    // rule number to use for a default reduction in that state. Here is the 
+    // yydefact table produced for our a sample grammar:
+    // {
+    // 0,     6,     8,     0,     3,     5,     9,     0,     1,     0,
+    // 0,     7,     2,     4
+    // };
+    // Note that a rule number 0 in this table means error. Rule number 0 is 
+    // not used internally by Bison because of some limitations of the internal
+    // representation of the input grammar. One important observation here -
+    // rule numbers are incremented by 1 in this table because of the additional 
+    // rule ($accept â L $end). So what was really r5 for state 1, has become 
+    // r6 in yydefact.
+    "line_pointer": LINE_POINTER,
+
+    // (yypact) - Directory into yytable indexed by state number. Ddisplacements 
+    // in yytable are indexed by symbol number.
+    // This table specifies the portion of yytable that describes what to do 
+    // in state S. It is indexed by the symbol number of the token symbols. This
+    // is like the directory table D that was described in the previous section 
+    // on compressing parsing tables. It is the first table consulted by the 
+    // parsing loop. If yypact[cur-state] = YYPACT_NINF, its time for a 
+    // default reduction using yydefact. This means that the state has only 
+    // reductions as in state 1 (r5); otherwise the entry in yypact[cur-state] 
+    // is to be added to the symbol number of the current look-ahead token and 
+    // the resulting number is used as an index into yytable to get the next
+    // action (see comments in yytable code).An example:
+    
+    // Suppose we are in state zero and the look-ahead token is 'a' (symbol 
+    // number 5). Now yypact[0] is -4, so the index into yytable is 5-4 = 1. 
+    // yytable[1] is 1 which means "shift this symbol and go to state 1". See 
+    // yycheck below for some more checking information. If the yytable entry 
+    // specifies a negative value say -3, it means that we should be reducing 
+    // the stack with rule #3.
+    "set_state_action": SET_STATE_ACTION,
+
+    // (yycheck) - guard used to check legal bounds within portions yytable 
+    // This is like a guard table. This table is used for various checks. Again 
+    // this table is another mixed bag - of symbol numbers and state numbers. 
+    // There is a very good explanation for this table inside Bison source
+    // code (src/tables.h): YYCHECK = a vector indexed in parallel with YYTABLE.  
+    // It indicates, in a roundabout way, the bounds of the portion you are 
+    // trying to examine.
+    // Suppose that the portion of YYTABLE starts at index P and the index to 
+    // be examined within the portion is I. Then if YYCHECK[P+I] != I,
+    // I is outside the bounds of what is actually allocated, and the 
+    // default (from YYDEFACT or YYDEFGOTO) should be used. Otherwise,
+    // YYTABLE[P+I] should be used.
+    // Example: Suppose we are in state 0 and the look-ahead token in 'a'. 
+    // yypact[0] = -4 and this, added to symbol number of 'a' (5) gives the
+    // index in yytable as we have seen before. Before accessing yytable[1] and
+    // proceeding to shift the token, the parser must check that yycheck[1] has 
+    // the symbol number for the current token. If the test fails, it is time
+    // for a default reduction! But in our case, yycheck[1] contains 5 which 
+    // really is the symbol number 'a', so we can safely consult yytable for
+    // what to do next.
+    // yycheck also helps with special case reductions where the GOTO on a
+    // non-terminal for the current state is not the most common state 
+    // (specified by yydefgoto); Consider the same example given in the yypgoto 
+    // section: we were in state #10 and the reduction rule was rule #5 (P â a). 
+    // We added yypgoto[P]=2 to current state number (10) to get 12. Before 
+    // consulting yytable the parser checks with yycheck[12]. If this value 
+    // is 10, then we know that state# 10 is a special case, otherwise, we use 
+    // yydefgoto to decide the transition.
+    "state_action_valid": STATE_ACTION_VALID,
+
+    // (yytable) - a highly compressed representation of the actions in each 
+    // state. Negative entries represent reductions. There is a negative 
+    // infinity to detect errors.
+    // This table is a mixed bag of state numbers and rule numbers in some 
+    // pre-calculated order. This is the table T we discussed in the previous 
+    // section. yytable works closely with yycheck, yypact and yypgoto tables 
+    // to indicate to the parser either the state to pushed next on to the 
+    // parse stack or a rule to use for reduction.
+    // One thing worth noting here is the definition of YYTABLE_NINF - the 
+    // "negative infinity" value for yytable is the highest negative entry 
+    // which in our case is -1 (since there are no negative values in yytable). 
+    // This value is used to determine explicit error situations.
+    "state_action": STATE_ACTION,
+
+    // (yytname) [gram.tab.c]  String specifying the symbol for symbol number n. 
+    // ~ yytoknum[n] - Token number of token n (String name of token TOKEN_NUM)
+    "token_number_of_token": TOKEN_NUMBER_OF_TOKEN,
+
+    // (yyprhs) [gram.tabl.c] Index in yyrhs of the first RHS symbol of rule n.
+    // Not generated anymore in Bison > 2014
+    "right_hand_side_index": RIGHT_HAND_SIDE_INDEX,
+
+    // (YYTRANSLATE) [gram.tabl.c] - fetch Bison token number corresponding to YYLEX.
+    "translate": translate,
+  });
+
+}(window, YY, Error));
+
+// =============================================================================
 // ================================= State =====================================
 // =============================================================================
 (function (window, YY, Error) {
@@ -105,12 +434,12 @@
   /* not used so far
 
   // (FAList) Pointer of start FA in FA network
-  YY.parse_dict.finite_automaton_list = null;
+  YY.state_dict.finite_automaton_list = null;
 
-  YY.parse_dict.flag_body_class_accept = 0;
+  YY.state_dict.flag_body_class_accept = 0;
 
   // [mkfa.h]
-  YY.parse_dict.arc = {
+  YY.state_dict.arc = {
     "inp": 0,
     "finite_automaton": {},
     "flag_body_class_start": 0,
@@ -119,7 +448,7 @@
   };
 
   // [mkfa.h]
-  YY.parse_dict.unify_arc = {
+  YY.state_dict.unify_arc = {
     "inp": 0,
     "finite_automaton": {},
     "flag_body_class_start": 0,
@@ -129,13 +458,13 @@
   };
 
   // [mkfa.h]
-  YY.parse_dict.finite_automaton_list = {
+  YY.state_dict.finite_automaton_list = {
     "finite_automation": {},
     "next": {}
   };
 
   // [mkfa.h]
-  YY.parse_dict.finite_automaton = {
+  YY.state_dict.finite_automaton = {
     // common
     "stat": 0,
     "arc": [],
@@ -151,7 +480,6 @@
   
   */
 
-  // (getClass) [nfa.c]
   function getClass(my_dict, my_head_string) {
     var dict = my_dict,
       body_class;
@@ -174,7 +502,6 @@
     }
   }
 
-  // (getNewClassName)
   function getNewClassName (my_dict, my_name) {
     var dict = my_dict;
 
@@ -183,7 +510,6 @@
     dict.static_tmp_class_count += 1;
   }
   
-  // (chkNoInstantClass) [gram.tab.c]
   function checkNoInstantClass(my_dict) {
     var dict = my_dict,
       current_class = dict.class_tree,
@@ -203,7 +529,6 @@
     }
   }
 
-  // (_BODY) [mkfa.h]
   function createTerminalSymbolBody() {
    return {
      "name": null,
@@ -212,7 +537,6 @@
      };
   }
 
-  // (appendTerm) [voca.c]
   function appendTerminalSymbol(my_dict, my_body_list, my_name) {
     var dict = my_dict;
       new_term_body;
@@ -225,7 +549,6 @@
     return new_term_body;
   }
 
-  // (BODYLIST) [mkfa.h]
   function createBodyList() {
     return {
       "body": {},
@@ -233,7 +556,6 @@
     };
   }
   
-  // (class) [mkfa.h]
   function createBodyClass() {
     return {
       "number": null,
@@ -247,7 +569,6 @@
     };
   }
 
-  // (entryTerm) [voca.c]
   function enterTerminalSymbol(my_dict, my_name, my_body_list, my_counter) {
     var dict = my_dict,
       input_number = dict.static_enter_terminal_symobol_input_number,
@@ -281,9 +602,6 @@
     dict.root_body_list.next = null;
   }
 
-  // (setNonTerm), must return a body
-  // Non-Terminal symbols can be replaced using grammar rules
-  // Terminl symbols cannot be replaced
   function createNonTerminalSymbolBody(my_dict) {
     var dict = my_dict, 
       body = dict.createTerminalSymbolBody(),
@@ -306,7 +624,6 @@
     return body;
   }
 
-  // (appendNonTerm) [gram.tab.c]
   function appendNonTerminalSymbol(my_dict, my_flag_is_mode_assign_accept) {
     var dict = my_dict,
       name = dict.head_string,
@@ -320,7 +637,6 @@
     dict.body_number = 0;
   }
 
-  // (outputHeader) [gram.tab.c]
   function outputHeader(my_dict, my_semantic_stack_value) {
     var dict = my_dict,
       header = YY.util_dict.getFileByType(YY.file_dict, "header");
@@ -349,7 +665,6 @@
    }
   }
 
-  // (enterNonTerm) [gram.tab.c]
   function enterNonTerminalSymbol(
     my_dict,
     my_name,
@@ -555,7 +870,57 @@
 (function (window, YY, Math, Error) {
   "use strict";
 
-  // XXX Here we are
+  // A ported Bison parser, made from gram. by hand.
+  /* Skeleton output parser for bison,
+  
+    Copyright (C) 1984, 1989, 1990, 2000, 2001, 2002 Free Software
+    Foundation, Inc.
+  
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2, or (at your option)
+    any later version.
+  
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+  
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 59 Temple Place - Suite 330,
+    Boston, MA 02111-1307, USA.  */
+
+  /* As a special exception, when this file is copied by Bison into a
+    Bison output file, you may use that output file without restriction.
+    This special exception was added by the Free Software Foundation
+    in version 1.24 of Bison.  */
+  
+  /* This is the parser code that is written into each bison parser when
+    the %semantic_parser declaration is not specified in the grammar.
+    It was written by Richard Stallman by simplifying the hairy parser
+    used when %semantic_parser is specified.  */
+  
+  /* All symbols defined below should begin with yy or YY, to avoid
+    infringing on user name space.  This should be done even for local
+    variables, as they might otherwise be expanded by user macros.
+    There are some unavoidable exceptions within include files to
+    define necessary library symbols; they are noted "INFRINGES ON
+    USER NAME SPACE" below.  */
+
+  // ported from:
+  // https://goo.gl/2koggK
+  // resources:
+  // http://www.cs.man.ac.uk/~pjj/cs212/ex5_hint.html
+  // https://en.wikipedia.org/wiki/LALR_parser#LR_parsers
+  // https://goo.gl/9BbDd0
+  // https://zaa.ch/jison/try
+  // https://www.cs.uic.edu/~spopuri/cparser.html
+  // https://en.wikipedia.org/wiki/Shift-reduce_parser
+  // https://en.wikipedia.org/wiki/Terminal_and_nonterminal_symbols
+
+
+
   // ----------------------------- PARSE ---------------------------------------
 
   // #line 315 "/usr/share/bison/bison.simple"
@@ -739,352 +1104,8 @@
   }
   */
 
-  // A ported Bison parser, made from gram. by hand.
-  /* Skeleton output parser for bison,
+
   
-    Copyright (C) 1984, 1989, 1990, 2000, 2001, 2002 Free Software
-    Foundation, Inc.
-  
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2, or (at your option)
-    any later version.
-  
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-  
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place - Suite 330,
-    Boston, MA 02111-1307, USA.  */
-
-  /* As a special exception, when this file is copied by Bison into a
-    Bison output file, you may use that output file without restriction.
-    This special exception was added by the Free Software Foundation
-    in version 1.24 of Bison.  */
-  
-  /* This is the parser code that is written into each bison parser when
-    the %semantic_parser declaration is not specified in the grammar.
-    It was written by Richard Stallman by simplifying the hairy parser
-    used when %semantic_parser is specified.  */
-  
-  /* All symbols defined below should begin with yy or YY, to avoid
-    infringing on user name space.  This should be done even for local
-    variables, as they might otherwise be expanded by user macros.
-    There are some unavoidable exceptions within include files to
-    define necessary library symbols; they are noted "INFRINGES ON
-    USER NAME SPACE" below.  */
-
-  // ported from:
-  // https://goo.gl/2koggK
-  // resources:
-  // http://www.cs.man.ac.uk/~pjj/cs212/ex5_hint.html
-  // https://en.wikipedia.org/wiki/LALR_parser#LR_parsers
-  // https://goo.gl/9BbDd0
-  // https://zaa.ch/jison/try
-  // https://www.cs.uic.edu/~spopuri/cparser.html
-  // https://en.wikipedia.org/wiki/Shift-reduce_parser
-  // https://en.wikipedia.org/wiki/Terminal_and_nonterminal_symbols
-
-  if (YY === undefined) {
-    throw new Error("[error] Missing YY. We won't get far.");
-  }
-
-  // -------------------------- lookup tables ----------------------------------
-  YY.table_dict = {
-
-    // (yytranslate)
-    // This table maps lexical token numbers to their symbol numbers. If you 
-    // have %token declarations in your grammar, Bison assigns token numbers to 
-    // the different tokens; If you just use character representations, Bison 
-    // just maps their ASCII values to the symbol numbers. Example of the latter
-    // is yytranslate[97] = 5 which is 'a'. Full listing of yytranslate is below.
-    "translate": [
-       0,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,     2,     2,     2,     1,     3,     4,     5,
-       6,     7,     8,     9,    10,    11,    12,    13
-    ],
-
-    // (yypgoto) - accounts for non-default GOTOs for all non-terminal symbols.
-    "non_terminal_goto_method": [
-      51,-32768,-32768,-32768,   21,-32768,-32768,   -3,   24,   12,
-    -32768,-32768,   -2  
-    ],
-
-    // (yydefgoto) - lists default GOTOs for each non-terminal symbol. It is 
-    // only used after checking with yypgoto.
-    "default_goto_method": [
-      23,   10,   11,   12,   30,   31,   13,   14,   28,   15,
-      29,   16,   17  
-    ],
-
-    // This is a compressed form of the GOTO part of our traditional table. 
-    // It has as many entries as there are non-terminals in the grammar. Each 
-    // entry specifies the state to transition to on each non-terminal. So 
-    // here goes:
-    //{
-    //  -1,     3,     4,     5,     7
-    //};
-    // yydefgoto[nth non-terminal] = most common GOTO state for the nth 
-    // non-terminal. n starts from zero. An index into this array is obtained 
-    // by subtracting the number of terminal symbols from the symbol number of
-    // the non-terminal. For example, the symbol number for E is 10 and number 
-    // of tokens in the grammar is 8, so:
-    // Thus yydefgoto[E] = yydefgoto[10-8] = state 4.
-    // yydefgoto is consulted whenever the parser reduces stack contents 
-    // using a rule. Later we will see that yydefgoto is consulted only after 
-    // checking with another goto table, and that will explain how we manage 
-    // to go to state 6 from state 2 on L instead of going to state 3 as this
-    // table specifies for L.
-    // As a final note observe that the entry for the zeroth non-terminal
-    // ($accept) is -1. The stack will never be reduced with the $accept rule.
-
-    // This table gives a reference to GOTO entries for non-terminals that can 
-    // transition the automaton to different states based on previous state.
-    // For example, the symbol L can take the automaton to state 3 if the 
-    // present state is 0, but the GOTO on L for state 2 is state 6. Similarly 
-    // for symbols E and P there are different GOTO states based on the current
-    // state. The most common GOTO is already defined in YYDEFGOTO. The job 
-    // of YYPGOTO is to indicate the anomalies. Lets take a look:
-    // {
-    //  -5,     5,    -1,     2,    -5
-    // };
-    // That's our ND table that we discussed in the compressing parsing tables 
-    // section. It is indexed by non-terminal symbol number; One entry each 
-    // for $accept, L, E, P, M. Let us say the current state on top of the 
-    // stack after reduction by rule #5 (P â a) is state 10 (see example parse
-    // in the appendix). Now the GOTO transition for state 10 on P is really 
-    // state 13 (according to our traditional tables), which is not the 
-    // yydefgoto entry for P.
-    // The parser adds yypgoto[P] i.e yypgoto[3] to the current exposed 
-    // state number (state 10). The result is 12 (since yypgoto[3]=2). 
-    // Now yytable[12] happens to be 13, so this is the new state to be 
-    // pushed on to the stack.
-
-    // How does the parser know that it has to pick the state value from 
-    // yytable (via yypgoto) and not from yydefgoto? For this, there is a 
-    // guard table called yycheck that will indicate this fact. It is only 
-    // after checking with this table that a proper pick is made. We will see 
-    // this operation in the section describing the parsing routine yyparse().
-
-    // (yyr1) - Symbol number of symbol that rule yyn derives.
-    // Symbol number of lhs of each rule. Used at the time of a 
-    // reduction to find the next state. yyr1 specifies the symbol number of 
-    // the LHS of each rule. Remember that 0 is never used as a rule number, 
-    // so this table has NRULES + 1 entries, where NRULES is the number of 
-    // rules in the grammar. Here is the listing:
-    "rule_left_hand_side_symbol_number": [
-       0,   14,   14,   15,   15,   15,   15,   15,   16,   17,
-      17,   18,   18,   19,   19,   19,   20,   20,   21,   22,
-      22,   23,   23,   24,   25,   25,   26,   26  
-    ],
-
-    // Other example:
-    // {
-    //   0,     8,     9,     9,    10,    10,    11,    11,    12,    12
-    // };
-    // So rule #1 has $accept as LHS, and hence rule_symbol_number[1] = 8 (see 
-    // symbol table given previously) and so on. When a reduction takes place, 
-    // We need to know the LHS symbol of the rule used for reduction to 
-    // transition to an appropriate state. That is where this table comes into 
-    // use.
-
-    // (yyr2) - length of RHS of each rule (Number of symbols composing right
-    // hand side of rule. Used at the time of reduction to pop the stack.
-    "rule_right_hand_side_symbol_length": [
-      0,    1,    2,    1,    1,    1,    1,    2,    6,    1,
-      2,    1,    2,    1,    2,    1,    1,    2,    4,    1,
-      2,    1,    2,    1,    2,    1,    1,    1  
-    ],
-
-    // (yyrhs) - A -1 separated list of RHS (right hand side/key) symbol
-    // numbers of all rules. yyrhs[n] is first symbol on the RHS (right hand 
-    // side of rule #n)
-    // Not generated anymore in Bison > 2014
-    "right_hand_side": [
-      15,     0,    15,    14,     0,    16,     0,    20,     0,    25,
-       0,    26,     0,     1,    13,     0,    17,     5,    26,    18,
-       6,    26,     0,    10,     0,     7,    10,     0,    19,     0,
-      19,    18,     0,    21,     0,    23,    26,     0,    26,     0,
-      21,     0,     7,    21,     0,    23,     9,    22,    26,     0,
-      24,     0,    24,    22,     0,    11,     0,     8,    11,     0,
-      11,     0,     3,    26,     0,     4,     0,    12,     0,    13,
-       0
-    ],    
-
-    // yyr2 specifies the length (number of symbols) of the right hand side of 
-    // each rule. Here is a listing produced by Bison:
-    // {
-    //   0,     2,     3,     1,     3,     1,     1,     3,     0,     1
-    // };
-    // Rule #2 (L â L;E) has 3 symbols on the RHS, and hence yyr2[2] = 3. This 
-    // table is also used at the time of a reduction. The number of states to 
-    // be popped off the stack is same as the number of symbols on the right 
-    // hand side of the reducing rule.
-
-    // (yydefact) - default reduction rules for each state = default rule to 
-    // reduce with in state S when YYTABLE doesn't specify something else to do.
-    "default_reduction_rule": [
-       0,    0,    0,   25,    0,    0,    9,   21,   26,   27,
-       0,    3,    0,    4,   16,    0,    5,    6,    7,   24,
-      10,   17,   22,    2,    0,    0,    0,   23,    0,   19,
-       0,   11,   13,    0,   15,   18,   20,    0,   12,   14,
-       8,    0,    0,    0
-    ],
-
-    // (yyrline[n]) - Line # in .y grammar source file where rule n is defined.
-    "line_pointer": [
-       0,    55,    55,    57,    57,    57,    57,    58,    63,    65,
-      70,    76,    76,    78,    82,    86,    88,    92,    97,    99,
-      99,   101,   105,   111,   116,   120,   125,   125
-    ],
-
-    // This table lists default reductions for each state. yydefact[state] = 
-    // rule number to use for a default reduction in that state. Here is the 
-    // yydefact table produced for our a sample grammar:
-    // {
-    // 0,     6,     8,     0,     3,     5,     9,     0,     1,     0,
-    // 0,     7,     2,     4
-    // };
-    // Note that a rule number 0 in this table means error. Rule number 0 is 
-    // not used internally by Bison because of some limitations of the internal
-    // representation of the input grammar. One important observation here -
-    // rule numbers are incremented by 1 in this table because of the additional 
-    // rule ($accept â L $end). So what was really r5 for state 1, has become 
-    // r6 in yydefact.
-
-    // (yypact) - Directory into yytable indexed by state number. Ddisplacements 
-    // in yytable are indexed by symbol number.
-    "set_state_action": [
-          29,    14,     5,-32768,    36,     0,-32768,-32768,-32768,-32768,
-           2,-32768,    20,-32768,-32768,    25,-32768,-32768,-32768,-32768,
-      -32768,-32768,-32768,-32768,     5,    34,     8,-32768,     5,    34,
-          42,     8,-32768,    -5,-32768,-32768,-32768,     5,-32768,-32768,
-      -32768,    49,    50,-32768
-    ],
-    
-    // This table specifies the portion of yytable that describes what to do 
-    // in state S. It is indexed by the symbol number of the token symbols. This
-    // is like the directory table D that was described in the previous section 
-    // on compressing parsing tables. It is the first table consulted by the 
-    // parsing loop. If yypact[cur-state] = YYPACT_NINF, its time for a 
-    // default reduction using yydefact. This means that the state has only 
-    // reductions as in state 1 (r5); otherwise the entry in yypact[cur-state] 
-    // is to be added to the symbol number of the current look-ahead token and 
-    // the resulting number is used as an index into yytable to get the next
-    // action (see comments in yytable code).An example:
-    
-    // Suppose we are in state zero and the look-ahead token is 'a' (symbol 
-    // number 5). Now yypact[0] is -4, so the index into yytable is 5-4 = 1. 
-    // yytable[1] is 1 which means "shift this symbol and go to state 1". See 
-    // yycheck below for some more checking information. If the yytable entry 
-    // specifies a negative value say -3, it means that we should be reducing 
-    // the stack with rule #3.
-
-    // (yycheck) - guard used to check legal bounds within portions yytable 
-    "state_action_valid": [
-       2,    4,    0,    1,    9,    3,    4,   12,   13,    7,
-       8,   11,   10,   11,   12,   13,    8,   12,   13,   11,
-      12,   13,   24,   26,   26,    5,   28,   13,   31,   31,
-       1,   33,    3,    4,    9,   37,    7,    8,   26,   10,
-      11,   12,   13,   31,    8,   11,   10,   11,    6,    0,
-       0,    0,   31,   29
-    ],
-
-    // This is like a guard table. This table is used for various checks. Again 
-    // this table is another mixed bag - of symbol numbers and state numbers. 
-    // There is a very good explanation for this table inside Bison source
-    // code (src/tables.h): YYCHECK = a vector indexed in parallel with YYTABLE.  
-    // It indicates, in a roundabout way, the bounds of the portion you are 
-    // trying to examine.
-    // Suppose that the portion of YYTABLE starts at index P and the index to 
-    // be examined within the portion is I. Then if YYCHECK[P+I] != I,
-    // I is outside the bounds of what is actually allocated, and the 
-    // default (from YYDEFACT or YYDEFGOTO) should be used. Otherwise,
-    // YYTABLE[P+I] should be used.
-    // Example: Suppose we are in state 0 and the look-ahead token in 'a'. 
-    // yypact[0] = -4 and this, added to symbol number of 'a' (5) gives the
-    // index in yytable as we have seen before. Before accessing yytable[1] and
-    // proceeding to shift the token, the parser must check that yycheck[1] has 
-    // the symbol number for the current token. If the test fails, it is time
-    // for a default reduction! But in our case, yycheck[1] contains 5 which 
-    // really is the symbol number 'a', so we can safely consult yytable for
-    // what to do next.
-    // yycheck also helps with special case reductions where the GOTO on a
-    // non-terminal for the current state is not the most common state 
-    // (specified by yydefgoto); Consider the same example given in the yypgoto 
-    // section: we were in state #10 and the reduction rule was rule #5 (P â a). 
-    // We added yypgoto[P]=2 to current state number (10) to get 12. Before 
-    // consulting yytable the parser checks with yycheck[12]. If this value 
-    // is 10, then we know that state# 10 is a special case, otherwise, we use 
-    // yydefgoto to decide the transition.
-
-    // (yytable) - a highly compressed representation of the actions in each 
-    // state. Negative entries represent reductions. There is a negative 
-    // infinity to detect errors.
-    "state_action": [
-      19,   21,   -1,    1,   25,    2,    3,    8,    9,    4,
-       5,   22,    6,    7,    8,    9,    5,    8,    9,    7,
-       8,    9,   26,   32,   34,   24,   35,   18,   32,   34,
-       1,   39,    2,    3,   25,   40,    4,    5,   33,    6,
-       7,    8,    9,   33,    5,   27,   20,    7,   37,   42,
-      43,   41,   38,   36
-    ],
-
-    // This table is a mixed bag of state numbers and rule numbers in some 
-    // pre-calculated order. This is the table T we discussed in the previous 
-    // section. yytable works closely with yycheck, yypact and yypgoto tables 
-    // to indicate to the parser either the state to pushed next on to the 
-    // parse stack or a rule to use for reduction.
-    // One thing worth noting here is the definition of YYTABLE_NINF - the 
-    // "negative infinity" value for yytable is the highest negative entry 
-    // which in our case is -1 (since there are no negative values in yytable). 
-    // This value is used to determine explicit error situations.
-
-    //if (dict.debug || dict.verbose) {
-    // (yytname[n]) - A string specifying the symbol for symbol number n. 
-    // ~ yytoknum[n] - Token number of token n (String name of token TOKEN_NUM)
-    "token_number_of_token": [
-      "$", "error", "$undefined.", "CTRL_ASSIGN", "CTRL_IGNORE", "OPEN", 
-      "CLOSE", "REVERSE", "STARTCLASS", "LET", "TAG", "SYMBOL", "REMARK", 
-      "NL", "src", "statement", "block", "tag", "members", "member", "single", 
-      "define", "bodies", "head", "body", "contol", "remark", 0  
-    ],
-
-    // (yyprhs[n]) - Index in yyrhs of the first RHS symbol of rule n.
-    // Not generated anymore in Bison > 2014
-    "right_hand_side_index": [
-       0,     0,     2,     5,     7,     9,    11,    13,    16,    23,
-      25,    28,    30,    33,    35,    38,    40,    42,    45,    50,
-      52,    55,    57,    60,    62,    65,    67,    69
-    ]
-  };
 
   // --------------------------- config ----------------------------------------
   // YYucky options all go here
@@ -1457,13 +1478,6 @@
     console.log("[error] (#" + dict.current_error_count + "): " + my_message);
   }
 
-  // YYTRANSLATE() - fetch Bison token number corresponding to YYLEX.
-  function translate(my_x) {
-    if (my_x <= 267) {
-      return YY.table_dict.translate[my_x];
-    }
-    return 27;
-  }
 
   // build long string of everything we have, then get its length
   function sizeof(my_list) {
