@@ -311,7 +311,7 @@
   // (YYTRANSLATE) [gram.tabl.c]
   YY.table_dict = YY.util_dict.extendDict({}, {
 
-    // (yy_ec) [lex.yy.c] ??
+    // (yy_ec) [lex.yy.c]
     "ec": LEX_EC,
 
     // (yy_accept) [lex.yy.c] used to set yy_act = action to run, so this
@@ -319,19 +319,19 @@
     // number of rules available (15, 14+1)
     "accept": LEX_ACCEPT,
 
-    // (yy_base)
+    // (yy_base) [lex.yy.c]
     "base": LEX_BASE,
 
-    // (yy_meta)
+    // (yy_meta) [lex.yy.c]
     "meta": LEX_META,
 
-    // (yy_def)
+    // (yy_def) [lex.yy.c]
     "def": LEX_DEF,
 
-    // (yy_nxt)
+    // (yy_nxt) [lex.yy.c]
     "nxt": LEX_NXT,
 
-    // (yy_chk) checks current state, probably to validate
+    // (yy_chk) [lex.yy.c] checks current state, probably to validate
     "check": LEX_CHK,
 
     // (yytranslate) [gram.tab.c]
@@ -1139,7 +1139,132 @@
   // https://en.wikipedia.org/wiki/Shift-reduce_parser
   // https://en.wikipedia.org/wiki/Terminal_and_nonterminal_symbols
 
+  function relocateStack(my_old_view, my_new_view, my_len) {
+    var i;
+    for (i = 0; i < my_len; i += 1) {
+      my_from.setInt8(i, my_to.getInt8(i)); 
+    }
+  }
 
+  function setParserStackList(my_dict, my_depth, my_init) {
+    function setStack(my_param) {
+      var util_dict = YY.util_dict, 
+        stack = my_param + "_stack",
+        view = my_param + "_view",
+        top = my_param + "_top",
+        bottom = my_param + "_bottom",
+        tmp,
+        len,
+        few;
+
+      // initialize new or move existing arraybuffer to new (larger) one
+      if (my_dict[stack] === undefined) {
+        my_dict[stack] = util_dict.setBuffer(my_depth);
+      } else {
+        tmp = util_dict.setBuffer(my_depth);
+        len = my_dict.state_stack.byteLength;
+        few = util_dict.setView(tmp);
+        my_dict[stack] = relocateStack(my_dict[view], few, len);
+      }
+
+      // (yyssa/yyvsa/yylsa)
+      my_dict[view] = setView(my_dict[stack]);
+
+      // (yyss/yyvs/yyls)
+      my_dict[bottom] = 0;
+      
+      // (yyssp/yyvsp/yylsp)
+      my_dict[top] = my_dict.stack_size - 1;
+    }
+
+    // The state stack: Does not shift symbols on to the stack. 
+    // Only a stack of states is maintained.
+    setStack("state");
+    
+    // This semantic stack: Grows parallel to the state stack. At 
+    // each reduction, semantic values are popped off this stack and the 
+    // semantic action is executed.
+    setStack("semantic");
+    
+    // The location stack: only used when dict.is_location_type_needed is set 
+    // and I'm not sure at this moment how it behaves.
+    if (my_dict.is_location_type_needed) {
+      setStack("location");
+    }
+
+    // no need to redefine on updates
+    if (my_init === true) {
+      my_dict.stack_size = my_dict.stack_initial_depth;
+      my_dict.popStack = function (my_dict, n) {
+        my_dict.semantic_top = my_dict.semantic_top - n || 1;
+        my_dict.state_top = my_dict.state_top - n || 1;
+        if (dict.is_location_type_needed) {
+          my_dict.location_top = my_dict.location_top - n || 1;
+        }
+      };
+    }
+  }
+
+  // -------------------------------- config------------------------------------
+  YY.parse_dict = YY.util_dict.extendDict({}, {
+
+    // ---------------------------- stacks -------------------------------------
+  
+    // A stack is an area of memory that holds local variables and parameters 
+    // used by any function and remembers the order in which functions are 
+    // called so that function returns occur correctly. Refer to the stacks 
+    // through separate pointers to allow overflow to reallocate them elsewhere.
+
+    // quick reference:
+    // state_view         yyssa
+    // state_top          yyssp
+    // state_bottom       yyss
+    // semantic_view      yyvsa
+    // semantic_top       yyvsp
+    // semantic_bottom    yyvs
+    // location_view      yylsa
+    // location_top       yylsp
+    // location_bottom    yyls
+  
+    // (YYPOPSTACK) [gram.tab.c] - remove n items off the top opf the stack.
+    "popStack":  null,
+
+    // (YYSTACK_RELOCATE)
+    // Relocate STACK from its old location to the new one. The local variables 
+    // (have been local to .parse()!!) YYSIZE) and YYSTACKSIZE give the old and 
+    // new number of elements in the stack, and YYPTR gives the new location of 
+    // the stack. Advance YYPTR to a properly aligned location for the next stack.
+    // https://opensource.apple.com/source/cc/cc-798/bison/bison.hairy.auto.html
+    // Mozilla has an arrayBuffer tranfer which extends without copying but not 
+    // supported anywhere else
+    // Copy STACK COUNT objects FROM to TO. source and destination don't overlap
+    "relocateStack": relocateStack,
+
+    // () [gram.tab.c] using ArrayBuffer
+    // http://www.javascripture.com/ArrayBuffer
+    "setParserStackList": setParserStackList,
+
+    // (yystacksize) will also be overwritten externally, no need to update 
+    // on relocates
+    "my_dict.stack_size": null,
+
+    // (YYPURE) [gram.tab.c]
+    // Hardcoded. Pure parser = reeentrant = can be called during modification
+    // https://www.gnu.org/software/bison/manual/html_node/Pure-Decl.html
+    "is_pure": 0,
+
+    // (lsp_needed) [gram.tab.c] Use locations, as in: 
+    // https://fbb-git.github.io/bisoncpp/bisonc++api.html
+    // LTYPE__ d_loc__ The location type value associated with a terminal token.
+    // It can be used by, e.g., lexical scanners to pass location information
+    // of a matched token to the parser in parallel with a returned token.
+    // It is available only when %lsp-needed, %ltype or %locationstruct is set.
+
+    // Bonus: http://acronymsmeanings.com/full-meaning-of/yylsp/
+    "is_location_type_needed": 0,
+
+    
+  });
 
   // ----------------------------- PARSE ---------------------------------------
 
@@ -1150,20 +1275,23 @@
   // https://en.wikipedia.org/wiki/Liskov_substitution_principle
 
   function parse(my_unused_param) {
-    var opts = YY.parse_dict,
-      dict;
+    var parse_dict = YY.parse_dict,
+      util_dict = YY.util_dict,
+      state_dict = YY.state_dict,
+      runtime_dict;
 
     // differentiate between reentrant non reentrant parser. Reentrant means
-    // it can be called again while processing (anything real time?), therefore
+    // it can be called again while processing (anything real time), therefore
     // all variables should only be locally set. If this is not the case, 
     // variables can go onto the global option dict.
-    if (opts.is_pure) {
-      dict = YY.util_dict.extendDict({}, opts);
+    if (parse_dict.is_pure) {
+      runtime_dict = util_dict.extendDict({}, parse_dict);
     } else {
-      dict = YY.parse_dict;
+      runtime_dict = parse_dict;
     }
 
-    dict = YY.util_dict.extendDict(dict, {
+    // add runtime local parameters
+    runtime_dict = util_dict.extendDict(runtime_dict, {
     
       // (yychar) [gram.tab.c] Lookahead symbol, upcoming token, this should be
       // the right hand side = value, this is the token returned, like INTEGER
@@ -1211,50 +1339,49 @@
       // side) of the reduced rule (length of RHS of a rule).
       "reduced_rule_right_hand_side_symbol_len": null,
 
-      // also add a pointer to the lookup tables
-      "lookup": YY.table_dict
-
     });
 
     // cleanup
-    if (dict.is_location_value_needed === 0) {
-      delete dict.lookahead_symbol_location;
-      delete dict.location_evaluation_result;
+    if (runtime_dict.is_location_value_needed === 0) {
+      delete runtime_dict.lookahead_symbol_location;
+      delete runtime_dict.location_evaluation_result;
     }
 
-    // setup
-    YY.state_dict.body_class_name_buffer_array = YY.util_dict.setBuffer(100);
-    YY.state_dict.body_class_name_buffer_view = YY.util_dict.setView(
-      YY.state_dict.body_class_name_buffer_array
+    // set name buffers
+    state_dict.body_class_name_buffer_array = util_dict.setBuffer(100);
+    state_dict.body_class_name_buffer_view = util_dict.setView(
+      state_dict.body_class_name_buffer_array
     );
 
-    setParserStackList(dict, dict.stack_initial_depth, true);
+    // set parser stacks
+    setParserStackList(runtime_dict, runtime_dict.stack_initial_depth, true);
 
     // Ok done declaring variables. Set the ball rolling!
-    if (dict.quiet === 0) {
+    if (runtime_dict.quiet === 0) {
       console.log("[info] Starting parse.");
     }
 
     // Initial state
-    dict.parse_current_state = 0;
-    dict.shift_token_error_message_threshold = 0;
-    dict.current_error_count = 0;
+    runtime_dict.parse_current_state = 0;
+    runtime_dict.shift_token_error_message_threshold = 0;
+    runtime_dict.current_error_count = 0;
 
     // Cause a token to be read.
-    dict.lookahead_symbol = dict.empty_token;
+    runtime_dict.lookahead_symbol = runtime_dict.empty_token;
 
     // Initialize stack pointers.
     // Waste one element of value and location stack so that they stay on the 
     // same level as the state stack. The wasted elements are never initialized.
     // Note: setting top = bottom
-    dict.state_top = dict.state_bottom;
-    dict.semantic_top = dict.semantic_bottom;
-    if (dict.is_location_type_needed) {
-      dict.location_top = dict.location_bottom;
+    runtime_dict.state_top = dict.state_bottom;
+    runtime_dict.semantic_top = dict.semantic_bottom;
+    if (runtime_dict.is_location_type_needed) {
+      runtime_dict.location_top = runtime_dict.location_bottom;
     }
 
     // ------------------------------ start ------------------------------------
-    setState(dict);
+    // make sure to pass runtime_dict around
+    setState(runtime_dict);
   }
 
   YY.Parser = parse;
@@ -1269,20 +1396,6 @@
   // YYucky options all go here
   YY.parse_dict = YY.util_dict.extendDict(YY.parse_dict || {}, {
 
-    // (YYPURE) [gram.tab.c]
-    // Hardcoded. Pure parser = reeentrant = can be called during modification
-    // https://www.gnu.org/software/bison/manual/html_node/Pure-Decl.html
-    "is_pure": 0,
-
-    // (lsp_needed) [gram.tab.c] Use locations, as in: 
-    // https://fbb-git.github.io/bisoncpp/bisonc++api.html
-    // LTYPE__ d_loc__ The location type value associated with a terminal token.
-    // It can be used by, e.g., lexical scanners to pass location information
-    // of a matched token to the parser in parallel with a returned token.
-    // It is available only when %lsp-needed, %ltype or %locationstruct is set.
-
-    // Bonus: http://acronymsmeanings.com/full-meaning-of/yylsp/
-    "is_location_type_needed": 0,
 
     // (YYINITDEPTH) [gram.tab.c] Initial size of the parser's stacks.
     "stack_initial_depth": 200,
@@ -1397,107 +1510,7 @@
     "NL": 267
   };
 
-  // ---------------------------- stacks ---------------------------------------
 
-  // A stack is an area of memory that holds all local variables and parameters 
-  // used by any function and remembers the order in which functions are called
-  // so that function returns occur correctly. Refer to the stacks through 
-  // separate pointers to allow overflow to reallocate them elsewhere.
-
-  // quick reference:
-  // state_view         yyssa
-  // state_top          yyssp
-  // state_bottom       yyss
-  // semantic_view      yyvsa
-  // semantic_top       yyvsp
-  // semantic_bottom    yyvs
-  // location_view      yylsa
-  // location_top       yylsp
-  // location_bottom    yyls
-
-  // (YYSTACK_RELOCATE)
-  // Relocate STACK from its old location to the new one. The local variables 
-  // (have been local to .parse()!!) YYSIZE) and YYSTACKSIZE give the old and 
-  // new number of elements in the stack, and YYPTR gives the new location of 
-  // the stack. Advance YYPTR to a properly aligned location for the next stack.
-  // https://opensource.apple.com/source/cc/cc-798/bison/bison.hairy.auto.html
-  // Mozilla has an arrayBuffer tranfer which extends without copying but not 
-  // supported anywhere else
-  // Copy STACK COUNT objects FROM to TO. source and destination don't overlap
-  function relocateStack(my_old_view, my_new_view, my_len) {
-    var i;
-    for (i = 0; i < my_len; i += 1) {
-      my_from.setInt8(i, my_to.getInt8(i)); 
-    }
-
-    // no need for caluclating yynewbytes and finding the position of stack in 
-    // memory yyptr defined in setState because this was a macro
-  }
-
-  // using ArrayBuffer http://www.javascripture.com/ArrayBuffer
-  function setParserStackList(my_dict, my_depth, my_init) {
-    
-    function setStack(my_param) {
-      var stack = my_param + "_stack",
-        view = my_param + "_view",
-        top = my_param + "_top",
-        bottom = my_param + "_bottom",
-        tmp,
-        len,
-        few;
-
-      // initialize new or move existing arraybuffer to new (larger) one
-      if (my_dict[stack] === undefined) {
-        my_dict[stack] = new ArrayBuffer(my_depth);
-      } else {
-        tmp = new ArrayBuffer(my_depth);
-        len = my_dict.state_stack.byteLength;
-        few = new DataView(tmp);
-        my_dict[stack] = relocateStack(my_dict[view], few, len);
-      }
-      
-      // (yyssa/yyvsa/yylsa)
-      my_dict[view] = new DataView(my_dict[stack]);
-      
-      // (yyss/yyvs/yyls)
-      my_dict[bottom] = 0;
-      
-      // (yyssp/yyvsp/yylsp)
-      my_dict[top] = my_dict.stack_size - 1;
-    }
-
-    // The state stack: Does not shift symbols on to the stack. 
-    // Only a stack of states is maintained.
-    setStack("state");
-    
-    // This semantic stack: Grows parallel to the state stack. At 
-    // each reduction, semantic values are popped off this stack and the 
-    // semantic action is executed.
-    setStack("semantic");
-    
-    // The location stack: only used when dict.is_location_type_needed is set 
-    // and I'm not sure at this moment how it behaves.
-    if (my_dict.is_location_type_needed) {
-      setStack("location");
-    }
-
-    // no need to redefine on updates
-    if (my_init === true) {
-
-      // (yystacksize) will also be overwritten externally, no need to update 
-      // on relocates
-      my_dict.stack_size = my_dict.stack_initial_depth;
-
-      // (YYPOPSTACK)
-      my_dict.popStack = function (n) {
-        my_dict.semantic_top = my_dict.semantic_top - n || 1;
-        my_dict.state_top = my_dict.state_top - n || 1;
-        if (dict.is_location_type_needed) {
-          my_dict.location_top = my_dict.location_top - n || 1;
-        }
-      };
-    }
-  }
 
   // ----------------------------- methods -------------------------------------
   // (YYLLOC_DEFAULT) -- Compute default location (before the actions are run).
