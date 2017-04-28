@@ -1205,8 +1205,63 @@
     }
   }
 
+  function setState(my_dict) {
+    var dict = my_dict,
+      current_stack_size;
+
+    dict.state_top = dict.parse_current_state;
+
+    // reallocate if we're running out of stack space (fortunately no memoy 
+    // management required here)
+    if (dict.state_top >= dict.state_bottom + dict.stack_size - 1) {
+
+      // Get the current used size of the three stacks, in elements.
+      current_stack_size = dict.state_top - dict.state_bottom + 1;
+      if (dict.is_overflow_possible === 0) {
+        if (relocateStack === undefined) {
+          overflowLab(dict);
+         } else {
+
+          // Extend the stack our own way, but honor or succumb to max_depth
+          if (dict.stack_size >= dict.stack_list_max_depth) {
+            overflowLab(dict);
+          }
+          dict.stack_size = dict.stack_size * 2;
+          if (dict.stack_size > dict.stack_list_max_depth) {
+            dict.stack_size = dict.stack_list_max_depth;
+          }
+
+          // we don't really need alloc(getStackTotalBytes(s.stack_size))...
+          // we just copy the old arrays into new ones with the larger stack 
+          // size. This replaces calls to YYSTACK_RELOCATE and YYSTACK_FREE.
+          setParserStackList(dict, dict.stack_size);
+        }
+      } else {
+        throw new Error("[error] - not able to handle arraybuffer overflow.");
+      }
+
+      dict.state_top = dict.state_bottom + current_stack_size - 1;
+      dict.semantic_top = dict.semantic_bottom + current_stack_size - 1;
+      if (dict.is_location_type_needed) {
+       dict.location_top = dict.location_bottom + current_stack_size - 1;
+      }
+      console.log("[info] - Stack size increased to " + s.stack_size);
+      if (dict.state_top >= dict.state_bottom + dict.stack_size - 1) {
+        abortLab(dict);
+      }
+    }
+
+    if (dict.quiet === 0) {
+      console.log("[info] - Entering state: " + dict.parse_current_state);
+    }
+    backup(dict);
+  }
+
   // -------------------------------- config------------------------------------
   YY.parse_dict = YY.util_dict.extendDict({}, {
+
+    // (yysetstate) - set a new state, incrementing stacks done here
+    "setState": setState,
 
     // ---------------------------- stacks -------------------------------------
   
@@ -1246,7 +1301,7 @@
 
     // (yystacksize) will also be overwritten externally, no need to update 
     // on relocates
-    "my_dict.stack_size": null,
+    "stack_size": null,
 
     // (YYPURE) [gram.tab.c]
     // Hardcoded. Pure parser = reeentrant = can be called during modification
@@ -2093,58 +2148,7 @@
       newState(dict);
   }
 
-  // (yysetstate) - set a new state, incrementing stacks done here
-  function setState(my_dict) {
-    var dict = my_dict,
-      current_stack_size;
-
-    dict.state_top = dict.parse_current_state;
-
-    // reallocate if we're running out of stack space (fortunately no memoy 
-    // management required here)
-    if (dict.state_top >= dict.state_bottom + dict.stack_size - 1) {
-
-      // Get the current used size of the three stacks, in elements.
-      current_stack_size = dict.state_top - dict.state_bottom + 1;
-      if (dict.is_overflow_possible === 0) {
-        if (relocateStack === undefined) {
-          overflowLab(dict);
-         } else {
-
-          // Extend the stack our own way, but honor or succumb to max_depth
-          if (dict.stack_size >= dict.stack_list_max_depth) {
-            overflowLab(dict);
-          }
-          dict.stack_size = dict.stack_size * 2;
-          if (dict.stack_size > dict.stack_list_max_depth) {
-            dict.stack_size = dict.stack_list_max_depth;
-          }
-
-          // we don't really need alloc(getStackTotalBytes(s.stack_size))...
-          // we just copy the old arrays into new ones with the larger stack 
-          // size. This replaces calls to YYSTACK_RELOCATE and YYSTACK_FREE.
-          setParserStackList(dict, dict.stack_size);
-        }
-      } else {
-        throw new Error("[error] - not able to handle arraybuffer overflow.");
-      }
-
-      dict.state_top = dict.state_bottom + current_stack_size - 1;
-      dict.semantic_top = dict.semantic_bottom + current_stack_size - 1;
-      if (dict.is_location_type_needed) {
-       dict.location_top = dict.location_bottom + current_stack_size - 1;
-      }
-      console.log("[info] - Stack size increased to " + s.stack_size);
-      if (dict.state_top >= dict.state_bottom + dict.stack_size - 1) {
-        abortLab(dict);
-      }
-    }
-
-    if (dict.quiet === 0) {
-      console.log("[info] - Entering state: " + dict.parse_current_state);
-    }
-    backup(dict);
-  }
+  
 
 }(window, YY, Math, Error));
 // &&&&&&&&&&&&&&
