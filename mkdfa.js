@@ -18,15 +18,6 @@
     return new DataView(my_array);
   }
 
-  // (newLineAdjust) [mkdfa.c]
-  //function adjustNewLine(my_dict) {
-  //  var dict = my_dict;
-  //  if (is_no_new_line === 1) {
-  //    console.log("\n");
-  //  }
-  //  dict.is_no_new_line = 0;
-  //}
-
   function getFileByType(my_dict, my_type) {
     var dict = my_dict,
       file;
@@ -80,11 +71,6 @@
     // as type on the a file object, this way we don't care for the name a
     // file is given.
     "getFileByType": getFileByType,
-
-    // (newLineAdjust) [mkdfa.c] - we don't call this, just set keep no_new_line
-    // at 0 and eventually remove the method altogether, because it's just for
-    // outputting log messages.
-    "adjustNewLine": adjustNewLine,
 
     // create a new array buffer
     "setBuffer": setBuffer,
@@ -147,7 +133,7 @@
        6,     7,     8,     9,    10,    11,    12,    13
     ],
 
-    NON_TERMINAL_GOTO_METHOT = [
+    NON_TERMINAL_GOTO_METHOD = [
       51,-32768,-32768,-32768,   21,-32768,-32768,   -3,   24,   12,
     -32768,-32768,   -2  
     ],
@@ -1233,9 +1219,6 @@
     }
 
     if (dict.quiet === 0) {
-
-      // util_dict.adjustNewLine();
-      // dict.is_no_new_line = 0;
       console.log("[info] - Now parsing vocabulary file.");
     }
 
@@ -1369,7 +1352,7 @@
     console.log("[error] (#" + dict.current_error_count + "): " + my_message);
   }
 
-  function sizeof(my_list) {
+  function sizeOf(my_list) {
     var str = "",
       i,
       len;
@@ -1408,7 +1391,7 @@
       }
 
       // (yyssa/yyvsa/yylsa)
-      my_dict[view] = setView(my_dict[stack]);
+      my_dict[view] = util_dict.setView(my_dict[stack]);
 
       // (yyss/yyvs/yyls)
       my_dict[bottom] = 0;
@@ -2174,8 +2157,8 @@
     // Waste one element of value and location stack so that they stay on the 
     // same level as the state stack. The wasted elements are never initialized.
     // Note: setting top = bottom
-    runtime_dict.state_top = dict.state_bottom;
-    runtime_dict.semantic_top = dict.semantic_bottom;
+    runtime_dict.state_top = runtime_dict.state_bottom;
+    runtime_dict.semantic_top = runtime_dict.semantic_bottom;
 
     // ------------------------------ start ------------------------------------
     // make sure to pass runtime_dict around
@@ -2630,6 +2613,7 @@
   }
 
   function doAction (my_dict) {
+    console.log("DOING")
     var dict = my_dict,
       state_dict = YY.state_dict,
       parse_dict = YY.parse_dict,
@@ -2710,11 +2694,12 @@
 
       // a buffer end can be the end of a line or file?
       case dict.buffer_end:
-
+        console.log("end of buffer")
         // Amount of text matched not including the EOB char.
         dict.amount_of_matched_text = (dict.current_run_character_position -
           dict.matched_string_pseudo_pointer) - 1;
-
+        console.log(dict)
+        console.log(dict.amount_of_matched_text)
         // Undo the effects of doBeforeAction.
         dict.current_run_character_position_address = dict.tmp_character_hold;
         restoreOriginalOffset(dict);
@@ -2746,7 +2731,7 @@
         // check what character-position (c_buf_p) is and use index!
         if (dict.current_buffer_character_position <= 
           dict.current_buffer_memory_address.buffer_state_array_view.getInt8(
-            buffer_state_character_len
+            dict.current_buffer.buffer_state_character_len
         )) {
 
           // This was really a NUL. This means end of a word or something, 
