@@ -30,7 +30,7 @@
   var LINE_BREAKS = /(.*?[\r\n])/g;
   var LINE_BREAK = /[\r\n]/g;
   var LINE_COMMENT = /[#.*]/g;
-  
+
   var GRAMMAR_VALUE =
     "S : NS_B SENT NS_E\n" +
     "SENT: CALL_V NAME_N\n" +
@@ -134,7 +134,7 @@
     return new RSVP.Queue()
       .push(function () {
         var prefix = my_response.name;
-        return mkdfa(
+        return createDfa(
           "-e1",
           "-fg", my_response[prefix + ".rev.grammar"].join(),
           "-fv", my_response[prefix + ".tmp.voca"].join(),
@@ -249,4 +249,201 @@
     });
 
 }(window, document, rJS, RSVP));
+
+
+/*
+
+// https://github.com/julius-speech/julius/tree/6d135a686a74376495a7a6f55d3d67df54186f83/gramtools
+// https://github.com/julius-speech/julius/blob/6d135a686a74376495a7a6f55d3d67df54186f83/gramtools/mkdfa/mkdfa.pl.in
+// https://github.com/VoxForge/develop/blob/master/bin/mkdfa.jl
+// needs mkfa => https://github.com/rti7743/kaden_voice/blob/master/naichichi2/julius/gramtools/mkdfa/mkfa-1.44-flex/main.c
+// needs dfa_minimize => https://github.com/julius-speech/julius/blob/6d135a686a74376495a7a6f55d3d67df54186f83/gramtools/dfa_minimize/dfa_minimize.c
+
+function main ()
+
+  mkfa= @windows ? "mkfa.exe" : "mkfa"
+  dfa_minimize= @windows ? "dfa_minimize.exe" : "dfa_minimize"
+  workingfolder=mktempdir()
+
+  rgramfile= "$(workingfolder)/g$(getpid()).grammar"
+  gramfile="$(grammar_prefix).grammar"
+  vocafile=grammar_prefix * ".voca"
+  termfile=grammar_prefix * ".term"
+  tmpvocafile="$(workingfolde  r)/g$(getpid()).voca"
+  dfafile=grammar_prefix * ".dfa"
+  dictfile="$(grammar_prefix).dict"
+  headerfile="$(workingfolder)/g$(getpid()).h"
+
+  ok reverse_grammar(rgramfile,gramfile)
+  ok make_category_voca(vocafile,termfile,tmpvocafile)
+  run(`$mkfa -e1 -fg $rgramfile -fv $tmpvocafile -fo $(dfafile).tmp -fh $headerfile`)
+  => https://github.com/rti7743/kaden_voice/blob/master/naichichi2/julius/gramtools/mkdfa/mkfa-1.44-flex/main.c
+
+  run(`$dfa_minimize $(dfafile).tmp -o $dfafile`) 
+  => https://github.com/julius-speech/julius/blob/6d135a686a74376495a7a6f55d3d67df54186f83/gramtools/dfa_minimize/dfa_minimize.c
+
+  rm("$(dfafile).tmp")
+  rm(rgramfile)
+  rm(tmpvocafile)
+  rm(headerfile)
+end
+
+/* Inputs
+GRAMMAR
+S : NS_B SENT NS_E
+SENT: CALL_V NAME_N
+SENT: DIAL_V DIGIT
+
+
+VOCA
+% NS_B
+<s>        sil
+
+% NS_E
+</s>        sil
+
+% CALL_V
+PHONE        f ow n
+CALL        k ao l
+
+% DIAL_V
+DIAL        d ay ah l
+
+% NAME_N
+STEVE        s t iy v
+YOUNG        y ah ng
+
+% DIGIT
+FIVE        f ay v
+FOUR        f ao r
+NINE        n ay n
+EIGHT        ey t
+OH        ow
+ONE        w ah n
+SEVEN        s eh v ah n
+SIX        s ih k s
+THREE        th r iy
+TWO        t uw
+ZERO        z iy r ow
+
+Phone Steve
+Phone Young
+Call Steve
+Call Young
+Dial Five
+Dial Four
+Dial Nine
+Dial Eight
+Dial Oh
+Dial One
+Dial Seven
+Dial Six
+Dial Three
+Dial Two
+Dial Zero
+
+===================================
+term
+0	NS_B
+1	NS_E
+2	COMMAND
+3	NAME
+4	SUBJECT
+5	DISTANCE
+6	ACTIVITY
+7	DIGIT
+8	HELPER
+----------------------------------
+dfa
+0 1 1 0 0
+1 2 2 0 0
+1 3 3 0 0
+1 4 4 0 0
+1 5 5 0 0
+1 6 6 0 0
+2 0 7 0 0
+2 3 3 0 0
+3 0 7 0 0
+4 4 8 0 0
+4 6 3 0 0
+5 7 3 0 0
+6 7 9 0 0
+7 -1 -1 1 0
+8 6 10 0 0
+9 7 11 0 0
+10 3 3 0 0
+11 7 12 0 0
+12 8 13 0 0
+13 6 3 0 0
+------------------------------------
+dict
+0	[<s>]	sil
+1	[</s>]	sil
+2	[LEFT]	l eh f t
+2	[RIGHT]	r ay t
+2	[UP]	ah p
+2	[DOWN]	d aw n
+2	[SAVE]	s ey v
+2	[CLOSE]	k l ow s
+2	[OPEN]	ow p ah n
+2	[REMOVE]	r iy m uw v
+2	[SEARCH]	s er ch
+2	[BULK]	b ah l k
+2	[SYNC]	s ih ng k
+2	[PICK]	p ih k
+2	[TAB]	t ae b
+2	[NEXT]	n eh k s t
+2	[PREVIOUS]	p r iy v iy ah s
+3	[LUCY]	l uw s iy
+4	[WEAPON]	w eh p ah n
+4	[SYSTEMS]	s ih s t ah m z
+4	[TARGET]	t aa r g ah t
+5	[METERS]	m iy t er z
+6	[ACTIVATE]	ae k t ah v ey t
+6	[ACQUIRE]	ah k w ay er
+6	[DEPLOY]	d ih p l oy
+6	[FIRE]	f ay er
+7	[ONE]	w ah n
+7	[TWO]	t uw
+7	[THREE]	th r iy
+8	[IN]	ih n
+8	[ON]	aa n
+==================================
+term
+0	NS_B
+1	NS_E
+2	CALL_V
+3	DIAL_V
+4	NAME_N
+5	DIGIT
+-----------------------------------
+dfa
+0 1 1 0 0
+1 4 2 0 0
+1 5 3 0 0
+2 2 4 0 0
+3 3 4 0 0
+4 0 5 0 0
+5 -1 -1 1 0
+----------------------------------
+dict
+0	[<s>]	sil
+1	[</s>]	sil
+2	[PHONE]	f ow n
+2	[CALL]	k ao l
+3	[DIAL]	d ay ah l
+4	[STEVE]	s t iy v
+4	[YOUNG]	y ah ng
+5	[FIVE]	f ay v
+5	[FOUR]	f ao r
+5	[NINE]	n ay n
+5	[EIGHT]	ey t
+5	[OH]	ow
+5	[ONE]	w ah n
+5	[SEVEN]	s eh v ah n
+5	[SIX]	s ih k s
+5	[THREE]	th r iy
+5	[TWO]	t uw
+5	[ZERO]	z iy r ow
+*/
 
