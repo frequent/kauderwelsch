@@ -2270,8 +2270,20 @@
     my_buffer.buffer_state_input_line_start = 1;
     my_buffer.buffer_status = dict.buffer_is_new;
 
+    // uuid?
     if (my_buffer === dict.current_buffer) {
       loadBuffer(dict);
+    }
+  }
+
+  function fillBuffer(my_dict) {
+    var dict = my_dict,
+      buffer = dict.current_buffer,
+      input = dict.file_input,
+      len = dict.file_input_length = input.length,
+      i;
+    for (i = 0; i < len; i += 1) {
+      buffer.buffer_state_array_view.setInt8(i, input[i]);
     }
   }
 
@@ -2286,8 +2298,10 @@
 
     // only place currently where character position memory address is used!
     // this should probably give the memory of the current character position?
-    dict.tmp_character_hold =
-      dict.current_buffer_character_position_memory_address;
+    dict.tmp_character_hold = dict.current_buffer_character_position;
+
+    // we still need to actually fill the buffer
+    fillBuffer(my_dict);
   }
 
   function createBuffer (my_dict, my_file) {
@@ -2302,6 +2316,8 @@
     buffer.buffer_state_array_view = setView(buffer.buffer_state_array_buffer);
     buffer.buffer_is_ours = 1;
     initializeBuffer(dict, buffer, my_file);
+
+    // return the buffer so it's set on current_buffer    
     return buffer;
   }
 
@@ -2516,9 +2532,8 @@
       new_size,
       i;
 
-    // XXX will fail because of memory_address not being set/used
     if (dict.current_buffer_character_position >
-      dict.current_buffer_memory_address.buffer_state_array_view.getInt8(
+      dict.current_buffer.buffer_state_array_view.getInt8(
         dict.current_buffer.buffer_state_character_len + 1
       )) {
       throw new Error("[error] Fatal flex scanner - end of buffer missed");
@@ -2574,9 +2589,7 @@
         // return buffer_character_len or at least set it
         // XXX this will fail, because memory address is never initialized
         memory_address =
-          dict.current_buffer_memory_address.buffer_state_array_view.getInt8(
-            number_to_move
-          );
+          dict.current_buffer.buffer_state_array_view.getInt8(number_to_move);
         readChunkFromInput(dict, memory_address, number_to_read);
         dict.current_buffer.buffer_state_character_len =
           dict.buffer_character_len;
@@ -2607,13 +2620,12 @@
 
       // XXX will fail because of undefined memory address
       content_pointer =
-        dict.current_buffer_memory_address.buffer_state_array_view.getInt8(0);
+        dict.current_buffer.buffer_state_array_view.getInt8(0);
       return return_value;
     }
   }
 
   function doAction (my_dict) {
-    console.log("DOING")
     var dict = my_dict,
       state_dict = YY.state_dict,
       parse_dict = YY.parse_dict,
@@ -2694,12 +2706,11 @@
 
       // a buffer end can be the end of a line or file?
       case dict.buffer_end:
-        console.log("end of buffer")
+
         // Amount of text matched not including the EOB char.
         dict.amount_of_matched_text = (dict.current_run_character_position -
           dict.matched_string_pseudo_pointer) - 1;
-        console.log(dict)
-        console.log(dict.amount_of_matched_text)
+
         // Undo the effects of doBeforeAction.
         dict.current_run_character_position_address = dict.tmp_character_hold;
         restoreOriginalOffset(dict);
@@ -2727,10 +2738,9 @@
         // the test in input().
 
         // ~ test character position to position of first end of block in buffer
-        // XXX will fail because memory_address is not defined
         // check what character-position (c_buf_p) is and use index!
         if (dict.current_buffer_character_position <= 
-          dict.current_buffer_memory_address.buffer_state_array_view.getInt8(
+          dict.current_buffer.buffer_state_array_view.getInt8(
             dict.current_buffer.buffer_state_character_len
         )) {
 
@@ -2831,6 +2841,9 @@
     // (yyin) file input file
     "file_input": null,
 
+    // the length of the file input
+    "file_input_length": null,
+
     // (yyout) file output file
     "file_output": null,
 
@@ -2857,11 +2870,11 @@
     // (yy_load_buffer_state)
     "loadBuffer": loadBuffer,
 
+    // actually put the input file into the buffer
+    "fillBuffer": fillBuffer,
+
     // added to reset whatever was #defined here, namely
     "resetPseudoGlobalsSetInBuffer": resetPseudoGlobalsSetInBuffer,
-
-    // (&yy_current_buffer) sigh, what do to with this?
-    "current_buffer_memory_address": null,
 
     // (YY_END_OF_BUFFER_CHAR)
     "buffer_end_character": 0,
@@ -2937,9 +2950,6 @@
 
     // (yy_c_buf_p) => current run character position (~ DataView index)
     "current_buffer_character_position": 0,
-
-    // (*yy_c_buf_p) ? (char *) 0
-    "current_buffer_character_position_memory_address": 0,
 
     // (yy_hold_char) holds the character lost when yytext is formed.
     "tmp_character_hold": null,
