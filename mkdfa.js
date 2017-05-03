@@ -1218,7 +1218,7 @@
       throw new Error("Can't open vocabulary file.");
     }
 
-    if (dict.quiet === 0) {
+    if (dict.is_debug === 1) {
       console.log("[info] - Now parsing vocabulary file.");
     }
 
@@ -1443,7 +1443,7 @@
       dict.lookahead_symbol = YY.Lexer();
 
       // curiousity kills the cat
-      if (dict.quiet === 0) {
+      if (dict.is_debug === 1) {
         console.log("[info] Reading a token: ");
         console.log(dict.lookahead_symbol);
         console.log(dict.lookahead_symbol_semantic_value);
@@ -1457,12 +1457,12 @@
     if (dict.lookahead_symbol <= 0) {
       dict.lookahead_symbol_as_number = 0;
       dict.lookahead_symbol = dict.end_of_file_reached;
-      if (dict.quiet === 0) {
+      if (dict.is_debug === 1) {
         console.log("[info] Now at end of input.");
       }
     } else {
       dict.lookahead_symbol_as_number = translate(dict.lookahead_symbol);
-      if (dict.debug) {
+      if (dict.is_debug === 1) {
         console.log(
           "[info] Next token is " + dict.lookahead_symbol + " (" +
           lookup.token_number_of_token[dict.lookahead_symbol_as_number] + ")"
@@ -1497,7 +1497,7 @@
     // 2) Positive => shift, truc is new state.
     // 3) if new state is final state => no shift, just return success
     // 4) if 0 or most negative number => error.
-    if (dict.quiet === 0) {
+    if (dict.is_debug === 1) {
       console.log("[info] Truc was set to :" + dict.truc);
     }
 
@@ -1573,7 +1573,7 @@
       1 - dict.reduced_rule_right_hand_side_symbol_len
     );
 
-    if (dict.quiet === 0) {
+    if (dict.is_debug === 1) {
       console.log(
         "[info] - Reducing via rule " + dict.truc + " (line " +
         lookup.rule_line_pointer[dict.truc] + ")"
@@ -1666,7 +1666,7 @@
     s.semantic_top -= dict.reduced_rule_right_hand_side_symbol_len;
     s.state_top -= dict.reduced_rule_right_hand_side_symbol_len;
 
-    if (dict.quiet === 0) {
+    if (dict.is_debug === 1) {
       tmp_semantic_top = dict.semantic_bottom - 1;
       console.log("[info] - State stack now");
       while (tmp_semantic_top !== stack.semantic_top) {
@@ -1726,7 +1726,7 @@
 
     // intially set top to bottom to 0
     dict.state_top = dict.parse_current_state;
-    if (dict.quiet === 0) {
+    if (dict.is_debug === 1) {
       console.log("[info] - Entering state: " + dict.parse_current_state);
     }
     backupState(dict);
@@ -1773,7 +1773,7 @@
     if (dict.shift_token_error_message_threshold === 0) {
       dict.current_error_count += 1;
 
-      if (dict.quiet === 0) {
+      if (dict.is_debug === 1) {
         dict.truc = lookup.set_state_action[dict.parse_current_state];
         if (dict.truc > dict.is_state_default_action &&
           dict.truc > dict.index_last_state_action
@@ -1894,7 +1894,7 @@
     // XXX yystate = *--yyssp;
     dict.parse_current_state = dict.state_top = dict.state_top - 1;
 
-    if (dict.debug) {
+    if (dict.is_debug === 1) {
       temp_state_bottom = dict.state_bottom - 1;
       console.log("[info] state stack snapshot:");
       while (temp_state_bottom !== dict.state_top) {
@@ -2141,7 +2141,7 @@
     setParserStackList(runtime_dict, runtime_dict.stack_initial_depth);
 
     // Set the ball rolling!
-    if (runtime_dict.quiet === 0) {
+    if (runtime_dict.is_debug === 1) {
       console.log("[info] Starting parse.");
     }
 
@@ -3147,14 +3147,14 @@
        //        Do logical AND between label and FA's field #4, #5.\n\
        //\n\n";
 
-    if (dict.is_quiet === 0) {
+    if (dict.is_debug === 1) {
       console.log("[info]: Now parsing grammar file\n");
     }
 
     // yyiha!
     YY.Parser();
 
-    if (dict.is_quiet === 0) {
+    if (dict.is_debug === 1) {
       console.log(
         "[info] - Now modifying grammar to minimize states[" +
         YY.state_dict.grammar_modification_number + "]"
@@ -3239,13 +3239,13 @@
         dict.is_debug = 1;
         break;
       case "dfa":
-        if (dict.is_init_with_filename && dict.debug === 0) {
+        if (dict.is_init_with_filename && dict.is_debug === 1) {
           console.log("[info] dfa resolving option set");
         }
         dict.is_nfa_output = 0;
         break;
       case "nfa":
-        if (dict.is_init_with_filename && dict.quiet === 0) {
+        if (dict.is_init_with_filename && dict.is_debug === 1) {
           console.log("[info] dfa resolving option set");
         }
         dict.is_nfa_output = 1;
@@ -3273,7 +3273,7 @@
         dict.is_edge_start = 1;
         break;
       case "q0":
-        dict.is_quiet = 1;
+        dict.is_debug = 1;
         break;
       default:
         throw new Error("[error] Out of options...");
@@ -3330,12 +3330,6 @@
 
     // (SW_Compati) [main.c]
     "is_compat_i": 0,
-
-    // (SW_Quiet) [main.c]
-    "is_quiet": 0,
-
-    // (SW_SemiQuiet) [main.c] - quiet or no quiet is enough
-    // "is_semi_quiet": 0,
 
     // (SW_Debug) [main.c]
     "is_debug": 0,
@@ -3402,5 +3396,4 @@
   window.createDfa = createDfa;
 
 }(window, RSVP, YY, Error));
-
 
