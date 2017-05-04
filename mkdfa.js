@@ -1337,6 +1337,7 @@
   // ported from:
   // https://goo.gl/2koggK
   // resources:
+  // http://www.javascripture.com/ArrayBuffer
   // http://www.cs.man.ac.uk/~pjj/cs212/ex5_hint.html
   // https://en.wikipedia.org/wiki/LALR_parser#LR_parsers
   // https://goo.gl/9BbDd0
@@ -2192,49 +2193,40 @@
     my_dict.buffer_is_normal = 1;
   }
 
-  function getBufferStateDict() {
+  function getBufferDict() {
     return {
 
       // the file (yy_input_file)
-      buffer_state_input_file: null,
-
-      // (yy_is_interactive) Whether this is an "interactive" input source; 
-      // if so, and if we're using stdio for input, then we want to use getc()
-      // instead of fread(), to make sure we stop fetching input after 
-      // each newline.
-      //buffer_state_interactive_input: null,
+      "input_file": null,
 
       // (yy_fill_buffer) Whether to try to fill the input buffer when we 
       // reach the end of it.
-      buffer_state_fill_if_full: null,
+      "fill_if_full": null,
 
       // (yy_buf_size type = yy_size_t) - Size of input buffer in bytes, not 
       // including room for EOB characters.
-      buffer_state_size: null,
-
-      // (yy_is_our_buffer) Whether we "own" the buffer - i.e., we know we 
-      // created it, can realloc() it to grow and should free() it to delete it.
-      buffer_is_ours: null,
+      "size": null,
 
       // (yy_ch_buf) input buffer, only used to define view below
-      buffer_state_array_buffer: null,
+      "array_buffer": null,
 
       // data view for yy_ch_buf
-      buffer_state_array_view: null,
+      "array_view": null,
 
       // (yy_n_chars) Number of characters read into yy_ch_buf, not including 
       // EOB characters.
-      buffer_state_character_len: null,
+      "character_len": null,
 
       // (yy_buf_pos) current position in input buffer
-      buffer_state_current_position: null,
+      "current_position": null,
 
       // (yy_buffer_status)
-      buffer_status: null,
+      "is_status": null,
 
       // (yy_at_bol) Whether we're considered to be at the beginning of a line.
       // If so, '^' rules will be active on the next match, otherwise not.
-      buffer_state_input_line_start: null
+      // not used as set_bol is never called.
+      "input_line_start": null
     };
   }
 
@@ -2247,8 +2239,8 @@
     // http://stackoverflow.com/questions/36258224/what-is-isatty-in-c-for
     // my_file ? /* (isatty( fileno(file) ) > 0) */ 1 : 0;
     // my_buffer.buffer_state_interactive_input = 1;
-    my_buffer.buffer_state_input_file = my_file;
-    my_buffer.buffer_state_fill_if_full = 1;
+    my_buffer.input_file = my_file;
+    my_buffer.fill_if_full = 1;
   }
 
   function flushBuffer(my_dict, my_buffer) {
@@ -2257,18 +2249,17 @@
     if (my_buffer === null) {
       return;
     }
-    my_buffer.buffer_state_character_len = 0;
+    my_buffer.character_len = 0;
 
     // We always need two end-of-buffer characters. The first causes
     // a transition to the end-of-buffer state. The second causes
     // a jam in that state.
     // mh?
-    my_buffer.buffer_state_array_view.setInt8(0, my_dict.buffer_end_character);
-    my_buffer.buffer_state_array_view.setInt8(1, my_dict.buffer_end_character);
-    my_buffer.buffer_state_current_position =
-      my_buffer.buffer_state_array_view.getInt8(0);
-    my_buffer.buffer_state_input_line_start = 1;
-    my_buffer.buffer_status = dict.buffer_is_new;
+    my_buffer.array_view.setInt8(0, my_dict.buffer_end_character);
+    my_buffer.array_view.setInt8(1, my_dict.buffer_end_character);
+    my_buffer.current_position = my_buffer.array_view.getInt8(0);
+    my_buffer.input_line_start = 1;
+    my_buffer.is_status = dict.buffer_is_new;
 
     // uuid?
     if (my_buffer === dict.current_buffer) {
@@ -2282,39 +2273,43 @@
       input = dict.file_input,
       len = dict.file_input_length = input.length,
       i;
+
     for (i = 0; i < len; i += 1) {
-      buffer.buffer_state_array_view.setInt8(i, input[i]);
+      buffer.array_view.setInt8(i, input.charCodeAt(i));
     }
   }
 
   function loadBuffer(my_dict) {
     var dict = my_dict;
-    
-    dict.buffer_character_len = dict.current_buffer.buffer_state_character_len;
+
+    // we still need to actually fill the buffer
+    fillBuffer(my_dict);
+
+    dict.buffer_character_len =
+      dict.current_buffer.character_len =
+        dict.current_buffer.input_file.length;
+
     dict.matched_string_pseudo_pointer =
       dict.current_buffer_character_position =
-        dict.current_buffer.buffer_state_current_position;
-    dict.file_input = dict.current_buffer.buffer_state_input_file;
+        dict.current_buffer.current_position;
+
+    dict.file_input = dict.current_buffer.input_file;
 
     // only place currently where character position memory address is used!
     // this should probably give the memory of the current character position?
     dict.tmp_character_hold = dict.current_buffer_character_position;
-
-    // we still need to actually fill the buffer
-    fillBuffer(my_dict);
   }
 
   function createBuffer (my_dict, my_file) {
     var dict = my_dict,
       setBuffer = YY.util_dict.setBuffer,
       setView = YY.util_dict.setView,
-      buffer = getBufferStateDict();
+      buffer = getBufferDict();
 
     resetPseudoGlobalsSetInBuffer(dict);
-    buffer.buffer_state_size = my_dict.default_buffer_size;
-    buffer.buffer_state_array_buffer = setBuffer(buffer.buffer_state_size);
-    buffer.buffer_state_array_view = setView(buffer.buffer_state_array_buffer);
-    buffer.buffer_is_ours = 1;
+    buffer.size = my_dict.default_buffer_size;
+    buffer.array_buffer = setBuffer(buffer.size);
+    buffer.array_view = setView(buffer.array_buffer);
     initializeBuffer(dict, buffer, my_file);
 
     // return the buffer so it's set on current_buffer    
@@ -2487,7 +2482,7 @@
 
   function readChunkFromInput(my_dict, my_buffer_top, my_chunk_size) {
     var input_len = dict.file_input.byteLength,
-      view = dict.current_buffer.buffer_state_array_view,
+      view = dict.current_buffer.array_view,
       current_character_position,
       character,
       n;
@@ -2520,7 +2515,7 @@
 
   function getNextBuffer (my_dict) {
     var dict = my_dict,
-      current_buffer_view = dict.current_buffer.buffer_state_array_view,
+      current_buffer_view = dict.current_buffer.array_view,
       current_buffer_len = current_buffer_view.byteLength,
       content_pointer = dict.matched_string_pseudo_pointer,
       character_position = dict.current_buffer_character_position,
@@ -2533,14 +2528,14 @@
       i;
 
     if (dict.current_buffer_character_position >
-      dict.current_buffer.buffer_state_array_view.getInt8(
-        dict.current_buffer.buffer_state_character_len + 1
+      dict.current_buffer.array_view.getInt8(
+        dict.current_buffer.character_len + 1
       )) {
       throw new Error("[error] Fatal flex scanner - end of buffer missed");
     }
 
     // Don't try to fill the buffer, so this is an EOF (end of file).
-    if (dict.current_buffer.buffer_state_fill_if_full === 0) {
+    if (dict.current_buffer.fill_if_full === 0) {
 
       // We matched a single character, the EOB, treat this as a final EOF = 1
       if (character_position - content_pointer - dict.more_adjust === 1) {
@@ -2561,11 +2556,11 @@
     }
 
     // don't read, it's not guaranteed to return an EOF, just force an EOF
-    if (dict.current_buffer.buffer_status === dict.buffer_eof_pending) {
-      dict.current_buffer.buffer_state_character_len =
+    if (dict.current_buffer.is_status === dict.buffer_eof_pending) {
+      dict.current_buffer.character_len =
         dict.buffer_character_len = 0;
     } else {
-      number_to_read = dict.current_buffer.buffer_state_size -
+      number_to_read = dict.current_buffer.size -
         number_to_move - 1;
 
       while (number_to_read <= 0) {
@@ -2573,11 +2568,11 @@
         // not sure I can use len here, but can't subtract the DataView
         current_buffer_offset = character_position - current_buffer_len;
         character_position =
-          dict.current_buffer.buffer_state_array_view.getInt8(
+          dict.current_buffer.array_view.getInt8(
             current_buffer_offset
           );
 
-        number_to_read = dict.current_buffer.buffer_state_size -
+        number_to_read = dict.current_buffer.size -
           number_to_move - 1;
 
         if (number_to_read > dict.buffer_read_chunk_size) {
@@ -2589,9 +2584,9 @@
         // return buffer_character_len or at least set it
         // XXX this will fail, because memory address is never initialized
         memory_address =
-          dict.current_buffer.buffer_state_array_view.getInt8(number_to_move);
+          dict.current_buffer.array_view.getInt8(number_to_move);
         readChunkFromInput(dict, memory_address, number_to_read);
-        dict.current_buffer.buffer_state_character_len =
+        dict.current_buffer.character_len =
           dict.buffer_character_len;
       }
     
@@ -2602,25 +2597,25 @@
           restartLex(dict, dict.file_input);
         } else {
           return_value = dict.end_of_block_action_last_match;
-          dict.current_buffer.buffer_status = dict.buffer_eof_pending;
+          dict.current_buffer.is_status = dict.buffer_eof_pending;
         }
       } else {
         return_value = dict.end_of_block_action_continue_scan;
       }
 
       dict.buffer_character_len += number_to_move;
-      dict.current_buffer.buffer_state_array_view.setInt8(
-        dict.current_buffer.buffer_state_character_len,
+      dict.current_buffer.array_view.setInt8(
+        dict.current_buffer.character_len,
         dict.buffer_end_character
       );
-      dict.current_buffer.buffer_state_array_view.setInt8(
-        dict.current_buffer.buffer_state_character_len + 1,
+      dict.current_buffer.array_view.setInt8(
+        dict.current_buffer.character_len + 1,
         dict.buffer_end_character
       );
 
       // XXX will fail because of undefined memory address
       content_pointer =
-        dict.current_buffer.buffer_state_array_view.getInt8(0);
+        dict.current_buffer.array_view.getInt8(0);
       return return_value;
     }
   }
@@ -2715,7 +2710,7 @@
         dict.current_run_character_position_address = dict.tmp_character_hold;
         restoreOriginalOffset(dict);
 
-        if (dict.current_buffer.buffer_status === dict.buffer_is_new) {
+        if (dict.current_buffer.is_status === dict.buffer_is_new) {
 
           // We're scanning a new file or input source.  It's possible that 
           // this happened because the user just pointed file input (yyin) at 
@@ -2725,9 +2720,9 @@
           // first action (other than possibly a back-up) that will match for 
           // the new input source.
           dict.buffer_character_len =
-            dict.current_buffer.buffer_state_character_len;
-          dict.current_buffer.buffer_state_input_file = dict.file_input;
-          dict.current_buffer.buffer_status = dict.buffer_is_normal;
+            dict.current_buffer.character_len;
+          dict.current_buffer.input_file = dict.file_input;
+          dict.current_buffer.is_status = dict.buffer_is_normal;
         }
 
         // Note that here we test for current_buffer_character_position 
@@ -2740,8 +2735,8 @@
         // ~ test character position to position of first end of block in buffer
         // check what character-position (c_buf_p) is and use index!
         if (dict.current_buffer_character_position <= 
-          dict.current_buffer.buffer_state_array_view.getInt8(
-            dict.current_buffer.buffer_state_character_len
+          dict.current_buffer.array_view.getInt8(
+            dict.current_buffer.character_len
         )) {
 
           // This was really a NUL. This means end of a word or something, 
@@ -2810,8 +2805,8 @@
 
               // XXX this returns the character, not the buffer?
               dict.current_buffer_character_position =
-                dict.current_buffer.buffer_state_array_view.getInt8(
-                  dict.current_buffer.buffer_state_character_len
+                dict.current_buffer.array_view.getInt8(
+                  dict.current_buffer.character_len
                 );
               dict.current_state = getPreviousState(dict);
               dict.current_run_character_position =
@@ -2856,7 +2851,7 @@
     "default_buffer_size": 16384,
 
     // (yy_buffer_state)
-    "getBufferStateDict": getBufferStateDict,
+    "getBufferDict": getBufferDict,
 
     // (yy_create_buffer)
     "createBuffer": createBuffer,
@@ -3370,7 +3365,7 @@
 
         // 1/6 main.c => set up files
         getSwitch(parameter_list);
-        console.log("switched");
+
         // 2/6 setGram => parse & lex
         setGrammarFile();
         console.log("grammared");
@@ -3396,4 +3391,5 @@
   window.createDfa = createDfa;
 
 }(window, RSVP, YY, Error));
+
 
