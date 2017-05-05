@@ -2207,6 +2207,9 @@
       // including room for EOB characters.
       "size": null,
 
+      // id to verify a buffer is the current buffer
+      "uuid": null,
+
       // (yy_ch_buf) input buffer, only used to define view below
       "array_buffer": null,
 
@@ -2261,8 +2264,7 @@
     my_buffer.input_line_start = 1;
     my_buffer.is_status = dict.buffer_is_new;
 
-    // uuid?
-    if (my_buffer === dict.current_buffer) {
+    if (my_buffer.uuid === dict.current_buffer.uuid) {
       loadBuffer(dict);
     }
   }
@@ -2307,6 +2309,7 @@
       buffer = getBufferDict();
 
     resetPseudoGlobalsSetInBuffer(dict);
+    buffer.uuid = createUuid();
     buffer.size = my_dict.default_buffer_size;
     buffer.array_buffer = setBuffer(buffer.size);
     buffer.array_view = setView(buffer.array_buffer);
