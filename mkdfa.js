@@ -30,19 +30,6 @@
     }
   }
 
-  function createUuid() {
-    function S4() {
-      var string = Math.floor(Math.random() * 0x10000).toString(16),
-        i;
-      for (i = string.length; i < 4; i += 1) {
-        string = '0' + string;
-      }
-      return string;
-    }
-    return S4() + S4() + "-" + S4() + "-" + S4() + "-" + S4() + "-" + S4() +
-      S4() + S4();
-  }
-
   function extendDict(my_existing_dict, my_new_dict) {
     var key;
     for (key in my_new_dict) {
@@ -62,9 +49,6 @@
 
     // combine two objects into one
     "extendDict": extendDict,
-
-    // generate a unique identifier
-    "createUuid": createUuid,
 
     // retrieve a specific file from the file dict. as user can pass his own
     // name prefix like "sample", the file "type" (grammar, voca, etc) is set
@@ -2207,9 +2191,6 @@
       // including room for EOB characters.
       "size": null,
 
-      // id to verify a buffer is the current buffer
-      "uuid": null,
-
       // (yy_ch_buf) input buffer, only used to define view below
       "array_buffer": null,
 
@@ -2252,21 +2233,17 @@
     if (my_buffer === null) {
       return;
     }
+
     my_buffer.character_len = 0;
 
     // We always need two end-of-buffer characters. The first causes
     // a transition to the end-of-buffer state. The second causes
-    // a jam in that state.
-    // mh?
+    // a jam in that state. mh?
     my_buffer.array_view.setInt8(0, my_dict.buffer_end_character);
     my_buffer.array_view.setInt8(1, my_dict.buffer_end_character);
     my_buffer.current_position = my_buffer.array_view.getInt8(0);
     my_buffer.input_line_start = 1;
     my_buffer.is_status = dict.buffer_is_new;
-
-    if (my_buffer.uuid === dict.current_buffer.uuid) {
-      loadBuffer(dict);
-    }
   }
 
   function fillBuffer(my_dict) {
@@ -2309,7 +2286,6 @@
       buffer = getBufferDict();
 
     resetPseudoGlobalsSetInBuffer(dict);
-    buffer.uuid = createUuid();
     buffer.size = my_dict.default_buffer_size;
     buffer.array_buffer = setBuffer(buffer.size);
     buffer.array_view = setView(buffer.array_buffer);
