@@ -352,7 +352,9 @@
     // #defines
     "token_dict": TOKEN_DICT,
     
-    // (yy_ec) [lex.yy.c]
+    // (yy_ec) [lex.yy.c], this is a table with 256 entries, presumably
+    // extended ascii, so it takes an index and returns what a number telling
+    // what to do with the ascii character parsed.
     "ec": LEX_EC,
 
     // (yy_accept) [lex.yy.c] used to set yy_act = action to run, so this
@@ -1446,7 +1448,7 @@
         console.log("[info] Now at end of input.");
       }
     } else {
-      dict.lookahead_symbol_as_number = translate(dict.lookahead_symbol);
+      dict.lookahead_symbol_as_number = lookup.translate(dict.lookahead_symbol);
       if (dict.is_debug === 1) {
         console.log(
           "[info] Next token is " + dict.lookahead_symbol + " (" +
@@ -1777,7 +1779,7 @@
           }
 
           message = "parse error, unexpected " +
-            lookup.token_number_of_token[translate(dict.lookahead_symbol)];
+            lookup.token_number_of_token[lookup.translate(dict.lookahead_symbol)];
 
           if (count < 5) {
             count = 0;
@@ -2157,7 +2159,7 @@
 // =============================================================================
 //                                  Lexer
 // =============================================================================
-(function (window, YY, Math, Error) {
+(function (window, YY, Math, String, Error) {
   "use strict";
 
   // ported from:
@@ -2193,34 +2195,38 @@
     var dict = my_dict,
       lookup = YY.table_dict,
       counter;
-    
+    console.log(dict)
     function getCount(my_counter) {
       return lookup.check[lookup.base[dict.current_state] + my_counter];
     }
 
     do {
-
-      counter = lookup.ec[
-        Math.abs(dict.current_run_character_position_address)
-      ];
-
+      counter = lookup.ec[getCurrentRunCharacterFromPointer(dict)];
+      console.log("current char:" + getCurrentRunCharacterFromPointer(dict))
+      console.log("matching, counter: " + counter)
+      console.log("current_state: " + dict.current_state + ", accept: " + lookup.accept[dict.current_state])
       if (lookup.accept[dict.current_state]) {
+        console.log("accepted")
         dict.last_accepted_state = dict.current_state;
         dict.last_accepted_character_position =
-          dict.current_run_character_position;
+          dict.current_run_position_being_read;
       }
 
       while (getCount(counter) !== dict.current_state) {
+        console.log("looping to current_state")
+        console.log("infinity.... and beyond")
         dict.current_state = lookup.def[dict.current_state];
+        console.log("state set to: " + dict.current_state)
         if (dict.current_state >= 33 ) {
           counter = lookup.meta[counter];
         }
       }
 
       dict.current_state = lookup.nxt[lookup.base[dict.current_state] + counter];
-      dict.current_run_character_position =
-        dict.current_run_character_position + 1;
-
+      dict.current_run_position_being_read =
+        dict.current_run_position_being_read + 1;
+      console.log("current state set to next:" + dict.current_state)
+      console.log("current run pos upped by 1 to: " + dict.current_run_position_being_read)
     } while (lookup.base[dict.current_state] !== 40);
   }
 
@@ -2233,7 +2239,7 @@
 
     // have to back up
     if (dict.action_to_run === 0) {
-      dict.current_run_character_position =
+      dict.current_run_position_being_read =
         dict.last_accepted_character_position;
       dict.current_state = dict.last_accepted_state;
       dict.action_to_run = lookup.accept[dict.current_state];
@@ -2245,18 +2251,22 @@
     var dict = my_dict;
 
     // setting pointer to current_run start position = "string starting from"
-    dict.input_position_being_read = dict.current_run_buffer_start_position;
-    dict.matched_string_len = dict.current_run_character_position -
-      dict.current_run_buffer_start_position;
-    dict.buffer_position_being_read = dict.current_run_character_position;
+    dict.input_position_being_read = dict.current_run_position_start;
+    dict.matched_string_len = dict.current_run_position_being_read -
+      dict.current_run_position_start;
+    dict.buffer_position_being_read = dict.current_run_position_being_read;
 
     // Note, here we backup the current character position address! and then 
     // add explicit null character? (*yy_cp = '\0'), the length of the string 
     // is +2 bytes, because the NUL character \0 still counts as a character 
     // and the string is still terminated with an implicit \0
     // Note: all strings end with implicit end of string \0!, words too!
-    dict.backup_character = dict.current_run_character_position_address;
-    //dict.current_run_character_position_address = "\0";
+    // I guess this should really use the actual character on the current
+    // position, because afterwards we are tampering with it.
+    dict.backup_character = getCurrentRunCharacterFromPointer(dict);
+
+    // can't this just be null? no, because this one I can call fromCharCode on
+    dict.current_run_character_backup = "\0";
   }
 
   function restoreOriginalOffset (my_dict) {
@@ -2268,13 +2278,12 @@
       table_dict = YY.table_dict,
       counter = 1;
 
-    dict.current_run_character_position_address =
-      dict.buffer_position_being_read;
+    dict.current_run_character_backup = dict.buffer_position_being_read;
 
     if (table_dict.accept[my_lexer_current_state]) {
       dict.last_accepted_state = my_lexer_current_state;
       dict.last_accepted_character_position =
-        dict.current_run_character_position;
+        dict.current_run_position_being_read;
     }
     while (table_dict.check[table_dict.base[my_lexer_current_state] + counter] !==
       my_lexer_current_state
@@ -2299,7 +2308,7 @@
     var dict = my_dict,
       table_dict = YY.table_dict,
       tmp_lexer_current_state = dict.start_state,
-      i = dict.current_run_character_position,
+      i = dict.current_run_position_being_read,
       init_pos = dict.input_position_being_read + dict.more_adjust, 
       counter;
 
@@ -2308,10 +2317,8 @@
     }
 
     for (i = init_pos; i < dict.buffer_position_being_read; i += 1) {
-      if (dict.current_run_character_position_address) {
-        counter = lookup.ec[
-          Math.abs(dict.current_run_character_position_address)
-        ];
+      if (dict.current_run_character_backup) {
+        counter = lookup.ec[getCurrentRunCharacterFromPointer(dict)];
       } else {
         counter = 1;
       }
@@ -2319,7 +2326,7 @@
       if (table_dict.accept[tmp_lexer_current_state]) {
         dict.last_accepted_state = tmp_lexer_current_state;
         dict.last_accepted_character_position =
-          dict.current_run_character_position;
+          dict.current_run_position_being_read;
       }
 
       while (lookup(tmp_lexer_current_state, my_counter)
@@ -2477,9 +2484,8 @@
 
     switch (dict.action_to_run) {
       case 0:
-        dict.current_run_character_position_address =
-          dict.backup_character;
-        dict.current_run_character_position =
+        dict.current_run_character_backup = dict.backup_character;
+        dict.current_run_position_being_read =
           dict.last_accepted_character_position;
         dict.current_state = dict.last_accepted_state;
 
@@ -2552,11 +2558,11 @@
       case dict.buffer_end:
 
         // Amount of text matched not including the EOB char.
-        dict.amount_of_matched_text = (dict.current_run_character_position -
+        dict.amount_of_matched_text = (dict.current_run_position_being_read -
           dict.input_position_being_read) - 1;
 
         // Undo the effects of doBeforeAction.
-        dict.current_run_character_position_address = dict.backup_character;
+        dict.current_run_character_backup = dict.backup_character;
         restoreOriginalOffset(dict);
 
         if (dict.current_buffer.buffer_status === dict.buffer_is_new) {
@@ -2595,17 +2601,17 @@
           dict.current_state = getPreviousState(dict);
 
           dict.next_state = attemptNulTransition(dict, dict.current_state);
-          dict.current_run_buffer_start_position =
+          dict.current_run_position_start =
             dict.input_position_being_read + dict.more_adjust;
 
           // Consume the NUL.
           if (dict.next_state) {
-            dict.current_run_character_position =
+            dict.current_run_position_being_read =
               dict.buffer_position_being_read++;
             dict.current_state = dict.next_state;
             matchText(dict);
           } else {
-            dict.current_run_character_position =
+            dict.current_run_position_being_read =
               dict.buffer_position_being_read;
             findAction(dict);
           }
@@ -2643,9 +2649,9 @@
                 dict.input_position_being_read +
                   dict.amount_of_matched_text;
               dict.current_state = getPreviousState(dict);
-              dict.current_run_character_position =
+              dict.current_run_position_being_read =
                 dict.buffer_position_being_read;
-              dict.current_run_buffer_start_position =
+              dict.current_run_position_start =
                 dict.input_position_being_read + dict.more_adjust;
               matchText(dict);
               break;
@@ -2658,9 +2664,9 @@
                   dict.current_buffer.buffer_characters_read
                 );
               dict.current_state = getPreviousState(dict);
-              dict.current_run_character_position =
+              dict.current_run_position_being_read =
                 dict.buffer_position_being_read;
-              dict.current_run_buffer_start_position =
+              dict.current_run_position_start =
                 dict.input_position_being_read + dict.more_adjust;
               findAction(dict);
               break;
@@ -2690,10 +2696,6 @@
 
     // (yyout) file output file
     "file_output": null,
-
-    // (*yy_c_buf_p) = pointer to current character, initially set to (char *) 0; 
-    // so pointing to null character, we don't have those in JS though.
-    "getCurrentCharacterFromPointer": getCurrentCharacterFromPointer,
 
     // -------------------------------- buffer -----------------------------------
 
@@ -2727,10 +2729,6 @@
     // declare inside buffer state dict,not sure this can be pulled out
     "buffer_is_normal": 1,
 
-    // (yy_n_chars) number of characters read into yy_ch_buf
-    // CAREFUL, also defined inside state buffer.
-    "buffer_characters_read": null,
-
     // (YY_BUF_SIZE) buffer created with this length to get
     // arbitrary inputs and requiring to handle overflows
     // (later...)
@@ -2749,6 +2747,21 @@
     // declared inside buffer state dict, not sure this can be pulled out
     "buffer_eof_pending": 2,
 
+    // (yy_n_chars) number of characters read into yy_ch_buf
+    // CAREFUL, also defined inside state buffer.
+    "buffer_characters_read": null,
+
+    // (yy_hold_char) holds the character lost when yytext is formed. It
+    // really is a (static) char, so not pointer or int.
+    "backup_character": null,
+
+    // (*yy_c_buf_p) = pointer to current character, initially set to (char *) 0; 
+    // so pointing to null character, we don't have those in JS though. This will
+    // take an index, namely the current buffer buffer_position_being_read and
+    // return the corresponding int stored in the DataView (which could be 
+    // be converted into a character using fromCharCode)
+    "getBufferCharacterFromPointer": getBufferCharacterFromPointer,
+
     // (yy_c_buf_p) => current run character position, this is the actual character
     // (position), index in dataView, not the character value itself!
     "buffer_position_being_read": 0,
@@ -2760,6 +2773,28 @@
     "input_position_being_read": 0,
 
     // ----------------------------- gotos -------------------------------------
+
+    // (yy_bp) int points to the position in yy_ch_buf of the start of
+    // the current run.
+    "current_run_position_start": null,
+
+    // (yy_cp) int
+    "current_run_position_being_read": null,
+
+    // (*yy_cp) char - doesn't really make sense why this is the char and
+    // cp is the int, but alas. do the same way as before and call a method
+    // returning the character at the current position. It also has to be
+    // set versus in the buffer, we are only getting it from the dataView
+    // so we need to have a parameter to keep the value set
+    "current_run_character_backup": null,
+
+    // retrieve the actual character stored in currentRunCharacter, takes
+    // an index and retrieves character.
+    "getCurrentRunCharacterFromPointer": getCurrentRunCharacterFromPointer,
+
+    // (yy_current_state) pulled out, declared in parse but used elsewhere
+    "current_state": null,
+
     // (GOTO yy_match)
     // not sure this is so easy to take out and the code is just executed 
     // disregarding the goto
@@ -2815,24 +2850,6 @@
     // file defines yytext_ptr as yytext, not sure, but it returns a number
     // I thought atoi(yytext) would be the value?
     "matched_string": 0,
-
-    // (yy_hold_char) holds the character lost when yytext is formed. It
-    // really is a (static) char, so not pointer or int.
-    "backup_character": null,
-
-    // (yy_cp) int
-    "current_run_character_position": null,
-
-    // (*yy_cp) char - doesn't really make sense why this is the char and
-    // cp is the int, but alas
-    "current_run_character_position_address": null,
-
-    // (yy_bp) int points to the position in yy_ch_buf of the start of
-    // the current run.
-    "current_run_buffer_start_position": null,
-
-    // (yy_current_state) pulled out, declared in parse but used elsewhere
-    "current_state": null,
 
     // (yy_last_accepted_state)
     "last_accepted_state": null,
@@ -2938,14 +2955,37 @@
     }
   }
 
-  function getCurrentCharacterFromPointer(my_dict) {
+  function getCurrentRunCharacterFromPointer(my_dict) {
+    var pos;
+
+    function hex(my_input) {
+      return my_input.charCodeAt(0) & 0xff;
+    }
+
+    console.log("not using actual position")
+    console.log(my_dict.current_run_position_being_read)
+    console.log(my_dict.current_run_character_backup)
+
+    //if (my_actual_position) {
+      pos = my_dict.current_run_position_being_read;
+      if (pos) {
+        return hex(my_dict.current_buffer.buffer_view.getInt8(pos));
+      }
+    //}
+    // take what was set and place in the backup
+    //return hex(my_dict.current_run_character_backup);
+  }
+
+  function getBufferCharacterFromPointer(my_dict) {
     var pos = my_dict.buffer_position_being_read;
 
     if (pos) {
-      return my_dict.current_buffer.buffer_view.getInt8(pos);
+      return String.fromCharCode(
+        my_dict.current_buffer.buffer_view.getInt8(pos)
+      );
     }
 
-    // improvise.
+    // improvise? hm.
     return '/0';
   }
 
@@ -2963,7 +3003,7 @@
     // yy_hold_char = *yy_c_buf_p; It's really the only pointer this is used,
     // because *yy_c_buf_p is only in yy_input, yy_scan_buffer, yy_less, all
     // of which aren't used. So just write default null character here later.
-    dict.backup_character = getCurrentCharacterFromPointer(dict);
+    dict.backup_character = getBufferCharacterFromPointer(dict);
 
     // yytext_ptr = yy_c_buf_p = yy_current_buffer->yy_buf_pos;
     // should likely begin at 0, so position being read is set appropriately
@@ -2982,6 +3022,7 @@
     // we're at the end of the buffer, NOT at the end of the memory
     // and not at the end of the input file. It's the flag to read
     // more input. So much hassle.
+    console.log("Setting flag and jammer")
     my_buffer.buffer_view.setInt8(0, dict.buffer_end_character);
     my_buffer.buffer_view.setInt8(1, dict.buffer_end_character);
     my_buffer.buffer_position_being_read = my_buffer.buffer_view.getInt8(0);
@@ -3031,25 +3072,25 @@
     while (1) {
       i++;
       console.log("iteration: " + i);
-      if (i === 10) {
+      if (i === 3) {
         break;
       }
-      /*
-      // set current position to current position in buffer
-      dict.current_run_character_position = dict.buffer_position_being_read;
 
-      // Support of yytext
-      dict.current_run_character_position_address = dict.backup_character;
+      // set current position to current position in buffer
+      dict.current_run_position_being_read = dict.buffer_position_being_read;
+
+      // Support of yytext, so this really keeps a character... not an index
+      dict.current_run_character_backup = dict.backup_character;
 
       // yy_bp points to the position in yy_ch_buf of the start of current run.
-      dict.current_run_buffer_start_position = dict.current_run_character_position;
+      dict.current_run_position_start = dict.current_run_position_being_read;
 
       // starts with 1
       dict.current_state = dict.start_state;
 
-      // lint says don't declare inside a loop
+      // let's not declare within loop
       matchText(dict);
-
+      /*
       // see if something was set
       findAction(dict);
 
@@ -3062,7 +3103,7 @@
 
   YY.Lexer = lexer;
 
-}(window, YY, Math, Error));
+}(window, YY, Math, String, Error));
 
 // =============================================================================
 // ================================  Start =====================================
