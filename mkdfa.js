@@ -2197,6 +2197,8 @@
       counter;
     console.log(dict)
     function getCount(my_counter) {
+      console.log("checking, my_counter => " + my_counter)
+      console.log(lookup.check[lookup.base[dict.current_state] + my_counter])
       return lookup.check[lookup.base[dict.current_state] + my_counter];
     }
 
@@ -2205,6 +2207,7 @@
       console.log("current char:" + getCurrentRunCharacterFromPointer(dict))
       console.log("matching, counter: " + counter)
       console.log("current_state: " + dict.current_state + ", accept: " + lookup.accept[dict.current_state])
+
       if (lookup.accept[dict.current_state]) {
         console.log("accepted")
         dict.last_accepted_state = dict.current_state;
@@ -2215,6 +2218,7 @@
       while (getCount(counter) !== dict.current_state) {
         console.log("looping to current_state")
         console.log("infinity.... and beyond")
+        console.log("current_state => " + dict.current_state)
         dict.current_state = lookup.def[dict.current_state];
         console.log("state set to: " + dict.current_state)
         if (dict.current_state >= 33 ) {
@@ -3087,6 +3091,7 @@
 
       // starts with 1
       dict.current_state = dict.start_state;
+      console.log("so start state set to:" + dict.start_state)
 
       // let's not declare within loop
       matchText(dict);
@@ -3411,5 +3416,4 @@
   window.createDfa = createDfa;
 
 }(window, RSVP, YY, Error));
-
 
