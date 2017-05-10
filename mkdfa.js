@@ -2195,7 +2195,7 @@
     var dict = my_dict,
       lookup = YY.table_dict,
       counter;
-    console.log(dict)
+
     function getCount(my_counter) {
       console.log("checking, my_counter => " + my_counter)
       console.log(lookup.check[lookup.base[dict.current_state] + my_counter])
@@ -3416,4 +3416,5 @@
   window.createDfa = createDfa;
 
 }(window, RSVP, YY, Error));
+
 
