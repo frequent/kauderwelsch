@@ -10,6 +10,10 @@
 (function (window, Math, Error) {
   "use strict";
 
+  function adjustIndex(my_index) {
+    return my_index - 1;
+  }
+
   function setBuffer (my_size) {
     return new ArrayBuffer(my_size);
   }
@@ -60,7 +64,11 @@
     "setBuffer": setBuffer,
 
     // create the view for an array buffer
-    "setView": setView
+    "setView": setView,
+    
+    // indices are always 0 based, so all character based lookups need to be
+    // shifted by 1, else things like ec[256] will miss end of the ec array.
+    "adjustIndex": adjustIndex
 
   })};
 
@@ -290,6 +298,12 @@
       return YY.table_dict.translate_token[my_x];
     }
     return 27;
+  }
+
+  function look(my_table, my_index) {
+    console.log(my_table)
+    console.log(my_index)
+    return YY.table_dict[my_table][my_index];
   }
 
   // (YYTRANSLATE) [gram.tabl.c]
@@ -571,6 +585,10 @@
 
     // (YYTRANSLATE) [gram.tabl.c] - fetch Bison token number corresponding to YYLEX.
     "translate": translate,
+
+    // lookup a table value, always shift one, because tables are 0 based
+    "look": look,
+
   });
 
 }(window, YY, Error));
@@ -2192,55 +2210,50 @@
   }
 
   function matchText (my_dict) {
-    var dict = my_dict,
-      lookup = YY.table_dict,
-      counter;
+    var look = YY.table_dict.look,
+      util = YY.util_dict,
+      dict = my_dict,
+      char_code;
 
-    function getCount(my_counter) {
-      console.log("checking, my_counter => " + my_counter)
-      console.log(lookup.check[lookup.base[dict.current_state] + my_counter])
-      return lookup.check[lookup.base[dict.current_state] + my_counter];
+    function getCharCode(my_character) {
+      return look("check", look("base", dict.current_state) + my_character);
     }
 
     do {
-      counter = lookup.ec[getCurrentRunCharacterFromPointer(dict)];
-      console.log("current char:" + getCurrentRunCharacterFromPointer(dict))
-      console.log("matching, counter: " + counter)
-      console.log("current_state: " + dict.current_state + ", accept: " + lookup.accept[dict.current_state])
 
-      if (lookup.accept[dict.current_state]) {
-        console.log("accepted")
+      // yy_c unsigned char, lookup in extended ascii table
+      // NOTE: we're getting a character pointer 0-255, so if the character is
+      // 0 and return 48 from the ascii table, I cannot look up ec[48], because
+      // it will be the 49th element, or?
+      char_code = look("ec", getCurrentRunCharacterFromPointer(dict) - 1);
+
+      if (look("accept", dict.current_state)) {
         dict.last_accepted_state = dict.current_state;
         dict.last_accepted_character_position =
           dict.current_run_position_being_read;
       }
 
-      while (getCount(counter) !== dict.current_state) {
-        console.log("looping to current_state")
-        console.log("infinity.... and beyond")
-        console.log("current_state => " + dict.current_state)
-        dict.current_state = lookup.def[dict.current_state];
-        console.log("state set to: " + dict.current_state)
+      while (getCharCode(char_code) !== dict.current_state) {
+        dict.current_state = look("def", dict.current_state);
         if (dict.current_state >= 33 ) {
-          counter = lookup.meta[counter];
+          char_code = look("meta", char_code);
         }
       }
-
-      dict.current_state = lookup.nxt[lookup.base[dict.current_state] + counter];
+      dict.current_state = look("nxt", look("base", dict.current_state) + char_code);
       dict.current_run_position_being_read =
         dict.current_run_position_being_read + 1;
-      console.log("current state set to next:" + dict.current_state)
-      console.log("current run pos upped by 1 to: " + dict.current_run_position_being_read)
-    } while (lookup.base[dict.current_state] !== 40);
+
+      // break when current_state = 5,6,7,8,10,12,14,15,17,30,31,32
+    } while (look("base", dict.current_state) !== 40);
   }
 
   function findAction (my_dict) {
     var dict = my_dict,
-      lookup = YY.table_dict;
-
+      look = YY.table_dict.look;
+    console.log(dict.current_state)
     // (yy_act) int only used within lexer
-    dict.action_to_run = lookup.accept[dict.current_state];
-
+    dict.action_to_run = look("accept", dict.current_state);
+    throw new Error(dict.action_to_run)
     // have to back up
     if (dict.action_to_run === 0) {
       dict.current_run_position_being_read =
@@ -2560,7 +2573,7 @@
 
       // (set to 15) a buffer end can be the end of a line or file? 
       case dict.buffer_end:
-
+        console.log("MANAGED TO REACH END OF BUFFER!!")
         // Amount of text matched not including the EOB char.
         dict.amount_of_matched_text = (dict.current_run_position_being_read -
           dict.input_position_being_read) - 1;
@@ -2962,21 +2975,21 @@
   function getCurrentRunCharacterFromPointer(my_dict) {
     var pos;
 
+    // yy_ec[YY_SC_TO_UI( * yy_cp)]
+    
     function hex(my_input) {
-      return my_input.charCodeAt(0) & 0xff;
+      return my_input.toString(10).charCodeAt(0) & 0xff;
     }
 
-    console.log("not using actual position")
-    console.log(my_dict.current_run_position_being_read)
-    console.log(my_dict.current_run_character_backup)
+    // this should be the equivalent to *[xxx] so we also need to look at
+    // position 0, especially since 00 is used to denote "get more input"
+    pos = my_dict.current_run_position_being_read;
 
-    //if (my_actual_position) {
-      pos = my_dict.current_run_position_being_read;
-      if (pos) {
-        return hex(my_dict.current_buffer.buffer_view.getInt8(pos));
-      }
-    //}
-    // take what was set and place in the backup
+    if (pos || pos === 0) {
+      return hex(my_dict.current_buffer.buffer_view.getInt8(pos));
+    }
+    // take what was set and place in the backup, but how to lookup \0?
+    // it should be address 0 I assume?
     //return hex(my_dict.current_run_character_backup);
   }
 
@@ -3026,7 +3039,6 @@
     // we're at the end of the buffer, NOT at the end of the memory
     // and not at the end of the input file. It's the flag to read
     // more input. So much hassle.
-    console.log("Setting flag and jammer")
     my_buffer.buffer_view.setInt8(0, dict.buffer_end_character);
     my_buffer.buffer_view.setInt8(1, dict.buffer_end_character);
     my_buffer.buffer_position_being_read = my_buffer.buffer_view.getInt8(0);
@@ -3095,14 +3107,13 @@
 
       // let's not declare within loop
       matchText(dict);
-      /*
+      console.log("MATCHED!")
       // see if something was set
       findAction(dict);
-
+      console.log("FOUND");
       if (doAction(dict)) {
         break; 
       }
-      */
     }
   }
 
