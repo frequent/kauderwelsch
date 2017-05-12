@@ -301,8 +301,6 @@
   }
 
   function look(my_table, my_index) {
-    console.log(my_table)
-    console.log(my_index)
     return YY.table_dict[my_table][my_index];
   }
 
@@ -2215,17 +2213,24 @@
       dict = my_dict,
       char_code;
 
+    // yy_c unsigned char, lookup in extended ascii table
+    // NOTE: we're getting a character pointer 0-255, so if the character is
+    // 0 and return 48 from the ascii table, I cannot look up ec[48], because
+    // it will be the 49th element, or?
+
+    // => check[base[1] = 0 + 8] = 1 |
+    // => check[base[11] = 0 + 8] = 1 |
+    // 
     function getCharCode(my_character) {
       return look("check", look("base", dict.current_state) + my_character);
     }
 
     do {
-
-      // yy_c unsigned char, lookup in extended ascii table
-      // NOTE: we're getting a character pointer 0-255, so if the character is
-      // 0 and return 48 from the ascii table, I cannot look up ec[48], because
-      // it will be the 49th element, or?
-      char_code = look("ec", getCurrentRunCharacterFromPointer(dict) - 1);
+      console.log("RUN")
+      char_code = look("ec", getCurrentRunCharacterFromPointer(dict));
+      // => current_state: 1 | 32
+      // => pointer: 48 | 48
+      // => char_code: 8 | 8
 
       if (look("accept", dict.current_state)) {
         dict.last_accepted_state = dict.current_state;
@@ -2233,34 +2238,50 @@
           dict.current_run_position_being_read;
       }
 
+      // => 1 !== 1 | 1 !== 11
+      console.log(char_code)
+      console.log(getCharCode(char_code))
       while (getCharCode(char_code) !== dict.current_state) {
+        // => def[11] = 34
         dict.current_state = look("def", dict.current_state);
         if (dict.current_state >= 33 ) {
+          // => meta[8] = 2
           char_code = look("meta", char_code);
         }
       }
+
+      // => nxt[base[1] = 0 + 8] = 11
+      // => nxt[base[34] = 24 + 8 = 32
       dict.current_state = look("nxt", look("base", dict.current_state) + char_code);
       dict.current_run_position_being_read =
         dict.current_run_position_being_read + 1;
+      console.log(dict.current_state)
+      console.log(char_code)
 
-      // break when current_state = 5,6,7,8,10,12,14,15,17,30,31,32
     } while (look("base", dict.current_state) !== 40);
+    
+    // initially, the current_state coming out here should be 4, so we can get 
+    // 4-1 = 15 on accept for action to run which will trigger loading new input
+    if (dict.is_debug === 1) {
+      console.log("[debug]: current_state should be 4: " + dict.current_state);
+    }
   }
 
   function findAction (my_dict) {
     var dict = my_dict,
       look = YY.table_dict.look;
-    console.log(dict.current_state)
+
     // (yy_act) int only used within lexer
     dict.action_to_run = look("accept", dict.current_state);
-    throw new Error(dict.action_to_run)
+
     // have to back up
     if (dict.action_to_run === 0) {
       dict.current_run_position_being_read =
         dict.last_accepted_character_position;
       dict.current_state = dict.last_accepted_state;
-      dict.action_to_run = lookup.accept[dict.current_state];
+      dict.action_to_run = look("accept", dict.current_state - 1);
     }
+    throw new Error("STOP")
     doBeforeAction(dict);
   }
 
@@ -2976,7 +2997,6 @@
     var pos;
 
     // yy_ec[YY_SC_TO_UI( * yy_cp)]
-    
     function hex(my_input) {
       return my_input.toString(10).charCodeAt(0) & 0xff;
     }
