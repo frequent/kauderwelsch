@@ -2218,19 +2218,12 @@
     // 0 and return 48 from the ascii table, I cannot look up ec[48], because
     // it will be the 49th element, or?
 
-    // => check[base[1] = 0 + 8] = 1 |
-    // => check[base[11] = 0 + 8] = 1 |
-    // 
     function getCharCode(my_character) {
       return look("check", look("base", dict.current_state) + my_character);
     }
 
     do {
-      console.log("RUN")
       char_code = look("ec", getCurrentRunCharacterFromPointer(dict));
-      // => current_state: 1 | 32
-      // => pointer: 48 | 48
-      // => char_code: 8 | 8
 
       if (look("accept", dict.current_state)) {
         dict.last_accepted_state = dict.current_state;
@@ -2238,32 +2231,24 @@
           dict.current_run_position_being_read;
       }
 
-      // => 1 !== 1 | 1 !== 11
-      console.log(char_code)
-      console.log(getCharCode(char_code))
       while (getCharCode(char_code) !== dict.current_state) {
-        // => def[11] = 34
         dict.current_state = look("def", dict.current_state);
         if (dict.current_state >= 33 ) {
-          // => meta[8] = 2
           char_code = look("meta", char_code);
         }
       }
 
-      // => nxt[base[1] = 0 + 8] = 11
-      // => nxt[base[34] = 24 + 8 = 32
       dict.current_state = look("nxt", look("base", dict.current_state) + char_code);
       dict.current_run_position_being_read =
         dict.current_run_position_being_read + 1;
-      console.log(dict.current_state)
-      console.log(char_code)
 
+    // initial run needs current_state to be 15 for correct action to be called
     } while (look("base", dict.current_state) !== 40);
     
-    // initially, the current_state coming out here should be 4, so we can get 
-    // 4-1 = 15 on accept for action to run which will trigger loading new input
+    // initially, the current_state coming out here should be 3, so we can get 
+    // 3 => 15 on accept for action to run which will trigger loading new input
     if (dict.is_debug === 1) {
-      console.log("[debug]: current_state should be 4: " + dict.current_state);
+      console.log("[debug]: current_state matched: " + dict.current_state);
     }
   }
 
@@ -2271,17 +2256,17 @@
     var dict = my_dict,
       look = YY.table_dict.look;
 
-    // (yy_act) int only used within lexer
+    // (yy_act) int only used within lexer, determines action!
     dict.action_to_run = look("accept", dict.current_state);
 
-    // have to back up
+    // have to back up, this is a fallback action to run in case of action 0
     if (dict.action_to_run === 0) {
       dict.current_run_position_being_read =
         dict.last_accepted_character_position;
       dict.current_state = dict.last_accepted_state;
-      dict.action_to_run = look("accept", dict.current_state - 1);
+      dict.action_to_run = look("accept", dict.current_state);
     }
-    throw new Error("STOP")
+
     doBeforeAction(dict);
   }
 
@@ -2589,6 +2574,8 @@
       case 14:
         echo();
         return 1;
+
+      // this will be 15+0+1 = 16
       case setEofState(dict, dict.initial):
         return terminate(dict);
 
@@ -2756,8 +2743,12 @@
     // actually put the input file into the buffer
     "fillBuffer": fillBuffer,
 
-    // (YY_END_OF_BUFFER_CHAR)
-    "buffer_end_character": 0,
+    // (YY_END_OF_BUFFER_CHAR) - we have no null character, but this
+    // needs to return 0 when retrieved from the DataView accessing the
+    // the data kept in the ArrayBuffer. The 0 will be the index to lookup 
+    // in the ec table and is the only one returning 0 and triggering new data
+    // to be loaded.
+    "buffer_end_character": "",
 
     // (YY_BUFFER_NEW) what elaborate way to say 0...
     // declared inside buffer state dict, not sure this can be pulled out
@@ -2994,23 +2985,28 @@
   }
 
   function getCurrentRunCharacterFromPointer(my_dict) {
-    var pos;
+    var position = my_dict.current_run_position_being_read,
+      value_at_position;
 
     // yy_ec[YY_SC_TO_UI( * yy_cp)]
     function hex(my_input) {
       return my_input.toString(10).charCodeAt(0) & 0xff;
     }
 
-    // this should be the equivalent to *[xxx] so we also need to look at
-    // position 0, especially since 00 is used to denote "get more input"
-    pos = my_dict.current_run_position_being_read;
+    // position should be the equivalent to *[xxx] need to look at 00 as it is
+    // used to denote "get more input", but we can't just store empty strings
+    // as flags, because the actual file input will have them, too? Careful:
+    // "" is not " ". Let's see.
+    value_at_position = my_dict.current_buffer.buffer_view.getInt8(position);
 
-    if (pos || pos === 0) {
-      return hex(my_dict.current_buffer.buffer_view.getInt8(pos));
+    // let's make it easy for now:
+    if (value_at_position === 0) {
+      return value_at_position;
     }
+    return hex(value_at_position);
+
     // take what was set and place in the backup, but how to lookup \0?
     // it should be address 0 I assume?
-    //return hex(my_dict.current_run_character_backup);
   }
 
   function getBufferCharacterFromPointer(my_dict) {
@@ -3059,9 +3055,9 @@
     // we're at the end of the buffer, NOT at the end of the memory
     // and not at the end of the input file. It's the flag to read
     // more input. So much hassle.
-    my_buffer.buffer_view.setInt8(0, dict.buffer_end_character);
-    my_buffer.buffer_view.setInt8(1, dict.buffer_end_character);
-    my_buffer.buffer_position_being_read = my_buffer.buffer_view.getInt8(0);
+    my_buffer.buffer_view.setUint8(0, dict.buffer_end_character);
+    my_buffer.buffer_view.setUint8(1, dict.buffer_end_character);
+    my_buffer.buffer_position_being_read = 0;
   }
 
   function createBuffer(my_dict) {
