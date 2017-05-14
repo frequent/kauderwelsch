@@ -2201,10 +2201,10 @@
     var dict = my_dict;
     dict.file_output.push(
       dict.file_input.substr(
-        dict.input_position_index,
+        dict.scanned_input_position,
         dict.matched_string_len
       )
-    ); 
+    );
   }
 
   function matchText (my_dict) {
@@ -2238,7 +2238,7 @@
       }
 
       dict.current_state = look("nxt", look("base", dict.current_state) + char_code);
-      dict.current_position_index = dict.current_position_index + 1;
+      dict.current_position_index += 1;
 
     // initial run needs current_state to be 15 for correct action to be called
     } while (look("base", dict.current_state) !== 40);
@@ -2271,7 +2271,10 @@
     var dict = my_dict;
 
     // setting pointer to current_run start position = "string starting from"
-    dict.input_position_index = dict.current_position_start;
+    // this is the only place scanned_input_position is set, either the name is
+    // misleading, because it's not the input_file position or it's not at the
+    // right place.
+    dict.scanned_input_position = dict.current_position_start;
 
     // amount of matched text (yyleng for ECHO) - what's the difference to
     // dict.amount_of_matched_text
@@ -2279,7 +2282,7 @@
       dict.current_position_start;
 
     // mh... yy_c_buf_p = yy_cp
-    dict.buffer_position_index = dict.current_position_index;
+    dict.actual_buffer_position = dict.current_position_index;
 
     // Note, here we backup the current character position address! and then 
     // add explicit null character? (*yy_cp = '\0'), the length of the string 
@@ -2312,11 +2315,11 @@
         // must back up, undo the effects of doBeforeAction
         return findAction(dict);
       case 1:
-        parse_dict.lookahead_symbol = dict.input_position_index + 1;
+        parse_dict.lookahead_symbol = dict.scanned_input_position + 1;
         parse_dict.lookahead_symbol_semantic_value = token.TAG;
         return 1;
       case 2:
-        parse_dict.lookahead_symbol = dict.input_position_index;
+        parse_dict.lookahead_symbol = dict.scanned_input_position;
         parse_dict.lookahead_symbol_semantic_value = token.SYMBOL;
         return 1;
       case 3:
@@ -2353,7 +2356,7 @@
         // {} ???
         return 1;
       case 13:
-        console.log("[error] Lexical mistake: " + dict.input_position_index);
+        console.log("[error] Lexical mistake: " + dict.scanned_input_position);
         return 1;
       case 14:
         echo();
@@ -2369,7 +2372,7 @@
         // Amount of text matched not including the EOB (end of buffer) char.
         // Will be zero on initial run as the buffer is empty except for EOB
         dict.amount_of_matched_text = dict.current_position_index -
-          dict.input_position_index - 1;
+          dict.scanned_input_position - 1;
 
         // Undo the effects of doBeforeAction.
         dict.current_character_backup = dict.backup_character;
@@ -2388,9 +2391,9 @@
           buffer.buffer_status = dict.buffer_is_normal;
         }
 
-        // Note that here we test for buffer_position_index 
+        // Note that here we test for actual_buffer_position 
         // "<=" to the position of the first EOB (end of block!) in the buffer, 
-        // since buffer_position_index will already have been 
+        // since actual_buffer_position will already have been 
         // incremented past the NUL character (since all states make 
         // transitions on EOB to the end-of-buffer state).  Contrast this with 
         // the test in input().
@@ -2400,24 +2403,21 @@
         // this works by accident... comparing int to 0-255?
         // if ( yy_c_buf_p <= &yy_current_buffer->yy_ch_buf[yy_n_chars] )
 
-        if (dict.buffer_position_index <= buffer.buffer_characters_read || 0) {
-        
-          // This was really a NUL. This means end of a word or something, 
-          // we can now try to transition "over" it? Think of a ""?
+        if (dict.actual_buffer_position <= buffer.buffer_characters_read || 0) {
 
-          dict.buffer_position_index =
-            dict.input_position_index + dict.amount_of_matched_text;
+          dict.actual_buffer_position =
+            dict.scanned_input_position + dict.amount_of_matched_text;
           dict.current_state = getPreviousState(dict);
           dict.next_state = attemptNulTransition(dict, dict.current_state);
-          dict.current_position_start = dict.input_position_index;
+          dict.current_position_start = dict.scanned_input_position;
 
           // Consume the NUL.
           if (dict.next_state) {
-            dict.current_position_index = dict.buffer_position_index++;
+            dict.current_position_index = dict.actual_buffer_position++;
             dict.current_state = dict.next_state;
             matchText(dict);
           } else {
-            dict.current_position_index = dict.buffer_position_index;
+            dict.current_position_index = dict.actual_buffer_position;
             findAction(dict);
           }
 
@@ -2427,12 +2427,11 @@
           switch (getNextBuffer(dict)) {
 
             case dict.end_of_block_action_end_of_file:
-
               // removed check for thatsAWrap, always true
 
               // Note: because we've taken care in getNextBuffer() to have 
               // set up matched_string (yytext), we can now set up
-              // buffer_position_index so that if some total
+              // actual_buffer_position so that if some total
               // hoser (like flex itself) wants to call the scanner after we 
               // return the nullinger, it'll still work - another nullinger 
               // will get returned.
@@ -2444,25 +2443,25 @@
               //  return my_dict.buffer_end + my_state + 1;
               //}
 
-              dict.buffer_position_index = dict.input_position_index;
+              dict.actual_buffer_position = dict.scanned_input_position;
               dict.action_to_run = setEofState(dict, (dict.start_state - 1)/2);
               doAction(dict);
               break;
 
             case dict.end_of_block_action_continue_scan:
-              dict.buffer_position_index =
-                dict.input_position_index + dict.amount_of_matched_text;
+              dict.actual_buffer_position =
+                dict.scanned_input_position + dict.amount_of_matched_text;
               dict.current_state = getPreviousState(dict);
-              dict.current_position_index = dict.buffer_position_index;
-              dict.current_position_start = dict.input_position_index;
+              dict.current_position_index = dict.actual_buffer_position;
+              dict.current_position_start = dict.scanned_input_position;
               matchText(dict);
               break;
 
             case dict.end_of_block_action_last_match:
-              dict.buffer_position_index = buffer.buffer_characters_read;
+              dict.actual_buffer_position = buffer.buffer_characters_read;
               dict.current_state = getPreviousState(dict);
-              dict.current_position_index = dict.buffer_position_index;
-              dict.current_position_start = dict.input_position_index;
+              dict.current_position_index = dict.actual_buffer_position;
+              dict.current_position_start = dict.scanned_input_position;
               findAction(dict);
               break;
           }
@@ -2478,7 +2477,7 @@
       table_dict = YY.table_dict,
       counter = 1;
 
-    dict.current_character_backup = dict.buffer_position_index;
+    dict.current_character_backup = dict.actual_buffer_position;
 
     if (table_dict.accept[my_lexer_current_state]) {
       dict.last_accepted_state = my_lexer_current_state;
@@ -2505,42 +2504,41 @@
 
   function getPreviousState(my_dict) {
     var dict = my_dict,
-      table_dict = YY.table_dict,
-      tmp_lexer_current_state = dict.start_state,
-      i = dict.current_position_index,
-      init_pos = dict.input_position_index, 
-      counter;
+      look = YY.table_dict.look,
+      tmp_state = dict.start_state,
+      init_pos = dict.scanned_input_position,
+      char_code,
+      i;
 
-    function lookup(my_state, my_counter) {
-      return table_dict.check[table_dict.base[my_state] + my_counter];
+    // oh-so familiar...
+    function getCharCode(my_char_code, my_tmp_state) {
+      return look("check", look("base", my_tmp_state) + my_char_code);
     }
 
-    for (i = init_pos; i < dict.buffer_position_index; i += 1) {
+    for (i = init_pos; i < dict.actual_buffer_position; i += 1) {
       if (dict.current_character_backup) {
-        counter = lookup.ec[getCurrentRunCharacterFromPointer(dict)];
+        char_code = look("ec", getCurrentRunCharacterFromPointer(dict));
       } else {
-        counter = 1;
+        char_code = 1;
       }
 
-      if (table_dict.accept[tmp_lexer_current_state]) {
-        dict.last_accepted_state = tmp_lexer_current_state;
+      if (look("accept", tmp_state)) {
+        dict.last_accepted_state = tmp_state;
         dict.last_accepted_character_position = dict.current_position_index;
       }
 
-      while (lookup(tmp_lexer_current_state, my_counter)
-        !== tmp_lexer_current_state)
-      {
-        tmp_lexer_current_state = table_dict.def[tmp_lexer_current_state];
-        if (tmp_lexer_current_state >= 33) {
-          counter = table_dict.meta[counter];
+      while (getCharCode(char_code, tmp_state) !== tmp_state) {
+        tmp_state = look("def", tmp_state);
+        if (tmp_state >= 33) {
+          counter = look("meta", char_code);
         }
       }
-      tmp_lexer_current_state = lookup(tmp_lexter_current_state, counter);
+      tmp_state = look("nxt", look("base", tmp_state) + char_code);
     }
-    return tmp_lexer_current_state;
+    return tmp_state;
   }
 
-  function readChunkFromInput(my_dict, my_top, my_chunk_size) {
+  function readChunkFromInput(my_dict, my_limbo, my_chars_to_read) {
     var dict = my_dict,
       view = dict.current_buffer.buffer_view,
       max_len = dict.file_input.length,
@@ -2551,8 +2549,8 @@
       n;
 
     // don't rely on max_len, just test for charCodeAt and NaN 
-    for (n = 0; n < my_chunk_size && (my_top + n < max_len); n += 1) {
-      local_index = my_top + n;
+    for (n = 0; n < my_chars_to_read && (my_limbo + n < max_len); n += 1) {
+      local_index = my_limbo + n;
       input_char = dict.file_input.charCodeAt(local_index);
 
       if (dict.is_debug === 1) {
@@ -2570,25 +2568,19 @@
           view.setInt8(local_index - 1, input_char);
         //} else {
         //
-        //  // are we ++punching holes into the ArrayBuffer?
+        //  // ++punching holes into the ArrayBuffer?
         //  view.setInt8(local_index++, input_char);
         }
       }
-
-      //else if (buffer_position_index === max_len) {
-      //  dict.total_characters_read = input_char;
-      //
-      // normal character
-      //} else {
-      //  view.setInt8(input_char, input_char);
-      //}
     }
 
-    // guessing this may be useful to have
-    dict.total_characters_read = n;
+    // flag end of input was hit before end of chunk. We're done.
+    //if (n >= max_len - 1) {
+    //  dict.current_buffer.buffer_fill = 0;
+    //}
 
-    // not really doing anything with it, yy, huh?
-    return n;
+    // guessing this may be useful to have, too
+    dict.total_characters_read = n;
   }
 
   function getNextBuffer (my_dict) {
@@ -2596,45 +2588,79 @@
       buffer = dict.current_buffer,
       view = buffer.buffer_view,
       return_value,
-      current_top,
+      limbo_chars,
       read_chars,
       position_offset,
       new_size,
       i;
+
+    // kudos: http://stackoverflow.com/a/43965423/536768
 
     // Returns a code representing an action:
     // EOB_ACT_LAST_MATCH = 2
     // EOB_ACT_CONTINUE_SCAN - continue scanning from current position = 0
     // EOB_ACT_END_OF_FILE - end of file = 1
 
-    if (dict.buffer_position_index > buffer.buffer_characters_read + 1) {
+    if (dict.actual_buffer_position > buffer.buffer_characters_read + 1) {
       throw new Error("[error] Fatal flex scanner - end of buffer missed");
     }
 
     // Don't try to fill the buffer, so this is an EOF (=> end of file).
-    if (dict.current_buffer.buffer_fill === 0) {
+    // buffer_fill is never set to 0, I'm doing it now in readChunkFromInput
+    // but to get the original lexer to work, it's commented out for now..
+    if (buffer.buffer_fill === 0) {
 
-      // We matched a single character, the EOB, treat this as a final EOF = 1
-      if (dict.buffer_position_index - dict.input_position_index === 1) {
+      // Matched single character, the EOB, treat this as a final EOF
+      if (dict.actual_buffer_position - dict.scanned_input_position === 1) {
         return dict.end_of_block_action_end_of_file;
       }
 
-      // We matched some text prior to the EOB, first process it = 2
+      // We matched some text prior to the EOB, first process it
       return dict.end_of_block_action_last_match;
     }
 
-    // Try to read more data
+    // Read more data
 
-    // First move last chars to start of buffer. loop *(dest++) = *(source++) ?
-    // register char *dest = yy_current_buffer->yy_ch_buf;
-    // register char *source = yytext_ptr;
+    // First move last chars to start of buffer
+    //  already scanned tokens-----------------------Curr  EOB (end of buffer)
+    //  ^                                            ^     ^
+    //  |                                            |     |
+    // yy_ch_buf                              yytext_ptr  yy_c_buf_p
 
-    // not sure why we are setting the input position index? does this mean the
-    // buffer will always be filled from zero? why grow it then?
-    // irrelevant on initial run, because 1-0-1
-    current_top = dict.buffer_position_index - dict.input_position_index - 1;
-    for (i = 0; i < current_top; i += 1) {
-      view.setUint8(i, file_input[dict.input_position_index++]);
+    // When end of buffer is detected, yy_c_buf_p points one past the NUL 
+    // which terminates the buffer, so yy_c_buf_p - yytext_ptr - 1 is the 
+    // number of characters which have been scanned in the current token, 
+    // (so it is the position in the current token, not the position in 
+    // the buffer.) The next step will be to read buffer_size - number_to_move 
+    // characters from the input so that the buffer now looks like this
+    
+    //    Current tokenNext token-----------------------------
+    //  | |------------read from yyin--------------------|
+    //  ^
+    // yy_ch_buf
+    // yytext
+    // yy_buf_p
+    
+    // yytext_ptr must point to the beginning of the current token, since that 
+    // is the expected value of yytext_ptr when the action is eventually run. 
+    // yy_c_buf_p always points to the next character to scan, so when the end
+    // of the token is really reached, it points to the first character in the 
+    // next token. (Before executing the action, that character is overwritten 
+    // with a NUL, and before starting the next scan, the character is restored.
+    
+    // It might seem odd that the scan pointer is repositioned to the beginning 
+    // of the token after the buffer is refilled, since that means that the
+    // entire token will be rescanned. This has to do with the way flex scanners
+    // recognize the end of the buffer; in summary, by the time the refill code 
+    // is executed, the scanner state at the last real character scanned has 
+    // been lost.
+
+    // limbo_chars ~ number_to_move
+    limbo_chars = dict.actual_buffer_position - dict.scanned_input_position - 1;
+
+    // move the limbo characters to the beginning of the buffer
+    for (i = 0; i < limbo_chars; i += 1) {
+      view.setUint8(i, view.getUint8(dict.scanned_input_position + i));
     }
 
     // don't read, it's not guaranteed to return an EOF, just force an EOF.
@@ -2642,13 +2668,20 @@
     if (buffer.buffer_status === dict.buffer_eof_pending) {
       buffer.buffer_characters_read = dict.total_characters_read = 0;
     } else {
-      read_chars = buffer.buffer_size - current_top - 1;
+
+      // read in buffer size less limbo chars
+      read_chars = buffer.buffer_size - limbo_chars - 1;
 
       // don't panic, read_chars can be negative...
       while (read_chars <= 0) {
 
-        // yy_c_buf_p_offset (int) (yy_c_buf_p - b->yy_ch_buf) ...mh??
-        position_offset = dict.buffer_position_index - buffer.buffer_offset;
+        // yy_c_buf_p_offset (int) (yy_c_buf_p - b->yy_ch_buf), isn't this
+        // just what we did before? Maybe this is the repositioning of the
+        // pointer to the not(?) beginning of the token. For example,
+        // 50, last 6 unread, plus 2 eob = 52, should the offset be 2 or 8 or 6?
+        // b->yy_ch_buf is the full buffer, so I'm doing 52 - buffer... byteLen
+        // still not sure here, why I can't just put this on 0.
+        position_offset = dict.actual_buffer_position - buffer.byteLength;
 
         new_size = buffer.buffer_size * 2;
         if (new_size <= 0) {
@@ -2660,25 +2693,28 @@
         // include space for 2 EOB chars
         buffer.buffer_size = buffer.buffer_size + 2;
 
-        //yy_c_buf_p = & b - > yy_ch_buf[yy_c_buf_p_offset] ...more mh??
-        dict.buffer_position_index = position_offset;
+        // yy_c_buf_p = & b - > yy_ch_buf[yy_c_buf_p_offset] ...more mh??
+        // and if we only dug up the 2 EOB, we should not put the index on
+        // 2 now, either 0 to rescan the partial token or 6 to continue where
+        // we left off. 
+        dict.actual_buffer_position = position_offset;
 
-        read_chars = buffer.buffer_size - current_top - 1;
+        read_chars = buffer.buffer_size - limbo_chars - 1;
         if (read_chars > dict.buffer_read_chunk_size) {
           read_chars = dict.buffer_read_chunk_size;
         }
 
-        // Read in more data ~ buffer top? yy_n_chars?
-        // We have to pass in the correct position on the buffer, this should 
-        // return total_characters_read or at least set it
-        // XXX this will fail, because memory address is never initialized
-        readChunkFromInput(dict, current_top, read_chars);
+        // Read in more data, we have to pass in the correct position 
+        // on the buffer, this should  return total_characters_read or 
+        // at least set it somewhere accessible
+        readChunkFromInput(dict, limbo_chars, read_chars);
+
+        // update the buffer on how many additional characters were read
         buffer.buffer_characters_read = dict.total_characters_read;
       }
-      console.log("ALORS")
-      console.log(dict.total_characters_read)
+
       if (dict.total_characters_read === 0) {
-        if (current_top === dict.more_adjust) {
+        if (limbo_chars === dict.more_adjust) {
           return_value = dict.end_of_block_action_end_of_file;
           restartLex(dict, dict.file_input);
         } else {
@@ -2693,12 +2729,23 @@
       view.setInt8(buffer.buffer_characters_read, dict.buffer_end_character);
       view.setInt8(buffer.buffer_characters_read + 1, dict.buffer_end_character);
 
-      // we can't set a char nor 0-255 value, just get the index of where we
-      // are currently. verfiy this works!
-      dict.input_position_being_read = dict.total_characters_read;
+      // start from scratch and rescan any partial tokens moved to the front
+      // yytext_ptr = &yy_current_buffer->yy_ch_buf[0]
+      dict.scanned_input_position = 0;
+
       return return_value;
     }
   }
+  
+  function restartLex(my_dict, my_file_input) {
+    var dict = my_dict;
+
+    // whatup with the file input?
+    if (dict.current_buffer === undefined) {
+      dict.current_buffer = createBuffer(dict, my_file_input); 
+    }
+    loadBuffer(dict);
+	}
 
   YY.lex_dict = YY.util_dict.extendDict({}, {
 
@@ -2718,6 +2765,11 @@
 
     // (yyout) file output file
     "file_output": null,
+
+    // (yyrestart) restart Lexer, somehow forgot this one. Supposedly it should
+    // allow to restart the lexer with a different input source, but not sure
+    // where this can defined without passing a different input.
+    "restartLex": restartLex,
 
     // -------------------------------- buffer -----------------------------------
 
@@ -2783,25 +2835,25 @@
 
     // (*yy_c_buf_p) = pointer to current character, initially set to (char *) 0; 
     // so pointing to null character, we don't have those in JS though. This will
-    // take an index, namely the current buffer buffer_position_index and
+    // take an index, namely the current buffer actual_buffer_position and
     // return the corresponding int stored in the DataView (which could be 
     // be converted into a character using fromCharCode)
     "getBufferCharacterFromPointer": getBufferCharacterFromPointer,
 
     // ----------------------------- gotos -------------------------------------
 
-    // (yy_c_buf_p) => overall buffer character position, this is the actual 
-    // character (position), index in dataView, not the character value itself!
-    // also note, the buffer is a chunk of the input being handled. also note,
-    // this is also a parameter in the buffer dict. why???
-    "buffer_position_index": 0,
+    // (yy_c_buf_p) => actual position in buffer, the position we have in the
+    // DataView (not the character value at this position). Note the parameter
+    // existed on the current_buffer, too, but I removed it. This position is
+    // in sync with scanned_input_position only at the start of a token (see
+    // below)
+    "actual_buffer_position": 0,
 
-    // (yytext_ptr) => #define yytext_ptr yytext, a macro pointing to yytext, 
-    // line 286 why not use it directly? where is yytext itself defined?
-    // external. Also this is a pointer and it is usually used in calculations
-    // so this is probably an int, most likely the absolute position in the
-    // input file being read
-    "input_position_index": 0,
+    // (yytext_ptr) => internal name for yytext (external). It's a pointer, but
+    // only goes until the start of a token whereas actual_buffer_position also
+    // goes through partial tokens and nul characters. It's how far along I 
+    // have scanned tokens from the input.
+    "scanned_input_position": 0,
 
     // (yy_bp) int points to the position in yy_ch_buf of the start of
     // the current run.
@@ -2953,9 +3005,6 @@
       // data view for yy_ch_buf
       "buffer_view": null,
 
-      // offset = up until which element the ArrayBuffer/DataView are filled
-      "buffer_offset": 0,
-
       // (yy_buf_size type = yy_size_t) - Size of input buffer in bytes, not 
       // including room for EOB characters.
       "buffer_size": null,
@@ -2970,8 +3019,10 @@
       // (yy_buf_pos) current position in input buffer, this should then
       // be the position currently being scanned, DateView index?, it's 
       // initialized as *yy_buf_pos and char, not sure what it means, for
-      // now we stay with position and use the index. starting at 0
-      "buffer_position_index": 0,
+      // now we stay with position and use the index. starting at 0. Also, 
+      // the same thing is set on dict and used there 99% of the time, so I
+      // only leave this as initializer.
+      "initial_index": 0,
 
       // (yy_buffer_status)
       "buffer_status": null,
@@ -3016,7 +3067,7 @@
   }
 
   function getBufferCharacterFromPointer(my_dict) {
-    var pos = my_dict.buffer_position_index;
+    var pos = my_dict.actual_buffer_position;
 
     if (pos) {
       return String.fromCharCode(
@@ -3046,10 +3097,10 @@
 
     // yytext_ptr = yy_c_buf_p = yy_current_buffer->yy_buf_pos;
     // should likely begin at 0, so position being read is set appropriately
-    // these should all be int (ah, the clarity...)
-    dict.input_position_index =
-      dict.buffer_position_index =
-        dict.current_buffer.buffer_position_index;
+    // these should all be int
+    dict.scanned_input_position =
+      dict.actual_buffer_position =
+        dict.current_buffer.initial_index;
   }
 
   function clogBuffer(my_dict, my_buffer) {
@@ -3063,7 +3114,6 @@
     // more input. So much hassle.
     my_buffer.buffer_view.setUint8(0, dict.buffer_end_character);
     my_buffer.buffer_view.setUint8(1, dict.buffer_end_character);
-    my_buffer.buffer_position_index = 0;
   }
 
   function createBuffer(my_dict) {
@@ -3116,10 +3166,10 @@
       }
 
       // yy_bp points to the position in yy_ch_buf of the start of current run.
-      dict.current_position_start = dict.buffer_position_index;
+      dict.current_position_start = dict.actual_buffer_position;
 
       // set current position to current position in buffer
-      dict.current_position_index = dict.buffer_position_index;
+      dict.current_position_index = dict.actual_buffer_position;
 
       // Support of yytext, so this really keeps a character... not an index
       dict.current_character_backup = dict.backup_character;
