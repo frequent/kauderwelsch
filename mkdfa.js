@@ -2474,32 +2474,35 @@
 
   function attemptNulTransition (my_dict, my_lexer_current_state) {
     var dict = my_dict,
-      table_dict = YY.table_dict,
-      counter = 1;
+      current_state = my_lexer_current_state,
+      look = YY.table_dict.look,
+      char_code = 1;
+
+    // oh-so familiar...
+    function getCharCode(my_char_code, my_tmp_state) {
+      return look("check", look("base", my_tmp_state) + my_char_code);
+    }
 
     dict.current_character_backup = dict.actual_buffer_position;
 
-    if (table_dict.accept[my_lexer_current_state]) {
-      dict.last_accepted_state = my_lexer_current_state;
+    if (look("accept", current_state)) {
+      dict.last_accepted_state = current_state;
       dict.last_accepted_character_position = dict.current_position_index;
     }
-    while (table_dict.check[table_dict.base[my_lexer_current_state] + counter] !==
-      my_lexer_current_state
-    ) {
-      my_lexer_current_state = table_dict.def[my_lexer_current_state];
-      if (my_lexer_current_state >= 33) {
-        counter = table_dict.meta[counter];
+
+    while (getCharCode(char_code, current_state) !==current_state) {
+      state = look("def", current_state);
+      if (current_state >= 33) {
+        char_code = look("meta", char_code);
       }
     }
-    my_lexer_current_state = table_dict.nxt[
-      table_dict.base[my_lexer_current_state] + counter
-    ];
+    current_state = look("nxt", look("base", current_state) + char_code);
 
     // is jammed
-    if (my_lexer_current_state === 32) {
+    if (current_state === 32) {
       return 0;
     }
-    return my_lexer_current_state;
+    return current_state;
   }
 
   function getPreviousState(my_dict) {
