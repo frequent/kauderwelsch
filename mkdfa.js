@@ -3185,7 +3185,7 @@
 
       // see if something was set
       findAction(dict);
-      console.log("FOUND");
+
       if (doAction(dict)) {
         break; 
       }
