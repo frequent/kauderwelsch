@@ -377,13 +377,16 @@
     // (yy_base) [lex.yy.c]
     "base": LEX_BASE,
 
-    // (yy_meta) [lex.yy.c]
+    // (yy_meta) [lex.yy.c], called if current_state is above 32 to rewrite
+    // char_code
     "meta": LEX_META,
 
     // (yy_def) [lex.yy.c]
     "def": LEX_DEF,
 
-    // (yy_nxt) [lex.yy.c]
+    // (yy_nxt) [lex.yy.c] will show the next state to go to based on the
+    // base current state value and the char_code currently being scanned.
+    // not really making sense all the way, but we'll get there.
     "nxt": LEX_NXT,
 
     // (yy_chk) [lex.yy.c] checks current state, probably to validate
