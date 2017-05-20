@@ -2308,7 +2308,9 @@
       token = YY.table_dict.token_dict,
       look = YY.table_dict.look,
       buffer = dict.current_buffer;
-
+    console.log("DO ACTION DEBUG")
+    console.log(dict.action_to_run)
+    console.log(dict)
     switch (dict.action_to_run) {
       case 0:
         dict.current_character_backup = dict.backup_character;
