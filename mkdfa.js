@@ -2308,9 +2308,7 @@
       token = YY.table_dict.token_dict,
       look = YY.table_dict.look,
       buffer = dict.current_buffer;
-    console.log("DO ACTION DEBUG")
-    console.log(dict.action_to_run)
-    console.log(dict)
+
     switch (dict.action_to_run) {
       case 0:
         dict.current_character_backup = dict.backup_character;
@@ -2373,18 +2371,18 @@
 
       // 15, end of buffer can be end of a chunk parsed or end of file 
       case dict.buffer_end:
-
+        console.log("!!!! fifteen")
         // Amount of text matched not including the EOB (end of buffer) char.
         // Will be zero on initial run as the buffer is empty except for EOB
         dict.amount_of_matched_text = dict.current_position_index -
           dict.scanned_input_position - 1;
-
+        console.log(dict.amount_of_matched_text)
         // Undo the effects of doBeforeAction.
         dict.current_character_backup = dict.backup_character;
 
         // Hit on initial run
         if (buffer.buffer_status === dict.buffer_is_new) {
-
+          console.log("new buffer")
           // We're scanning a new file or input source.  It's possible that 
           // this happened because the user just pointed file input (yyin) at 
           // a new source and called yylex().  If so, then we have to assure
@@ -2395,7 +2393,7 @@
           dict.total_characters_read = buffer.buffer_characters_read;
           buffer.buffer_status = dict.buffer_is_normal;
         }
-
+        console.log(dict.total_characters_read)
         // Note that here we test for actual_buffer_position 
         // "<=" to the position of the first EOB (end of block!) in the buffer, 
         // since actual_buffer_position will already have been 
@@ -2407,15 +2405,17 @@
         // buffer, check what character-position (c_buf_p) is and use index!
         // this works by accident... comparing int to 0-255?
         // if ( yy_c_buf_p <= &yy_current_buffer->yy_ch_buf[yy_n_chars] )
-
+        console.log(dict.actual_buffer_position)
+        console.log(buffer.buffer_characters_read)
         if (dict.actual_buffer_position <= buffer.buffer_characters_read || 0) {
 
+          console.log("in here?")
           dict.actual_buffer_position =
             dict.scanned_input_position + dict.amount_of_matched_text;
           dict.current_state = getPreviousState(dict);
           dict.next_state = attemptNulTransition(dict, dict.current_state);
           dict.current_position_start = dict.scanned_input_position;
-
+          console.log("consuming nuls")
           // Consume the NUL.
           if (dict.next_state) {
             dict.current_position_index = dict.actual_buffer_position++;
@@ -2427,13 +2427,15 @@
           }
 
         } else {
-
+          console.log("aha")
           // reading more input file handler
+          console.log("getting next buffer")
+          console.log(dict)
           switch (getNextBuffer(dict)) {
 
             case dict.end_of_block_action_end_of_file:
               // removed check for thatsAWrap, always true
-
+              console.log("0")
               // Note: because we've taken care in getNextBuffer() to have 
               // set up matched_string (yytext), we can now set up
               // actual_buffer_position so that if some total
@@ -2447,13 +2449,16 @@
               //function setEofState(my_dict, my_state) {
               //  return my_dict.buffer_end + my_state + 1;
               //}
-
+              console.log("hm")
+              console.log(dict.start_state)
+              console.log((dict.start_state - 1)/2)
               dict.actual_buffer_position = dict.scanned_input_position;
               dict.action_to_run = setEofState(dict, (dict.start_state - 1)/2);
               doAction(dict);
               break;
 
             case dict.end_of_block_action_continue_scan:
+              console.log("1")
               dict.actual_buffer_position =
                 dict.scanned_input_position + dict.amount_of_matched_text;
               dict.current_state = getPreviousState(dict);
@@ -2463,6 +2468,7 @@
               break;
 
             case dict.end_of_block_action_last_match:
+              console.log("2")
               dict.actual_buffer_position = buffer.buffer_characters_read;
               dict.current_state = getPreviousState(dict);
               dict.current_position_index = dict.actual_buffer_position;
