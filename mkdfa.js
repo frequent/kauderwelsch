@@ -1916,7 +1916,7 @@
     // ----------------------------- options -----------------------------------
 
     // (YYDEBUG)
-    "debug": 0,
+    "debug": 1,
 
     // (yyerror) this reports and bounces error count, so leave it for now
     "parseError": parseError,
@@ -2245,7 +2245,7 @@
 
     // initial run needs current_state to be 15 for correct action to be called
     } while (look("base", dict.current_state) !== 40);
-    
+
     // initially, the current_state coming out here should be 3, so we can get 
     // 3 => 15 on accept for action to run which will trigger loading new input
     if (dict.is_debug === 1) {
@@ -3090,7 +3090,8 @@
     }
 
     // improvise? hm.
-    return '/0';
+    console.log("returning empty string/nul")
+    return "";
   }
 
   function loadBuffer(my_dict) {
@@ -3169,7 +3170,8 @@
 
       loadBuffer(dict);
     }
-
+    console.log("looping over buffer");
+    console.log(dict.current_buffer);
     // ------------------------------ start ------------------------------------
     // loop until end of file is reached, but will stop after reaching one token?
     while (1) {
@@ -3190,6 +3192,9 @@
 
       // starts with 1
       dict.current_state = dict.start_state;
+      console.log(dict.current_position_start);
+      console.log(dict.current_position_index);
+      console.log(dict.current_character_backup);
 
       // let's not declare within loop
       matchText(dict);
