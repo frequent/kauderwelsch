@@ -2263,7 +2263,10 @@
     // have to back up, this is a fallback action to run in case of action 0
     if (dict.action_to_run === 0) {
       dict.current_position_index = dict.last_accepted_character_position;
+      console.log("overriding current_state?")
+      console.log(dict.current_state)
       dict.current_state = dict.last_accepted_state;
+      console.log(dict.current_state)
       dict.action_to_run = look("accept", dict.current_state);
     }
 
@@ -2411,8 +2414,10 @@
         if (dict.actual_buffer_position <= buffer.buffer_characters_read || 0) {
 
           console.log("A attempt nul transition")
+          console.log("setting actual buffer positon from: " + dict.actual_buffer_position)
           dict.actual_buffer_position =
             dict.scanned_input_position + dict.amount_of_matched_text;
+          console.log("to: " + dict.actual_buffer_position)
           dict.current_state = getPreviousState(dict);
           dict.next_state = attemptNulTransition(dict, dict.current_state);
           dict.current_position_start = dict.scanned_input_position;
@@ -2457,10 +2462,14 @@
               break;
 
             case dict.end_of_block_action_continue_scan:
-              console.log("1 end of block continue scan")
+              console.log("setting actual buffer positon from: " + dict.actual_buffer_position)
               dict.actual_buffer_position =
-                dict.scanned_input_position + dict.amount_of_matched_text;
+                dict.scanned_input_position + dict.amount_of_matched_text || 1;
+              console.log("to: " + dict.actual_buffer_position)
+              console.log("setting current_state using getPreviousState from, to")
+              console.log(dict.current_state)
               dict.current_state = getPreviousState(dict);
+              console.log(dict.current_state)
               dict.current_position_index = dict.actual_buffer_position;
               dict.current_position_start = dict.scanned_input_position;
               matchText(dict);
@@ -2516,14 +2525,18 @@
   }
 
   function getPreviousState(my_dict) {
+    console.log("GETTING PREVIOUS STATE")
+    console.log(my_dict.actual_buffer_position)
+    console.log(my_dict.scanned_input_position)
     var dict = my_dict,
       look = YY.table_dict.look,
+
+      // Start state is always 1 from what I see
       tmp_state = dict.start_state,
       init_pos = dict.scanned_input_position,
       char_code,
       i;
 
-    // oh-so familiar...
     function getCharCode(my_char_code, my_tmp_state) {
       return look("check", look("base", my_tmp_state) + my_char_code);
     }
@@ -2547,7 +2560,10 @@
         }
       }
       tmp_state = look("nxt", look("base", tmp_state) + char_code);
+      console.log("heya loop: " + tmp_state)
     }
+    console.log("we better looped")
+    console.log(tmp_state)
     return tmp_state;
   }
 
@@ -2606,7 +2622,7 @@
       position_offset,
       new_size,
       i;
-    console.log("TRYING TO GET NEXT BUFFER")
+
     // kudos: http://stackoverflow.com/a/43965423/536768
 
     // Returns a code representing an action:
@@ -2689,10 +2705,11 @@
       // read in buffer size less limbo chars, this determines whether new
       // data is read into the buffer, so buffer_size cannot be just set to a 
       // static value. read characters is the characters we have already read
-      // less nul less
+      // less nul less. Ho
       read_chars = buffer.buffer_size - limbo_chars - 1;
-      console.log("readchars = " + read_chars)
+
       // don't panic, read_chars must be negative to load more data
+      // Not enough room in the buffer - grow it.
       while (read_chars <= 0) {
 
         // :o
@@ -2702,46 +2719,40 @@
         // 50, last 6 unread, plus 2 eob = 52, should the offset be 2 or 8 or 6?
         // b->yy_ch_buf is the full buffer, so I'm doing 52 - buffer... byteLen
         // still not sure here, why I can't just put this on 0.
-        console.log("LOAD NEW DATA?")
-        console.log(dict.actual_buffer_position)
-        console.log(buffer)
-        console.log(buffer.byteLength)
         position_offset = dict.actual_buffer_position - buffer.buffer_view.byteLength;
-        console.log("position offset " + position_offset)
+
         new_size = buffer.buffer_size * 2;
         if (new_size <= 0) {
           buffer.buffer_size = dict.buffer_default_size / 8;
         } else {
           buffer.buffer_size = buffer.buffer_size * 2;
         }
-        console.log("updated buffer size = " + buffer.buffer_size)
+
         // include space for 2 EOB chars
         buffer.buffer_size = buffer.buffer_size + 2;
-        console.log("adjusted buffer size = " + buffer.buffer_size)
+
         // yy_c_buf_p = & b - > yy_ch_buf[yy_c_buf_p_offset] ...more mh??
         // and if we only dug up the 2 EOB, we should not put the index on
         // 2 now, either 0 to rescan the partial token or 6 to continue where
         // we left off. 
+        console.log("setting actual buffer position, it is: " + dict.actual_buffer_position)
         dict.actual_buffer_position = position_offset;
-        console.log("actual buffer position " + dict.actual_buffer_position)
-        console.log("why do I reset read_chars " + read_chars)
+        console.log("Now it's: " + dict.actual_buffer_position)
         read_chars = buffer.buffer_size - limbo_chars - 1;
-        if (read_chars > dict.buffer_read_chunk_size) {
-          read_chars = dict.buffer_read_chunk_size;
-        }
-        console.log("reading input")
-        console.log(limbo_chars)
-        console.log(read_chars)
-        // Read in more data, we have to pass in the correct position 
-        // on the buffer, this should  return total_characters_read or 
-        // at least set it somewhere accessible
-        readChunkFromInput(dict, limbo_chars, read_chars);
-        console.log("update characters read")
-        console.log(buffer.buffer_characters_read)
-        // update the buffer on how many additional characters were read
-        buffer.buffer_characters_read = dict.total_characters_read;
-        console.log(buffer.buffer_characters_read)
       }
+
+      if (read_chars > dict.buffer_read_chunk_size) {
+        read_chars = dict.buffer_read_chunk_size;
+      }
+
+      // Read in more data, we have to pass in the correct position 
+      // on the buffer, this should  return total_characters_read or 
+      // at least set it somewhere accessible
+      readChunkFromInput(dict, limbo_chars, read_chars);
+
+      // update the buffer on how many additional characters were read
+      buffer.buffer_characters_read = dict.total_characters_read;
+      console.log("read input and updated characters read to: " + dict.total_characters_read)
 
       if (dict.total_characters_read === 0) {
         if (limbo_chars === dict.more_adjust) {
@@ -2762,7 +2773,7 @@
       // start from scratch and rescan any partial tokens moved to the front
       // yytext_ptr = &yy_current_buffer->yy_ch_buf[0]
       dict.scanned_input_position = 0;
-
+      console.log("DONE READING INPUT")
       return return_value;
     }
   }
@@ -3534,5 +3545,4 @@
   window.createDfa = createDfa;
 
 }(window, RSVP, YY, Error));
-
 
