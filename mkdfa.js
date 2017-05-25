@@ -2242,7 +2242,7 @@
 
       dict.current_state = look("nxt", look("base", dict.current_state) + char_code);
       dict.current_position_index += 1;
-
+      console.log("DONE matchtext loop, current_state = " + dict.current_state + " => 40:" + look("base", dict.current_state))
     // initial run needs current_state to be 15 for correct action to be called
     } while (look("base", dict.current_state) !== 40);
 
@@ -2371,7 +2371,7 @@
 
       // 15, end of buffer can be end of a chunk parsed or end of file 
       case dict.buffer_end:
-        console.log("!!!! fifteen")
+
         // Amount of text matched not including the EOB (end of buffer) char.
         // Will be zero on initial run as the buffer is empty except for EOB
         dict.amount_of_matched_text = dict.current_position_index -
@@ -2382,7 +2382,7 @@
 
         // Hit on initial run
         if (buffer.buffer_status === dict.buffer_is_new) {
-          console.log("new buffer")
+          console.log("it's a new buffer")
           // We're scanning a new file or input source.  It's possible that 
           // this happened because the user just pointed file input (yyin) at 
           // a new source and called yylex().  If so, then we have to assure
@@ -2393,7 +2393,7 @@
           dict.total_characters_read = buffer.buffer_characters_read;
           buffer.buffer_status = dict.buffer_is_normal;
         }
-        console.log(dict.total_characters_read)
+
         // Note that here we test for actual_buffer_position 
         // "<=" to the position of the first EOB (end of block!) in the buffer, 
         // since actual_buffer_position will already have been 
@@ -2405,11 +2405,12 @@
         // buffer, check what character-position (c_buf_p) is and use index!
         // this works by accident... comparing int to 0-255?
         // if ( yy_c_buf_p <= &yy_current_buffer->yy_ch_buf[yy_n_chars] )
-        console.log(dict.actual_buffer_position)
-        console.log(buffer.buffer_characters_read)
+        console.log("position: " + dict.actual_buffer_position)
+        console.log("read: " + dict.total_characters_read)
+
         if (dict.actual_buffer_position <= buffer.buffer_characters_read || 0) {
 
-          console.log("in here?")
+          console.log("A attempt nul transition")
           dict.actual_buffer_position =
             dict.scanned_input_position + dict.amount_of_matched_text;
           dict.current_state = getPreviousState(dict);
@@ -2427,15 +2428,13 @@
           }
 
         } else {
-          console.log("aha")
+          console.log("B get more data from input")
           // reading more input file handler
-          console.log("getting next buffer")
-          console.log(dict)
           switch (getNextBuffer(dict)) {
 
             case dict.end_of_block_action_end_of_file:
               // removed check for thatsAWrap, always true
-              console.log("0")
+              console.log("0 . end of block end of file")
               // Note: because we've taken care in getNextBuffer() to have 
               // set up matched_string (yytext), we can now set up
               // actual_buffer_position so that if some total
@@ -2458,7 +2457,7 @@
               break;
 
             case dict.end_of_block_action_continue_scan:
-              console.log("1")
+              console.log("1 end of block continue scan")
               dict.actual_buffer_position =
                 dict.scanned_input_position + dict.amount_of_matched_text;
               dict.current_state = getPreviousState(dict);
@@ -2468,7 +2467,7 @@
               break;
 
             case dict.end_of_block_action_last_match:
-              console.log("2")
+              console.log("2 end of block last match")
               dict.actual_buffer_position = buffer.buffer_characters_read;
               dict.current_state = getPreviousState(dict);
               dict.current_position_index = dict.actual_buffer_position;
@@ -2607,7 +2606,7 @@
       position_offset,
       new_size,
       i;
-
+    console.log("TRYING TO GET NEXT BUFFER")
     // kudos: http://stackoverflow.com/a/43965423/536768
 
     // Returns a code representing an action:
@@ -2672,6 +2671,10 @@
     // limbo_chars ~ number_to_move
     limbo_chars = dict.actual_buffer_position - dict.scanned_input_position - 1;
 
+    console.log("actual buffer position: " + dict.actual_buffer_position)
+    console.log("scanned input position: " + dict.scanned_input_position)
+    console.log("LIMBO = " + limbo_chars) // 0 initially correct
+
     // move the limbo characters to the beginning of the buffer
     for (i = 0; i < limbo_chars; i += 1) {
       view.setUint8(i, view.getUint8(dict.scanned_input_position + i));
@@ -2683,48 +2686,61 @@
       buffer.buffer_characters_read = dict.total_characters_read = 0;
     } else {
 
-      // read in buffer size less limbo chars
+      // read in buffer size less limbo chars, this determines whether new
+      // data is read into the buffer, so buffer_size cannot be just set to a 
+      // static value. read characters is the characters we have already read
+      // less nul less
       read_chars = buffer.buffer_size - limbo_chars - 1;
-
-      // don't panic, read_chars can be negative...
+      console.log("readchars = " + read_chars)
+      // don't panic, read_chars must be negative to load more data
       while (read_chars <= 0) {
 
+        // :o
         // yy_c_buf_p_offset (int) (yy_c_buf_p - b->yy_ch_buf), isn't this
         // just what we did before? Maybe this is the repositioning of the
         // pointer to the not(?) beginning of the token. For example,
         // 50, last 6 unread, plus 2 eob = 52, should the offset be 2 or 8 or 6?
         // b->yy_ch_buf is the full buffer, so I'm doing 52 - buffer... byteLen
         // still not sure here, why I can't just put this on 0.
-        position_offset = dict.actual_buffer_position - buffer.byteLength;
-
+        console.log("LOAD NEW DATA?")
+        console.log(dict.actual_buffer_position)
+        console.log(buffer)
+        console.log(buffer.byteLength)
+        position_offset = dict.actual_buffer_position - buffer.buffer_view.byteLength;
+        console.log("position offset " + position_offset)
         new_size = buffer.buffer_size * 2;
         if (new_size <= 0) {
           buffer.buffer_size = dict.buffer_default_size / 8;
         } else {
           buffer.buffer_size = buffer.buffer_size * 2;
         }
-
+        console.log("updated buffer size = " + buffer.buffer_size)
         // include space for 2 EOB chars
         buffer.buffer_size = buffer.buffer_size + 2;
-
+        console.log("adjusted buffer size = " + buffer.buffer_size)
         // yy_c_buf_p = & b - > yy_ch_buf[yy_c_buf_p_offset] ...more mh??
         // and if we only dug up the 2 EOB, we should not put the index on
         // 2 now, either 0 to rescan the partial token or 6 to continue where
         // we left off. 
         dict.actual_buffer_position = position_offset;
-
+        console.log("actual buffer position " + dict.actual_buffer_position)
+        console.log("why do I reset read_chars " + read_chars)
         read_chars = buffer.buffer_size - limbo_chars - 1;
         if (read_chars > dict.buffer_read_chunk_size) {
           read_chars = dict.buffer_read_chunk_size;
         }
-
+        console.log("reading input")
+        console.log(limbo_chars)
+        console.log(read_chars)
         // Read in more data, we have to pass in the correct position 
         // on the buffer, this should  return total_characters_read or 
         // at least set it somewhere accessible
         readChunkFromInput(dict, limbo_chars, read_chars);
-
+        console.log("update characters read")
+        console.log(buffer.buffer_characters_read)
         // update the buffer on how many additional characters were read
         buffer.buffer_characters_read = dict.total_characters_read;
+        console.log(buffer.buffer_characters_read)
       }
 
       if (dict.total_characters_read === 0) {
@@ -3145,6 +3161,7 @@
     buffer.buffer_fill = 1;
     buffer.buffer = utils.setBuffer(dict.buffer_default_size + 2);
     buffer.buffer_view = utils.setView(buffer.buffer);
+    buffer.buffer_size = buffer.buffer_view.byteLength;
 
     // clog it so input chunks can be read into buffer
     clogBuffer(dict, buffer);
@@ -3170,8 +3187,7 @@
 
       loadBuffer(dict);
     }
-    console.log("looping over buffer");
-    console.log(dict.current_buffer);
+
     // ------------------------------ start ------------------------------------
     // loop until end of file is reached, but will stop after reaching one token?
     while (1) {
