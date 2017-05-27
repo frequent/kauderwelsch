@@ -2526,8 +2526,6 @@
 
   function getPreviousState(my_dict) {
     console.log("GETTING PREVIOUS STATE")
-    console.log(my_dict.actual_buffer_position)
-    console.log(my_dict.scanned_input_position)
     var dict = my_dict,
       look = YY.table_dict.look,
 
@@ -2541,26 +2539,32 @@
       return look("check", look("base", my_tmp_state) + my_char_code);
     }
 
+    console.log("init-pos, scanned input position(0) => " + my_dict.scanned_input_position)
+    console.log("actual buffer position(1) => " + my_dict.actual_buffer_position)
+    
     for (i = init_pos; i < dict.actual_buffer_position; i += 1) {
       if (dict.current_character_backup) {
         char_code = look("ec", getCurrentRunCharacterFromPointer(dict));
       } else {
         char_code = 1;
       }
+      console.log("char_code set to: " + char_code)
 
       if (look("accept", tmp_state)) {
         dict.last_accepted_state = tmp_state;
         dict.last_accepted_character_position = dict.current_position_index;
       }
-
+      console.log("checking: " + getCharCode(char_code, tmp_state) + " vs " + tmp_state)
       while (getCharCode(char_code, tmp_state) !== tmp_state) {
+        console.log(tmp_state)
         tmp_state = look("def", tmp_state);
+        console.log(tmp_state)
         if (tmp_state >= 33) {
-          counter = look("meta", char_code);
+          char_code = look("meta", char_code);
         }
       }
+      console.log(char_code)
       tmp_state = look("nxt", look("base", tmp_state) + char_code);
-      console.log("heya loop: " + tmp_state)
     }
     console.log("we better looped")
     console.log(tmp_state)
@@ -3545,4 +3549,5 @@
   window.createDfa = createDfa;
 
 }(window, RSVP, YY, Error));
+
 
