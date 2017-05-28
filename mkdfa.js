@@ -2215,7 +2215,7 @@
       util = YY.util_dict,
       dict = my_dict,
       char_code;
-
+    console.log("matching text, starting with current_state =" + dict.current_state)
     // yy_c unsigned char, lookup in extended ascii table
     // NOTE: we're getting a character pointer 0-255, so if the character is
     // 0 and return 48 from the ascii table, I cannot look up ec[48], because
@@ -2243,6 +2243,7 @@
       dict.current_state = look("nxt", look("base", dict.current_state) + char_code);
       dict.current_position_index += 1;
       console.log("DONE matchtext loop, current_state = " + dict.current_state + " => 40:" + look("base", dict.current_state))
+      console.log("cannot exist with current_state:10 => base10 = 40, so it has to be done through previousState")
     // initial run needs current_state to be 15 for correct action to be called
     } while (look("base", dict.current_state) !== 40);
 
@@ -2256,6 +2257,7 @@
   function findAction (my_dict) {
     var dict = my_dict,
       look = YY.table_dict.look;
+    console.log("need to have action 8, meaning current_state should be 10, it is: " + dict.current_state)
 
     // (yy_act) int only used within lexer, determines action!
     dict.action_to_run = look("accept", dict.current_state);
@@ -2439,7 +2441,7 @@
 
             case dict.end_of_block_action_end_of_file:
               // removed check for thatsAWrap, always true
-              console.log("0 . end of block end of file")
+              console.log("A-end-of-file")
               // Note: because we've taken care in getNextBuffer() to have 
               // set up matched_string (yytext), we can now set up
               // actual_buffer_position so that if some total
@@ -2462,6 +2464,7 @@
               break;
 
             case dict.end_of_block_action_continue_scan:
+              console.log("B-continue")
               console.log("setting actual buffer positon from: " + dict.actual_buffer_position)
               dict.actual_buffer_position =
                 dict.scanned_input_position + dict.amount_of_matched_text || 1;
@@ -2476,6 +2479,7 @@
               break;
 
             case dict.end_of_block_action_last_match:
+              console.log("C-last-match")
               console.log("2 end of block last match")
               dict.actual_buffer_position = buffer.buffer_characters_read;
               dict.current_state = getPreviousState(dict);
@@ -2563,11 +2567,10 @@
           char_code = look("meta", char_code);
         }
       }
-      console.log(char_code)
+      console.log("charcode set to: " + char_code)
       tmp_state = look("nxt", look("base", tmp_state) + char_code);
     }
-    console.log("we better looped")
-    console.log(tmp_state)
+    console.log("we looped, set tmp_state to :" + tmp_state)
     return tmp_state;
   }
 
@@ -3551,3 +3554,5 @@
 }(window, RSVP, YY, Error));
 
 
+git add .
+git commit
