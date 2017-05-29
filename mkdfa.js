@@ -2215,6 +2215,7 @@
       util = YY.util_dict,
       dict = my_dict,
       char_code;
+
     console.log("matching text, starting with current_state =" + dict.current_state)
     // yy_c unsigned char, lookup in extended ascii table
     // NOTE: we're getting a character pointer 0-255, so if the character is
@@ -2241,12 +2242,15 @@
       }
 
       dict.current_state = look("nxt", look("base", dict.current_state) + char_code);
+
+      console.log("here the position index is upped by 1, from " + dict.current_position_index)
       dict.current_position_index += 1;
+      console.log("to: " + dict.current_position_index)
       console.log("DONE matchtext loop, current_state = " + dict.current_state + " => 40:" + look("base", dict.current_state))
-      console.log("cannot exist with current_state:10 => base10 = 40, so it has to be done through previousState")
+
     // initial run needs current_state to be 15 for correct action to be called
     } while (look("base", dict.current_state) !== 40);
-
+    console.log("OUT matchText, current_state = " + dict.current_state + " position_index = " + dict.current_position_index)
     // initially, the current_state coming out here should be 3, so we can get 
     // 3 => 15 on accept for action to run which will trigger loading new input
     if (dict.is_debug === 1) {
@@ -2257,7 +2261,7 @@
   function findAction (my_dict) {
     var dict = my_dict,
       look = YY.table_dict.look;
-    console.log("need to have action 8, meaning current_state should be 10, it is: " + dict.current_state)
+    //console.log("need to have action 8, meaning current_state should be 10, it is: " + dict.current_state)
 
     // (yy_act) int only used within lexer, determines action!
     dict.action_to_run = look("accept", dict.current_state);
@@ -2265,10 +2269,9 @@
     // have to back up, this is a fallback action to run in case of action 0
     if (dict.action_to_run === 0) {
       dict.current_position_index = dict.last_accepted_character_position;
-      console.log("overriding current_state?")
-      console.log(dict.current_state)
+      console.log("overriding current_state, current = " + dict.current_state)
       dict.current_state = dict.last_accepted_state;
-      console.log(dict.current_state)
+      console.log("setting current_state to last accepted state = " + dict.current_state)
       dict.action_to_run = look("accept", dict.current_state);
     }
 
@@ -2282,6 +2285,7 @@
     // this is the only place scanned_input_position is set, either the name is
     // misleading, because it's not the input_file position or it's not at the
     // right place.
+    console.log("BEFORE ACTION, setting scanned input postion to current position start: " + dict.current_position_start)
     dict.scanned_input_position = dict.current_position_start;
 
     // amount of matched text (yyleng for ECHO) - what's the difference to
@@ -2314,6 +2318,7 @@
       look = YY.table_dict.look,
       buffer = dict.current_buffer;
 
+    console.log("ACTION JACKSON: " + dict.action_to_run)
     switch (dict.action_to_run) {
       case 0:
         dict.current_character_backup = dict.backup_character;
@@ -2410,6 +2415,8 @@
         // buffer, check what character-position (c_buf_p) is and use index!
         // this works by accident... comparing int to 0-255?
         // if ( yy_c_buf_p <= &yy_current_buffer->yy_ch_buf[yy_n_chars] )
+        
+        console.log("HERE WE SHOULD CHECK NUL trans if position <= characters read")
         console.log("position: " + dict.actual_buffer_position)
         console.log("read: " + dict.total_characters_read)
 
@@ -2435,11 +2442,13 @@
           }
 
         } else {
-          console.log("B get more data from input")
+
+          console.log("B get more data from input or finish")
           // reading more input file handler
           switch (getNextBuffer(dict)) {
 
             case dict.end_of_block_action_end_of_file:
+
               // removed check for thatsAWrap, always true
               console.log("A-end-of-file")
               // Note: because we've taken care in getNextBuffer() to have 
@@ -2469,10 +2478,10 @@
               dict.actual_buffer_position =
                 dict.scanned_input_position + dict.amount_of_matched_text || 1;
               console.log("to: " + dict.actual_buffer_position)
-              console.log("setting current_state using getPreviousState from, to")
-              console.log(dict.current_state)
+              console.log("setting current_state using getPreviousState from:" + dict.current_state)
+              
               dict.current_state = getPreviousState(dict);
-              console.log(dict.current_state)
+              console.log("to: " + dict.current_state)
               dict.current_position_index = dict.actual_buffer_position;
               dict.current_position_start = dict.scanned_input_position;
               matchText(dict);
@@ -2543,7 +2552,7 @@
       return look("check", look("base", my_tmp_state) + my_char_code);
     }
 
-    console.log("init-pos, scanned input position(0) => " + my_dict.scanned_input_position)
+    console.log("init-pos = scanned input position(0) => " + my_dict.scanned_input_position)
     console.log("actual buffer position(1) => " + my_dict.actual_buffer_position)
     
     for (i = init_pos; i < dict.actual_buffer_position; i += 1) {
@@ -2610,8 +2619,8 @@
       }
     }
 
-    // flag end of input was hit before end of chunk. We're done.
-    //if (n >= max_len - 1) {
+    // I'm adding this: Flag end of input file
+    //if (n >= max_len) {
     //  dict.current_buffer.buffer_fill = 0;
     //}
 
@@ -2631,7 +2640,7 @@
       i;
 
     // kudos: http://stackoverflow.com/a/43965423/536768
-
+    console.log("GETTING NEXT BUFFER")
     // Returns a code representing an action:
     // EOB_ACT_LAST_MATCH = 2
     // EOB_ACT_CONTINUE_SCAN - continue scanning from current position = 0
@@ -2645,12 +2654,12 @@
     // buffer_fill is never set to 0, I'm doing it now in readChunkFromInput
     // but to get the original lexer to work, it's commented out for now..
     if (buffer.buffer_fill === 0) {
-
+      console.log("NO MORE BUFFER FILLING, but to finish file, actual-buffer - scanned-input-pos = 1, we have: " + dict.actual_buffer_position + " - " + dict.scanned_input_position + " = " + dict.actual_buffer_position - dict.scanned_input_position)
       // Matched single character, the EOB, treat this as a final EOF
       if (dict.actual_buffer_position - dict.scanned_input_position === 1) {
         return dict.end_of_block_action_end_of_file;
       }
-
+      console.log("else: just last match")
       // We matched some text prior to the EOB, first process it
       return dict.end_of_block_action_last_match;
     }
@@ -2676,14 +2685,14 @@
     // yy_ch_buf
     // yytext
     // yy_buf_p
-    
+
     // yytext_ptr must point to the beginning of the current token, since that 
     // is the expected value of yytext_ptr when the action is eventually run. 
     // yy_c_buf_p always points to the next character to scan, so when the end
     // of the token is really reached, it points to the first character in the 
     // next token. (Before executing the action, that character is overwritten 
     // with a NUL, and before starting the next scan, the character is restored.
-    
+
     // It might seem odd that the scan pointer is repositioned to the beginning 
     // of the token after the buffer is refilled, since that means that the
     // entire token will be rescanned. This has to do with the way flex scanners
@@ -2705,6 +2714,8 @@
 
     // don't read, it's not guaranteed to return an EOF, just force an EOF.
     // This seems to be a real 0 not an null/""
+    console.log("buffer_status: " + buffer.buffer_status)
+    console.log("eof-pending:" + dict.buffer_eof_pending)
     if (buffer.buffer_status === dict.buffer_eof_pending) {
       buffer.buffer_characters_read = dict.total_characters_read = 0;
     } else {
@@ -2900,14 +2911,16 @@
     // (yytext_ptr) => internal name for yytext (external). It's a pointer, but
     // only goes until the start of a token whereas actual_buffer_position also
     // goes through partial tokens and nul characters. It's how far along I 
-    // have scanned tokens from the input.
+    // have scanned tokens from the input. Note this is only set by 
+    // current_postion_start
     "scanned_input_position": 0,
 
     // (yy_bp) int points to the position in yy_ch_buf of the start of
     // the current run.
     "current_position_start": null,
 
-    // (yy_cp) int, this is the counter running in matchText
+    // (yy_cp) int, this is the counter running in matchText, but why is it
+    // never reset and always reset in matchText
     "current_position_index": null,
 
     // (*yy_cp) char - doesn't really make sense why this is the char and
@@ -3115,16 +3128,15 @@
   }
 
   function getBufferCharacterFromPointer(my_dict) {
-    var pos = my_dict.actual_buffer_position;
+    var dict = my_dict,
+      pos = dict.actual_buffer_position;
 
     if (pos) {
-      return String.fromCharCode(
-        my_dict.current_buffer.buffer_view.getInt8(pos)
-      );
+      return String.fromCharCode(dict.current_buffer.buffer_view.getInt8(pos));
     }
 
-    // improvise? hm.
-    console.log("returning empty string/nul")
+    // return empty string/nul in case actual buffer position hasn't been set
+    // or is 0. improvising here.
     return "";
   }
 
@@ -3219,16 +3231,15 @@
       dict.current_position_start = dict.actual_buffer_position;
 
       // set current position to current position in buffer
-      dict.current_position_index = dict.actual_buffer_position;
+      dict.current_position_index = dict.current_position_start;
 
       // Support of yytext, so this really keeps a character... not an index
       dict.current_character_backup = dict.backup_character;
 
       // starts with 1
       dict.current_state = dict.start_state;
-      console.log(dict.current_position_start);
-      console.log(dict.current_position_index);
-      console.log(dict.current_character_backup);
+      console.log("position-start, our inital scanned input postion: " + dict.current_position_start);
+      console.log("position-index, the counter: " + dict.current_position_index);
 
       // let's not declare within loop
       matchText(dict);
@@ -3554,5 +3565,3 @@
 }(window, RSVP, YY, Error));
 
 
-git add .
-git commit
