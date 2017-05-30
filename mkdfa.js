@@ -1451,8 +1451,6 @@
       // curiousity kills the cat
       if (dict.is_debug === 1) {
         console.log("[info] Reading a token: ");
-        console.log(dict.lookahead_symbol);
-        console.log(dict.lookahead_symbol_semantic_value);
       }
     }
 
@@ -2216,7 +2214,6 @@
       dict = my_dict,
       char_code;
 
-    console.log("matching text, starting with current_state =" + dict.current_state)
     // yy_c unsigned char, lookup in extended ascii table
     // NOTE: we're getting a character pointer 0-255, so if the character is
     // 0 and return 48 from the ascii table, I cannot look up ec[48], because
@@ -2231,9 +2228,8 @@
 
       if (look("accept", dict.current_state)) {
         dict.last_accepted_state = dict.current_state;
-        dict.last_accepted_character_position = dict.current_position_index;
+        dict.last_accepted_position_index = dict.current_position_index;
       }
-
       while (getCharCode(char_code) !== dict.current_state) {
         dict.current_state = look("def", dict.current_state);
         if (dict.current_state >= 33 ) {
@@ -2242,20 +2238,19 @@
       }
 
       dict.current_state = look("nxt", look("base", dict.current_state) + char_code);
-
-      console.log("here the position index is upped by 1, from " + dict.current_position_index)
       dict.current_position_index += 1;
-      console.log("to: " + dict.current_position_index)
-      console.log("DONE matchtext loop, current_state = " + dict.current_state + " => 40:" + look("base", dict.current_state))
 
     // initial run needs current_state to be 15 for correct action to be called
     } while (look("base", dict.current_state) !== 40);
-    console.log("OUT matchText, current_state = " + dict.current_state + " position_index = " + dict.current_position_index)
+
     // initially, the current_state coming out here should be 3, so we can get 
     // 3 => 15 on accept for action to run which will trigger loading new input
     if (dict.is_debug === 1) {
       console.log("[debug]: current_state matched: " + dict.current_state);
     }
+
+    // see if something was set
+    return findAction(dict);
   }
 
   function findAction (my_dict) {
@@ -2268,14 +2263,12 @@
 
     // have to back up, this is a fallback action to run in case of action 0
     if (dict.action_to_run === 0) {
-      dict.current_position_index = dict.last_accepted_character_position;
-      console.log("overriding current_state, current = " + dict.current_state)
+      dict.current_position_index = dict.last_accepted_position_index;
       dict.current_state = dict.last_accepted_state;
-      console.log("setting current_state to last accepted state = " + dict.current_state)
       dict.action_to_run = look("accept", dict.current_state);
     }
 
-    doBeforeAction(dict);
+    return doBeforeAction(dict);
   }
 
   function doBeforeAction (my_dict) {
@@ -2285,7 +2278,6 @@
     // this is the only place scanned_input_position is set, either the name is
     // misleading, because it's not the input_file position or it's not at the
     // right place.
-    console.log("BEFORE ACTION, setting scanned input postion to current position start: " + dict.current_position_start)
     dict.scanned_input_position = dict.current_position_start;
 
     // amount of matched text (yyleng for ECHO) - what's the difference to
@@ -2306,8 +2298,12 @@
     dict.backup_character = getCurrentRunCharacterFromPointer(dict);
 
     // can't this just be null? no, because this one I can call fromCharCode on
-    // with my empty string returns 0 handler
+    // with my empty string returns 0 handler. If I set this to empty string
+    // it will always hit the test in getPreviousState, so leave null for now
     dict.current_character_backup = "";
+
+    // need to do it here
+    return doAction(dict);
   }
 
   function doAction (my_dict) {
@@ -2318,11 +2314,10 @@
       look = YY.table_dict.look,
       buffer = dict.current_buffer;
 
-    console.log("ACTION JACKSON: " + dict.action_to_run)
     switch (dict.action_to_run) {
       case 0:
         dict.current_character_backup = dict.backup_character;
-        dict.current_position_index = dict.last_accepted_character_position;
+        dict.current_position_index = dict.last_accepted_position_index;
         dict.current_state = dict.last_accepted_state;
 
         // must back up, undo the effects of doBeforeAction
@@ -2386,13 +2381,13 @@
         // Will be zero on initial run as the buffer is empty except for EOB
         dict.amount_of_matched_text = dict.current_position_index -
           dict.scanned_input_position - 1;
-        console.log(dict.amount_of_matched_text)
+        
         // Undo the effects of doBeforeAction.
         dict.current_character_backup = dict.backup_character;
 
         // Hit on initial run
         if (buffer.buffer_status === dict.buffer_is_new) {
-          console.log("it's a new buffer")
+        
           // We're scanning a new file or input source.  It's possible that 
           // this happened because the user just pointed file input (yyin) at 
           // a new source and called yylex().  If so, then we have to assure
@@ -2415,42 +2410,35 @@
         // buffer, check what character-position (c_buf_p) is and use index!
         // this works by accident... comparing int to 0-255?
         // if ( yy_c_buf_p <= &yy_current_buffer->yy_ch_buf[yy_n_chars] )
-        
-        console.log("HERE WE SHOULD CHECK NUL trans if position <= characters read")
-        console.log("position: " + dict.actual_buffer_position)
-        console.log("read: " + dict.total_characters_read)
 
         if (dict.actual_buffer_position <= buffer.buffer_characters_read || 0) {
 
-          console.log("A attempt nul transition")
-          console.log("setting actual buffer positon from: " + dict.actual_buffer_position)
           dict.actual_buffer_position =
             dict.scanned_input_position + dict.amount_of_matched_text;
-          console.log("to: " + dict.actual_buffer_position)
+
           dict.current_state = getPreviousState(dict);
           dict.next_state = attemptNulTransition(dict, dict.current_state);
           dict.current_position_start = dict.scanned_input_position;
-          console.log("consuming nuls")
+
           // Consume the NUL.
           if (dict.next_state) {
             dict.current_position_index = dict.actual_buffer_position++;
             dict.current_state = dict.next_state;
-            matchText(dict);
+            return matchText(dict);
           } else {
             dict.current_position_index = dict.actual_buffer_position;
-            findAction(dict);
+            return findAction(dict);
           }
 
         } else {
 
-          console.log("B get more data from input or finish")
           // reading more input file handler
           switch (getNextBuffer(dict)) {
 
             case dict.end_of_block_action_end_of_file:
 
               // removed check for thatsAWrap, always true
-              console.log("A-end-of-file")
+
               // Note: because we've taken care in getNextBuffer() to have 
               // set up matched_string (yytext), we can now set up
               // actual_buffer_position so that if some total
@@ -2464,38 +2452,25 @@
               //function setEofState(my_dict, my_state) {
               //  return my_dict.buffer_end + my_state + 1;
               //}
-              console.log("hm")
-              console.log(dict.start_state)
-              console.log((dict.start_state - 1)/2)
               dict.actual_buffer_position = dict.scanned_input_position;
               dict.action_to_run = setEofState(dict, (dict.start_state - 1)/2);
-              doAction(dict);
-              break;
+              return doAction(dict);
 
             case dict.end_of_block_action_continue_scan:
-              console.log("B-continue")
-              console.log("setting actual buffer positon from: " + dict.actual_buffer_position)
               dict.actual_buffer_position =
                 dict.scanned_input_position + dict.amount_of_matched_text || 1;
-              console.log("to: " + dict.actual_buffer_position)
-              console.log("setting current_state using getPreviousState from:" + dict.current_state)
-              
+
               dict.current_state = getPreviousState(dict);
-              console.log("to: " + dict.current_state)
               dict.current_position_index = dict.actual_buffer_position;
               dict.current_position_start = dict.scanned_input_position;
-              matchText(dict);
-              break;
+              return matchText(dict);
 
             case dict.end_of_block_action_last_match:
-              console.log("C-last-match")
-              console.log("2 end of block last match")
               dict.actual_buffer_position = buffer.buffer_characters_read;
               dict.current_state = getPreviousState(dict);
               dict.current_position_index = dict.actual_buffer_position;
               dict.current_position_start = dict.scanned_input_position;
-              findAction(dict);
-              break;
+              return findAction(dict);
           }
         }
         break;
@@ -2519,7 +2494,7 @@
 
     if (look("accept", current_state)) {
       dict.last_accepted_state = current_state;
-      dict.last_accepted_character_position = dict.current_position_index;
+      dict.last_accepted_position_index = dict.current_position_index;
     }
 
     while (getCharCode(char_code, current_state) !==current_state) {
@@ -2538,48 +2513,38 @@
   }
 
   function getPreviousState(my_dict) {
-    console.log("GETTING PREVIOUS STATE")
     var dict = my_dict,
       look = YY.table_dict.look,
 
       // Start state is always 1 from what I see
       tmp_state = dict.start_state,
-      init_pos = dict.scanned_input_position,
-      char_code,
-      i;
+      char_code;
 
     function getCharCode(my_char_code, my_tmp_state) {
       return look("check", look("base", my_tmp_state) + my_char_code);
     }
 
-    console.log("init-pos = scanned input position(0) => " + my_dict.scanned_input_position)
-    console.log("actual buffer position(1) => " + my_dict.actual_buffer_position)
-    
-    for (i = init_pos; i < dict.actual_buffer_position; i += 1) {
-      if (dict.current_character_backup) {
+    for (dict.current_position_index = dict.scanned_input_position; 
+         dict.current_position_index < dict.actual_buffer_position;
+         dict.current_position_index += 1) {
+
+      if (dict.current_character_backup !== null) {
         char_code = look("ec", getCurrentRunCharacterFromPointer(dict));
       } else {
         char_code = 1;
       }
-      console.log("char_code set to: " + char_code)
-
       if (look("accept", tmp_state)) {
         dict.last_accepted_state = tmp_state;
-        dict.last_accepted_character_position = dict.current_position_index;
+        dict.last_accepted_position_index = dict.current_position_index;
       }
-      console.log("checking: " + getCharCode(char_code, tmp_state) + " vs " + tmp_state)
       while (getCharCode(char_code, tmp_state) !== tmp_state) {
-        console.log(tmp_state)
         tmp_state = look("def", tmp_state);
-        console.log(tmp_state)
         if (tmp_state >= 33) {
           char_code = look("meta", char_code);
         }
       }
-      console.log("charcode set to: " + char_code)
       tmp_state = look("nxt", look("base", tmp_state) + char_code);
     }
-    console.log("we looped, set tmp_state to :" + tmp_state)
     return tmp_state;
   }
 
@@ -2620,9 +2585,9 @@
     }
 
     // I'm adding this: Flag end of input file
-    //if (n >= max_len) {
+    // if (n >= max_len) {
     //  dict.current_buffer.buffer_fill = 0;
-    //}
+    // }
 
     // guessing this may be useful to have, too
     dict.total_characters_read = n;
@@ -2640,7 +2605,7 @@
       i;
 
     // kudos: http://stackoverflow.com/a/43965423/536768
-    console.log("GETTING NEXT BUFFER")
+
     // Returns a code representing an action:
     // EOB_ACT_LAST_MATCH = 2
     // EOB_ACT_CONTINUE_SCAN - continue scanning from current position = 0
@@ -2654,12 +2619,11 @@
     // buffer_fill is never set to 0, I'm doing it now in readChunkFromInput
     // but to get the original lexer to work, it's commented out for now..
     if (buffer.buffer_fill === 0) {
-      console.log("NO MORE BUFFER FILLING, but to finish file, actual-buffer - scanned-input-pos = 1, we have: " + dict.actual_buffer_position + " - " + dict.scanned_input_position + " = " + dict.actual_buffer_position - dict.scanned_input_position)
       // Matched single character, the EOB, treat this as a final EOF
       if (dict.actual_buffer_position - dict.scanned_input_position === 1) {
         return dict.end_of_block_action_end_of_file;
       }
-      console.log("else: just last match")
+
       // We matched some text prior to the EOB, first process it
       return dict.end_of_block_action_last_match;
     }
@@ -2703,10 +2667,6 @@
     // limbo_chars ~ number_to_move
     limbo_chars = dict.actual_buffer_position - dict.scanned_input_position - 1;
 
-    console.log("actual buffer position: " + dict.actual_buffer_position)
-    console.log("scanned input position: " + dict.scanned_input_position)
-    console.log("LIMBO = " + limbo_chars) // 0 initially correct
-
     // move the limbo characters to the beginning of the buffer
     for (i = 0; i < limbo_chars; i += 1) {
       view.setUint8(i, view.getUint8(dict.scanned_input_position + i));
@@ -2714,8 +2674,6 @@
 
     // don't read, it's not guaranteed to return an EOF, just force an EOF.
     // This seems to be a real 0 not an null/""
-    console.log("buffer_status: " + buffer.buffer_status)
-    console.log("eof-pending:" + dict.buffer_eof_pending)
     if (buffer.buffer_status === dict.buffer_eof_pending) {
       buffer.buffer_characters_read = dict.total_characters_read = 0;
     } else {
@@ -2753,9 +2711,7 @@
         // and if we only dug up the 2 EOB, we should not put the index on
         // 2 now, either 0 to rescan the partial token or 6 to continue where
         // we left off. 
-        console.log("setting actual buffer position, it is: " + dict.actual_buffer_position)
         dict.actual_buffer_position = position_offset;
-        console.log("Now it's: " + dict.actual_buffer_position)
         read_chars = buffer.buffer_size - limbo_chars - 1;
       }
 
@@ -2770,7 +2726,6 @@
 
       // update the buffer on how many additional characters were read
       buffer.buffer_characters_read = dict.total_characters_read;
-      console.log("read input and updated characters read to: " + dict.total_characters_read)
 
       if (dict.total_characters_read === 0) {
         if (limbo_chars === dict.more_adjust) {
@@ -2791,7 +2746,6 @@
       // start from scratch and rescan any partial tokens moved to the front
       // yytext_ptr = &yy_current_buffer->yy_ch_buf[0]
       dict.scanned_input_position = 0;
-      console.log("DONE READING INPUT")
       return return_value;
     }
   }
@@ -3005,8 +2959,10 @@
     // (yy_last_accepted_state)
     "last_accepted_state": null,
 
-    // (yy_last_accepted_cpos)
-    "last_accepted_character_position": null,
+    // (yy_last_accepted_cpos) stores the last index position accepted in
+    // matchText because we overshoot to leave the do-while loop and need
+    // to get back to where we left
+    "last_accepted_position_index": null,
 
     // (yy_act) - action_to_run
     "action_to_run": null,
@@ -3238,18 +3194,22 @@
 
       // starts with 1
       dict.current_state = dict.start_state;
-      console.log("position-start, our inital scanned input postion: " + dict.current_position_start);
-      console.log("position-index, the counter: " + dict.current_position_index);
 
-      // let's not declare within loop
-      matchText(dict);
-
-      // see if something was set
-      findAction(dict);
-
-      if (doAction(dict)) {
-        break; 
+      // as matchText, findAction and doAction are called stand alone, too and
+      // since they were used as goto in original code, we need to make sure
+      // that if matchText is called somewhere else it always is followed by
+      // findAction. only works if findAction is called from inside matchText
+      // and so on.
+      if (matchText(dict)) {
+        break;
       }
+
+      //// see if something was set
+      //findAction(dict);
+
+      // if (doAction(dict)) {
+      //  break; 
+      //}
     }
   }
 
@@ -3540,11 +3500,10 @@
 
         // 2/6 setGram => parse & lex
         setGrammarFile();
-        console.log("grammared");
+        
         // 3/6 setVoca
         setVocaFile();
-        console.log("vocaed");
-        console.log(YY);
+        
         // 4/6 makeNFA
         //makeNFA();
         // 5/6 makeDFA
