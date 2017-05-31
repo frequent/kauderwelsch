@@ -2239,10 +2239,13 @@
 
       dict.current_state = look("nxt", look("base", dict.current_state) + char_code);
       dict.current_position_index += 1;
-
+      console.log("matchText loop - current_state: " + dict.current_state + ", position_index: " + dict.current_position_index)
     // initial run needs current_state to be 15 for correct action to be called
     } while (look("base", dict.current_state) !== 40);
-
+    
+    console.log("matchText OUT - current_state: " + dict.current_state)
+    
+    
     // initially, the current_state coming out here should be 3, so we can get 
     // 3 => 15 on accept for action to run which will trigger loading new input
     if (dict.is_debug === 1) {
