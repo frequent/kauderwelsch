@@ -2213,7 +2213,7 @@
       util = YY.util_dict,
       dict = my_dict,
       char_code;
-
+    console.log("matchText - current_state = " + dict.current_state)
     // yy_c unsigned char, lookup in extended ascii table
     // NOTE: we're getting a character pointer 0-255, so if the character is
     // 0 and return 48 from the ascii table, I cannot look up ec[48], because
@@ -2238,7 +2238,7 @@
       }
 
       dict.current_state = look("nxt", look("base", dict.current_state) + char_code);
-      dict.current_position_index += 1;
+      dict.current_position_index++;
       console.log("matchText loop - current_state: " + dict.current_state + ", position_index: " + dict.current_position_index)
     // initial run needs current_state to be 15 for correct action to be called
     } while (look("base", dict.current_state) !== 40);
@@ -2259,7 +2259,6 @@
   function findAction (my_dict) {
     var dict = my_dict,
       look = YY.table_dict.look;
-    //console.log("need to have action 8, meaning current_state should be 10, it is: " + dict.current_state)
 
     // (yy_act) int only used within lexer, determines action!
     dict.action_to_run = look("accept", dict.current_state);
@@ -2289,6 +2288,7 @@
       dict.current_position_start;
 
     // mh... yy_c_buf_p = yy_cp
+    console.log("beforeAction, setting actual_buffer_position from " + dict.actual_buffer_position + " to current position index: " + dict.current_position_index)
     dict.actual_buffer_position = dict.current_position_index;
 
     // Note, here we backup the current character position address! and then 
@@ -2526,8 +2526,11 @@
     function getCharCode(my_char_code, my_tmp_state) {
       return look("check", look("base", my_tmp_state) + my_char_code);
     }
-
-    for (dict.current_position_index = dict.scanned_input_position; 
+    console.log("getPrevState, current_state: " + dict.current_state)
+    console.log("scanned input position: " + dict.scanned_input_position)
+    console.log("actual_buffer position: " + dict.actual_buffer_position)
+    for (dict.current_position_index = 1;
+         //dict.current_position_index = dict.scanned_input_position; 
          dict.current_position_index < dict.actual_buffer_position;
          dict.current_position_index += 1) {
 
@@ -2547,7 +2550,9 @@
         }
       }
       tmp_state = look("nxt", look("base", tmp_state) + char_code);
+      console.log("getPrevState loop, current_state = " + tmp_state)
     }
+    console.log("getPrevState done loop, tmp_state = " + tmp_state)
     return tmp_state;
   }
 
@@ -2699,7 +2704,6 @@
         // b->yy_ch_buf is the full buffer, so I'm doing 52 - buffer... byteLen
         // still not sure here, why I can't just put this on 0.
         position_offset = dict.actual_buffer_position - buffer.buffer_view.byteLength;
-
         new_size = buffer.buffer_size * 2;
         if (new_size <= 0) {
           buffer.buffer_size = dict.buffer_default_size / 8;
@@ -2714,6 +2718,7 @@
         // and if we only dug up the 2 EOB, we should not put the index on
         // 2 now, either 0 to rescan the partial token or 6 to continue where
         // we left off. 
+
         dict.actual_buffer_position = position_offset;
         read_chars = buffer.buffer_size - limbo_chars - 1;
       }
@@ -3190,6 +3195,7 @@
       dict.current_position_start = dict.actual_buffer_position;
 
       // set current position to current position in buffer
+      console.log("start current_position_index at: " + dict.current_position_index)
       dict.current_position_index = dict.current_position_start;
 
       // Support of yytext, so this really keeps a character... not an index
