@@ -2288,6 +2288,7 @@
       dict.current_position_start;
 
     // mh... yy_c_buf_p = yy_cp
+    console.log("beforeAction, setting scanned input position to current_position_start: " + dict.current_position_start)
     console.log("beforeAction, setting actual_buffer_position from " + dict.actual_buffer_position + " to current position index: " + dict.current_position_index)
     dict.actual_buffer_position = dict.current_position_index;
 
@@ -2529,8 +2530,7 @@
     console.log("getPrevState, current_state: " + dict.current_state)
     console.log("scanned input position: " + dict.scanned_input_position)
     console.log("actual_buffer position: " + dict.actual_buffer_position)
-    for (dict.current_position_index = 1;
-         //dict.current_position_index = dict.scanned_input_position; 
+    for (dict.current_position_index = dict.scanned_input_position; 
          dict.current_position_index < dict.actual_buffer_position;
          dict.current_position_index += 1) {
 
@@ -2674,7 +2674,8 @@
 
     // limbo_chars ~ number_to_move
     limbo_chars = dict.actual_buffer_position - dict.scanned_input_position - 1;
-
+    console.log("limbo: " + limbo_chars)
+    console.log("scanned-input-position: " + dict.scanned_input_position)
     // move the limbo characters to the beginning of the buffer
     for (i = 0; i < limbo_chars; i += 1) {
       view.setUint8(i, view.getUint8(dict.scanned_input_position + i));
@@ -3185,11 +3186,6 @@
     // ------------------------------ start ------------------------------------
     // loop until end of file is reached, but will stop after reaching one token?
     while (1) {
-      i++;
-      console.log("iteration: " + i);
-      if (i === 3) {
-        break;
-      }
 
       // yy_bp points to the position in yy_ch_buf of the start of current run.
       dict.current_position_start = dict.actual_buffer_position;
@@ -3219,6 +3215,12 @@
       // if (doAction(dict)) {
       //  break; 
       //}
+      i++;
+      console.log("iteration: " + i);
+      if (i === 3) {
+        break;
+      }
+
     }
   }
 
@@ -3531,5 +3533,6 @@
   window.createDfa = createDfa;
 
 }(window, RSVP, YY, Error));
+
 
 
